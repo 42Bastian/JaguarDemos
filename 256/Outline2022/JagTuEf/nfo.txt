@@ -1,0 +1,4 @@
+; Title: JagTuef
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: Boot intro: Tunnel (again) (GPU plus 68k)
