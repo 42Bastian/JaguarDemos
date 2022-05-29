@@ -1,0 +1,4 @@
+; Title: bootMandel
+; Compo: 128b oldschool
+; Author: 42Bastian
+; Info: BootIntro contains 128 Byte GPU only code in the encrypted boot header.

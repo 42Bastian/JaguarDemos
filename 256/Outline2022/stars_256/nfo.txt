@@ -1,0 +1,4 @@
+; Title: JagTuef
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: Boot intro: Star field (4864 stars, 50FPS)

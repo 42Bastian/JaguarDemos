@@ -1,0 +1,4 @@
+; Title: sierTriJag64
+; Compo: 128b oldschool
+; Author: 42Bastian
+; Info: Sierpinsky triangle in GPU code, to quick to see the actual building.

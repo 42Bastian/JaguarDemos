@@ -1,2 +1,17 @@
 # JaguarDemos
 A collection of new demos
+
+## BootIntro
+
+A 'BootIntro' is an Intro which replaces the GPU code which is decrypted by
+the Jaguar BIOS and directly executed.
+The encrypted size is limited to 10 time 64 bytes, though it is possible to
+use the rest of the ROM ;-)
+
+## 128
+
+A collection of 128 byte intros.
+
+## 256
+
+A collection of 256 byte intros.

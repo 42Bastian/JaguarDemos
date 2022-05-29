@@ -1,0 +1,4 @@
+; Title: xor_256
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: Boot intro: Fullscreen parallax XOR pattern (320x272).

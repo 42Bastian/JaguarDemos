@@ -1,0 +1,4 @@
+; Title: blobs_n_noise
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: (realtime) Plasma like blobs with some bytebeat noise.
