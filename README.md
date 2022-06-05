@@ -19,3 +19,9 @@ A collection of 256 byte intros.
 ## JagNICCC2000
 
 Port/Remix of the STNICCC 2000 Demo by Oxygene
+
+## JagNICCC2000_Tri
+
+Port/Remix of the STNICCC 2000 Demo by Oxygene
+
+Triple-buffering => 25% quicker.
