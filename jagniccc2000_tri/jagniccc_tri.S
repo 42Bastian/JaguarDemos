@@ -114,6 +114,7 @@ init:	INCLUDE "68k_inc/startup.inc"
 	bsr	VideoInit
 	bsr	InitOP
 	move.w #ScreenMode,$f00028
+	clr.w	$f00400
 
 	bsr	InitGPU
 
