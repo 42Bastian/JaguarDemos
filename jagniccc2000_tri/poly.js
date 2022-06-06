@@ -173,7 +173,7 @@ x2		reg 99
 y1		reg 99
 x1		reg 99
 counter		reg 99
-y2_next		reg 99
+y_min		reg 99
 
 DRAW_LINES	reg 99
 POLY_LOOP	reg 99
@@ -194,6 +194,8 @@ point		reg 99
 	move	tmp2,tmp0
 	shlq	#16,tmp2
 	or	tmp0,tmp2
+
+	movei	#max_y,y_min
 
 	WAITBLITTER	; wait for last blit to finish before set new color
 	store	tmp2,(blitter+_BLIT_PATD)
@@ -260,7 +262,11 @@ Edge::
 	neg	delta_y
 
 .cont0
+	cmp	y1,y_min
+	jr	n,.n
 	move	x2,delta_x
+	move	y1,y_min
+.n
 	movei	#max_y,y_count
 	sub	x1,delta_x
 	jr	nn,.cont1
@@ -413,38 +419,23 @@ DrawLines::
 
  IFND NO_DRAW
 	movefa	x_save.a,xptr
-	movei	#B_PATDSEL,bstart
-	movei	#max_x<<16,leave_it
-
+	move	y_min,y1
+	shlq	#2,y_min
 	movei	#.loop3,LOOP
-	xor	y1,y1
-	movei	#.cont1,CONT1
-	subq	#1,y1
-	;; find lowest Y
-.loop2
+	add	y_min,xptr
+	movei	#max_x<<16,leave_it
 	load	(xptr),x2
+	movei	#B_PATDSEL,bstart
 	store	leave_it,(xptr)	; restore min/max
 	addqt	#4,xptr
-	cmp	leave_it,x2	; still original min/max?
-	addqt	#1,y1
-	jr	z,.loop2
-
 .loop3
 	move	x2,x1
 	shlq	#16,x2
-	sharq	#16,x1
-	jr	nn,._0
-	cmp	leave_it,x2
-	moveq	#0,x1
-._0	jr	n,._1
+	shrq	#16,x1
 	shrq	#16,x2
-	movei	#max_x-1,x2
-._1
 	load	(xptr),x2_next
-	jump	eq,(CONT1)
 	store	leave_it,(xptr)	; restore min/max
 	sub	x1,x2
-	jump	n,(CONT1)
 	shlq	#16,x1
 	addq	#1,x2
 	or	y1,x1
