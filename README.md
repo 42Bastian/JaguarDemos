@@ -25,3 +25,9 @@ Port/Remix of the STNICCC 2000 Demo by Oxygene
 Port/Remix of the STNICCC 2000 Demo by Oxygene
 
 Triple-buffering => 25% quicker.
+
+## JagNICCC2000_dda
+
+Port/Remix of the STNICCC 2000 Demo by Oxygene
+
+Triple-buffering and DDA for poly-egdes => 86 polys/s.
