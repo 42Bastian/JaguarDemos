@@ -18,4 +18,4 @@ A parallax XOR pattern scroller with Blitter support.
 
 ### JagTuEf
 
-Tunner effect.
+Tunnel effect.
