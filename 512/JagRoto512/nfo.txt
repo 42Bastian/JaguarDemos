@@ -1,0 +1,18 @@
+;;; JagRoto512
+;;; Jaguar Boot-intro Rotozoomer with 3 different textures in 512 Bytes
+;;; 208x208 pixels, "real-time"
+;;; 8 Bytes free
+;;; Author: 42Bastian
+;;; Compo: Any which fits :-)
+;;; Runs only from JagGD, as it is a boot intro and needs a Model M Jaguar!
+;;;
+;;; Compo-Info: First version was little above 256. Since I could not shrink it
+;;;             I went for the next power of two and add more goodies :-)
+;;;
+;;; Files:
+;;; irqstub.S - 68k patch code
+;;; JagRoto512.bin - raw intro
+;;; JagRoto512.j64 - encrypted intro
+;;; JagRoto512.js  - GPU source
+;;; Makefile       - guess
+;;; nfo.txt        - this file

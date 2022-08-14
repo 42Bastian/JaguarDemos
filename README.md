@@ -16,6 +16,10 @@ A collection of 128 byte intros.
 
 A collection of 256 byte intros.
 
+## 512
+
+A collection of 512 byte intros.
+
 ## JagNICCC2000
 
 Port/Remix of the STNICCC 2000 Demo by Oxygene
