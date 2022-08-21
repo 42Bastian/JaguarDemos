@@ -43,7 +43,7 @@ xpos	equ 12
  IF ^^defined _PAL
 	bitmap screen, 58, 44, 224/4, 224/4, 224 ,4, 0, NOTRANS, 0 ,1
  ELSE
-	bitmap screen, 58, 27, 256/4, 256/4, 224 ,4, 0, NOTRANS, 0 ,1
+	bitmap screen, 58, 27, 256/4, 224/4, 224 ,4, 0, NOTRANS, 0 ,1
  ENDIF
  ELSE
 	;; below objects are modfied to jump to existing stop objects!
@@ -57,9 +57,9 @@ xpos	equ 12
  ENDIF
  ELSE
  IF ^^defined _PAL
-	bitmap screen, 35, 44, 256/4, 256/4, 240 ,4, 1, NOTRANS, 0 ,1
+	bitmap screen, 35, 44, 224/4, 224/4, 240 ,4, 1, NOTRANS, 0 ,1
  ELSE
-	bitmap screen, 35, 27, 256/4, 256/4, 224 ,4, 1, NOTRANS, 0 ,1
+	bitmap screen, 35, 27, 224/4, 224/4, 224 ,4, 1, NOTRANS, 0 ,1
  ENDIF
  ENDIF
  ENDIF
