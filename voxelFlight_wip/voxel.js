@@ -826,7 +826,7 @@ height		reg 99
 	sharq	#12-1-4,dx
 	sharq	#12-1-4,dy
  ELSE
-	imult	tmp0,dx		; not imult !!!!
+	imult	tmp0,dx
 	imult	tmp0,dy
 	sharq	#12-1,dx
 	sharq	#12-1,dy
