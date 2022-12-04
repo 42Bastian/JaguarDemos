@@ -527,22 +527,20 @@ DSP_LSP_routine_interruption_Timer1:
 
 DSP_LSP_Timer1_process:
     moveq	#0,R2
+    movei	#$0100,R3
 DSP_LSP_Timer1_cloop:
 
     loadb	(R0),R6			; R6 = byte code
     addq	#1,R0
 
     cmpq	#0,R6
-    jr		ne,DSP_LSP_Timer1_swCode
-    nop
-    movei	#$0100,R3
+    jr		eq,DSP_LSP_Timer1_cloop
     add		R3,R2
-    jr		DSP_LSP_Timer1_cloop
-    nop
 
+    sub		r3,r2
 DSP_LSP_Timer1_swCode:
-    add		R2,R6
-    move	R6,R2
+    add		R6,R2
+    move	R2,R6
 
     add		R2,R2
     load	(R14+2),R3	; R3=code table / m_codeTableAddr
@@ -568,83 +566,75 @@ DSP_LSP_Timer1_swCode:
 ;--------------------------
 ; test volume canal 3
     btst	#7,R2
-    jr		eq,DSP_LSP_Timer1_noVd
-    nop
     loadb	(R0),R4
+    jr		eq,DSP_LSP_Timer1_noVd
+    btst	#6,R2
     movei	#LSP_DSP_PAULA_AUD3VOL,R5
-    addq	#1,R0
+    addqt	#1,R0
     store	R4,(R5)
+    loadb	(R0),R4
 DSP_LSP_Timer1_noVd:
 ; test volume canal 2
-    btst	#6,R2
     jr		eq,DSP_LSP_Timer1_noVc
-    nop
-    loadb	(R0),R4
+    btst	#5,R2
     movei	#LSP_DSP_PAULA_AUD2VOL,R5
-    addq	#1,R0
+    addqt	#1,R0
     store	R4,(R5)
+    loadb	(R0),R4
 DSP_LSP_Timer1_noVc:
 ; test volume canal 1
-    btst	#5,R2
     jr		eq,DSP_LSP_Timer1_noVb
-    nop
-    loadb	(R0),R4
+    btst	#4,R2
     movei	#LSP_DSP_PAULA_AUD1VOL,R5
-    addq	#1,R0
+    addqt	#1,R0
     store	R4,(R5)
+    loadb	(R0),R4
 DSP_LSP_Timer1_noVb:
 ; test volume canal 0
-    btst	#4,R2
     jr		eq,DSP_LSP_Timer1_noVa
     nop
-    loadb	(R0),R4
     movei	#LSP_DSP_PAULA_AUD0VOL,R5
-    addq	#1,R0
+    addqt	#1,R0
     store	R4,(R5)
 DSP_LSP_Timer1_noVa:
-
     .if		LSP_avancer_module=1
     store	R0,(R14)				; store byte stream ptr
     .endif
-    addq	#4,R14					; avance a word stream ptr
+    addqt	#4,R14					; avance a word stream ptr
     load	(R14),R0				; R0 = word stream
 
 ;--------------------------
 ; gestion des notes
 ;--------------------------
 ; test period canal 3
-    btst	#3,R2
-    jr		eq,DSP_LSP_Timer1_noPd
-    nop
-    loadw	(R0),R4
     movei	#LSP_DSP_PAULA_AUD3PER,R5
-    addq	#2,R0
+    btst	#3,R2
+    loadw	(R0),R4
+    jr		eq,DSP_LSP_Timer1_noPd
+    btst	#2,R2
+    addqt	#2,R0
     store	R4,(R5)
+    loadw	(R0),R4
 DSP_LSP_Timer1_noPd:
 ; test period canal 2
-    btst	#2,R2
+    subqt	#4,r5
     jr		eq,DSP_LSP_Timer1_noPc
-    nop
-    loadw	(R0),R4
-    movei	#LSP_DSP_PAULA_AUD2PER,R5
-    addq	#2,R0
+    btst	#1,R2
+    addqt	#2,R0
     store	R4,(R5)
+    loadw	(R0),R4
 DSP_LSP_Timer1_noPc:
 ; test period canal 1
-    btst	#1,R2
+    subqt	#4,r5
     jr		eq,DSP_LSP_Timer1_noPb
-    nop
-    loadw	(R0),R4
-    movei	#LSP_DSP_PAULA_AUD1PER,R5
-    addq	#2,R0
+    btst	#0,R2
+    addqt	#2,R0
     store	R4,(R5)
+    loadw	(R0),R4
 DSP_LSP_Timer1_noPb:
 ; test period canal 0
-    btst	#0,R2
     jr		eq,DSP_LSP_Timer1_noPa
-    nop
-    loadw	(R0),R4
-    movei	#LSP_DSP_PAULA_AUD0PER,R5
+    subqt	#4,r5
     addq	#2,R0
     store	R4,(R5)
 DSP_LSP_Timer1_noPa:
@@ -658,12 +648,12 @@ DSP_LSP_Timer1_noPa:
 ; gestion des instruments
 ;--------------------------
 ;--- test instrument voie 3
-    movei	#DSP_LSP_Timer1_setIns3,R12
-    btst	#15,R2
-    jump	ne,(R12)
-    nop
+    movei	#LSP_DSP_PAULA_AUD3L,R7
+    movei	#LSP_DSP_PAULA_AUD3LEN,R8
 
+    btst	#15,R2
     movei	#DSP_LSP_Timer1_skip3,R12
+    jr		ne,DSP_LSP_Timer1_setIns3
     btst	#14,R2
     jump	eq,(R12)
     nop
@@ -673,12 +663,9 @@ DSP_LSP_Timer1_noPa:
     movei	#LSP_DSP_repeat_length3,R4
     load	(R3),R3			; pointeur sauvegardé, sur infos de repeats
     load	(R4),R4
-    movei	#LSP_DSP_PAULA_AUD3L,R7
-    movei	#LSP_DSP_PAULA_AUD3LEN,R8
     store	R3,(R7)
-    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
     jump	(R12)		; jump en DSP_LSP_Timer1_skip3
-    nop
+    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
 
 DSP_LSP_Timer1_setIns3:
     loadw	(R0),R3		; offset de l'instrument par rapport au precedent
@@ -688,7 +675,6 @@ DSP_LSP_Timer1_setIns3:
     sharq	#16,R3
     add		R3,R5		;R5=pointeur datas instruments
     addq	#2,R0
-
 
     movei	#LSP_DSP_PAULA_AUD3L,R7
     loadw	(R5),R6
@@ -746,12 +732,12 @@ DSP_LSP_Timer1_noreset3:
 DSP_LSP_Timer1_skip3:
 
 ;--- test instrument voie 2
-    movei	#DSP_LSP_Timer1_setIns2,R12
-    btst	#13,R2
-    jump	ne,(R12)
-    nop
+    movei	#LSP_DSP_PAULA_AUD2L,R7
+    movei	#LSP_DSP_PAULA_AUD2LEN,R8
 
+    btst	#13,R2
     movei	#DSP_LSP_Timer1_skip2,R12
+    jr		ne,DSP_LSP_Timer1_setIns2
     btst	#12,R2
     jump	eq,(R12)
     nop
@@ -761,12 +747,9 @@ DSP_LSP_Timer1_skip3:
     movei	#LSP_DSP_repeat_length2,R4
     load	(R3),R3			; pointeur sauvegardé, sur infos de repeats
     load	(R4),R4
-    movei	#LSP_DSP_PAULA_AUD2L,R7
-    movei	#LSP_DSP_PAULA_AUD2LEN,R8
     store	R3,(R7)
-    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
     jump	(R12)		; jump en DSP_LSP_Timer1_skip3
-    nop
+    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
 
 DSP_LSP_Timer1_setIns2:
     loadw	(R0),R3		; offset de l'instrument par rapport au precedent
@@ -829,17 +812,16 @@ DSP_LSP_Timer1_setIns2:
     load	(R12),R7
     store	R7,(R8)
 
-
 DSP_LSP_Timer1_noreset2:
 DSP_LSP_Timer1_skip2:
 
 ;--- test instrument voie 1
-    movei	#DSP_LSP_Timer1_setIns1,R12
-    btst	#11,R2
-    jump	ne,(R12)
-    nop
+    movei	#LSP_DSP_PAULA_AUD1L,R7
+    movei	#LSP_DSP_PAULA_AUD1LEN,R8
 
+    btst	#11,R2
     movei	#DSP_LSP_Timer1_skip1,R12
+    jr		ne,DSP_LSP_Timer1_setIns1
     btst	#10,R2
     jump	eq,(R12)
     nop
@@ -849,12 +831,9 @@ DSP_LSP_Timer1_skip2:
     movei	#LSP_DSP_repeat_length1,R4
     load	(R3),R3			; pointeur sauvegardé, sur infos de repeats
     load	(R4),R4
-    movei	#LSP_DSP_PAULA_AUD1L,R7
-    movei	#LSP_DSP_PAULA_AUD1LEN,R8
     store	R3,(R7)
-    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
     jump	(R12)		; jump en DSP_LSP_Timer1_skip3
-    nop
+    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
 
 DSP_LSP_Timer1_setIns1:
     loadw	(R0),R3		; offset de l'instrument par rapport au precedent
@@ -922,12 +901,12 @@ DSP_LSP_Timer1_noreset1:
 DSP_LSP_Timer1_skip1:
 
 ;--- test instrument voie 0
-    movei	#DSP_LSP_Timer1_setIns0,R12
-    btst	#9,R2
-    jump	ne,(R12)
-    nop
+    movei	#LSP_DSP_PAULA_AUD0L,R7
+    movei	#LSP_DSP_PAULA_AUD0LEN,R8
 
+    btst	#9,R2
     movei	#DSP_LSP_Timer1_skip0,R12
+    jr		ne,DSP_LSP_Timer1_setIns0
     btst	#8,R2
     jump	eq,(R12)
     nop
@@ -937,12 +916,9 @@ DSP_LSP_Timer1_skip1:
     movei	#LSP_DSP_repeat_length0,R4
     load	(R3),R3			; pointeur sauvegardé, sur infos de repeats
     load	(R4),R4
-    movei	#LSP_DSP_PAULA_AUD0L,R7
-    movei	#LSP_DSP_PAULA_AUD0LEN,R8
     store	R3,(R7)
-    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
     jump	(R12)		; jump en DSP_LSP_Timer1_skip3
-    nop
+    store	R4,(R8)		; stocke le pointeur sample de repeat dans LSP_DSP_PAULA_AUD3L
 
 DSP_LSP_Timer1_setIns0:
     loadw	(R0),R3		; offset de l'instrument par rapport au precedent
@@ -1027,91 +1003,66 @@ DSP_LSP_Timer1_noInst:
 ; conversion period => increment voie 0
     movei	#DSP_frequence_de_replay_reelle_I2S,R0
     movei	#LSP_DSP_PAULA_internal_increment0,R1
-    movei	#LSP_DSP_PAULA_AUD0PER,R2
+    movei	#LSP_DSP_PAULA_AUD0PER,R7
     load	(R0),R0
+    load	(R7),R2
     movei	#3546895,R3
-
-    load	(R2),R2
     cmpq	#0,R2
-    jr		ne,.1
-    nop
     moveq	#0,R4
-    jr		.2
+    jr		eq,.2
     nop
-.1:
     move	R3,R4
     div		R2,R4	; (3546895 / note)
-    or		R4,R4
     shlq	#nb_bits_virgule_offset,R4
     div		R0,R4	; (3546895 / note) / frequence I2S en 16:16
-    or		R4,R4
 .2:
     store	R4,(R1)
 ; conversion period => increment voie 1
-    movei	#LSP_DSP_PAULA_AUD1PER,R2
-    movei	#LSP_DSP_PAULA_internal_increment1,R1
-    move	R3,R4
-    load	(R2),R2
-    cmpq	#0,R2
-    jr		ne,.12
-    nop
+    addqt	#4,r7		;  LSP_DSP_PAULA_AUD1PER
+    load	(R7),R2
+    addqt	#4,r1
+    cmpq	#0,r2
     moveq	#0,R4
-    jr		.22
+    jr		eq,.22
     nop
-.12:
-
+    move	R3,R4
     div		R2,R4	; (3546895 / note)
-    or		R4,R4
     shlq	#nb_bits_virgule_offset,R4
     div		R0,R4	; (3546895 / note) / frequence I2S en 16:16
-    or		R4,R4
 .22:
     store	R4,(R1)
 
 ; conversion period => increment voie 2
-    movei	#LSP_DSP_PAULA_AUD2PER,R2
-    movei	#LSP_DSP_PAULA_internal_increment2,R1
-    move	R3,R4
-    load	(R2),R2
+    addqt	#4,r7		;  LSP_DSP_PAULA_AUD2PER
+    load	(R7),R2
+    addqt	#4,r1
     cmpq	#0,R2
-    jr		ne,.13
-    nop
     moveq	#0,R4
-    jr		.23
+    jr		eq,.23
     nop
-.13:
+    move	R3,R4
     div		R2,R4	; (3546895 / note)
-    or		R4,R4
     shlq	#nb_bits_virgule_offset,R4
     div		R0,R4	; (3546895 / note) / frequence I2S en 16:16
-    or		R4,R4
 .23:
     store	R4,(R1)
 
 ; conversion period => increment voie 3
-    movei	#LSP_DSP_PAULA_AUD3PER,R2
-    movei	#LSP_DSP_PAULA_internal_increment3,R1
-    move	R3,R4
-    load	(R2),R2
+    addqt	#4,r7		;  LSP_DSP_PAULA_AUD3PER
+    load	(R7),R2
+    addqt	#4,r1
     cmpq	#0,R2
-    jr		ne,.14
-    nop
     moveq	#0,R4
-    jr		.24
+    jr		eq,.24
     nop
-.14:
+    move	R3,R4
     div		R2,R4	; (3546895 / note)
-    or		R4,R4
     shlq	#nb_bits_virgule_offset,R4
     div		R0,R4	; (3546895 / note) / frequence I2S en 16:16
-    or		R4,R4
 .24:
     store	R4,(R1)
 
 ;--------------------------------------------------
-
-
-
 
 
 ;------------------------------------
@@ -1148,29 +1099,27 @@ DSP_LSP_Timer1_r_chgbpm:
     ;shlq    #8,R10		; 16 bits de virgule
     div	R11,R10		; 60/bpm
     movei    #24*65536,R9		; 24=> 5 bits
-    or	R10,R10
+//->    or	R10,R10
     ;shlq    #16,R9
     div	R10,R9		; R9=
-    or	R9,R9
+//->    or	R9,R9
     shrq    #8,R9		; R9=frequence replay
     ;move    R9,R11
 ; frequence du timer 1
     movei    #182150,R10		; 26593900 / 146 = 182150
     div	R9,R10
-    or	R10,R10
+//->    or	R10,R10
     move    R10,R14
+    addq	#1,R0
     subq    #1,R14		; -1 pour parametrage du timer 1
 ; 26593900 / 50 = 531 878 => 2 × 73 × 3643 => 146*3643
-    movei    #JPIT1,r10		; F10000
     movei    #145*65536,r9		; Timer 1 Pre-scaler
+    movei    #JPIT1,r10		; F10000
     ;shlq    #16,r12
     or	R14,R9
-    store    r9,(r10)		; JPIT1 & JPIT2
-
-
 
     jump	(R12)
-    addq	#1,R0
+    store    r9,(r10)		; JPIT1 & JPIT2
 
 
 
@@ -1178,7 +1127,7 @@ DSP_LSP_Timer1_r_chgbpm:
 ; ------------------- N/A ------------------
 DSP_LSP_routine_interruption_Timer2:
 ; ------------------- N/A ------------------
-
+ IF 0
 ;DSP_pad1
 ;DSP_pad2
 ; lecture des 2 pads
@@ -1317,7 +1266,7 @@ DSP_LSP_routine_interruption_Timer2:
 
     store	R8,(R11)
     store	R9,(R12)
-
+ ENDIF
 ;------------------------------------
 ; return from interrupt Timer 2
     load    (r31),r12	; return address
@@ -1391,23 +1340,19 @@ initPAL2:
     ;shlq    #8,R10		; 16 bits de virgule
     div	R11,R10		; 60/bpm
     movei    #24*65536,R9		; 24=> 5 bits
-    or	R10,R10
+    or	R10,R10				; div - bug, must read to finish div
     ;shlq    #16,R9
     div	R10,R9		; R9=
-    or	R9,R9
     shrq    #8,R9		; R9=frequence replay
 
     move    R9,R11
 
-
 ; frequence du timer 1
     movei    #182150,R10		; 26593900 / 146 = 182150
     div	R11,R10
-    or	R10,R10
     move    R10,R13
 
     subq    #1,R13		; -1 pour parametrage du timer 1
-
 
 
 ; 26593900 / 50 = 531 878 => 2 × 73 × 3643 => 146*3643
@@ -1471,6 +1416,7 @@ initPAL2:
     store    r29,(r30)
 
 DSP_boucle_centrale:
+ IF 0
 ; test button 0
     movei   #DSP_pad1,R30
     load    (R30),R30
@@ -1483,6 +1429,7 @@ DSP_boucle_centrale:
     store    R30,(R29)
 
 DSP_no_0_pressed:
+ ENDIF
     movei    #LSP_DSP_oldflag,R27
     load    (R27),R28
     movei    #LSP_DSP_flag,R29
@@ -1526,43 +1473,50 @@ LSP_PAULA:
 LSP_DSP_PAULA_AUD0L:		dc.l silence<<nb_bits_virgule_offset	; Audio channel 0 location
 LSP_DSP_PAULA_AUD0LEN:		dc.l (silence+4)<<nb_bits_virgule_offset		; en bytes !
 LSP_DSP_PAULA_AUD0PER:		dc.l 0		; period , a transformer en increment
+LSP_DSP_PAULA_AUD1PER:		dc.l 0		; period , a transformer en increment
+LSP_DSP_PAULA_AUD2PER:		dc.l 0		; period , a transformer en increment
+LSP_DSP_PAULA_AUD3PER:		dc.l 0		; period , a transformer en increment										+8
 LSP_DSP_PAULA_AUD0VOL:		dc.l 0		; volume
 LSP_DSP_PAULA_AUD0DAT:		dc.l 0		; long word en cours d'utilisation / stocké / buffering
 LSP_DSP_PAULA_internal_location0:   dc.l silence<<nb_bits_virgule_offset		; internal register : location of the sample currently played
 LSP_DSP_PAULA_internal_increment0:  dc.l 0		; internal register : increment linked to period 16:16
+LSP_DSP_PAULA_internal_increment1:  dc.l 0		; internal register : increment linked to period 16:16
+LSP_DSP_PAULA_internal_increment2:  dc.l 0		; internal register : increment linked to period 16:16
+LSP_DSP_PAULA_internal_increment3:  dc.l 0		; internal register : increment linked to period 16:16							+24
 LSP_DSP_PAULA_internal_length0:	dc.l (silence+4)<<nb_bits_virgule_offset		; internal register : length of the sample currently played
 LSP_DSP_repeat_pointeur0:	dc.l silence<<nb_bits_virgule_offset
 LSP_DSP_repeat_length0:		dc.l (silence+4)<<nb_bits_virgule_offset
 ; channel 1
 LSP_DSP_PAULA_AUD1L:		dc.l silence<<nb_bits_virgule_offset	; Audio channel 0 location
 LSP_DSP_PAULA_AUD1LEN:		dc.l (silence+4)<<nb_bits_virgule_offset		; en bytes !
-LSP_DSP_PAULA_AUD1PER:		dc.l 0		; period , a transformer en increment
+//->LSP_DSP_PAULA_AUD1PER:		dc.l 0		; period , a transformer en increment
 LSP_DSP_PAULA_AUD1VOL:		dc.l 0		; volume
 LSP_DSP_PAULA_AUD1DAT:		dc.l 0		; long word en cours d'utilisation / stocké / buffering
 LSP_DSP_PAULA_internal_location1:   dc.l silence<<nb_bits_virgule_offset		; internal register : location of the sample currently played
-LSP_DSP_PAULA_internal_increment1:  dc.l 0		; internal register : increment linked to period 16:16
+;;->LSP_DSP_PAULA_internal_increment1:  dc.l 0		; internal register : increment linked to period 16:16
+
 LSP_DSP_PAULA_internal_length1:	dc.l (silence+4)<<nb_bits_virgule_offset		; internal register : length of the sample currently played
 LSP_DSP_repeat_pointeur1:	dc.l silence<<nb_bits_virgule_offset
 LSP_DSP_repeat_length1:		dc.l (silence+4)<<nb_bits_virgule_offset
 ; channel 2
 LSP_DSP_PAULA_AUD2L:		dc.l silence<<nb_bits_virgule_offset	; Audio channel 0 location
 LSP_DSP_PAULA_AUD2LEN:		dc.l (silence+4)<<nb_bits_virgule_offset		; en bytes !
-LSP_DSP_PAULA_AUD2PER:		dc.l 0		; period , a transformer en increment
+//->LSP_DSP_PAULA_AUD2PER:		dc.l 0		; period , a transformer en increment
 LSP_DSP_PAULA_AUD2VOL:		dc.l 0		; volume
 LSP_DSP_PAULA_AUD2DAT:		dc.l 0		; long word en cours d'utilisation / stocké / buffering
 LSP_DSP_PAULA_internal_location2:   dc.l silence<<nb_bits_virgule_offset		; internal register : location of the sample currently played
-LSP_DSP_PAULA_internal_increment2:  dc.l 0		; internal register : increment linked to period 16:16
+//->LSP_DSP_PAULA_internal_increment2:  dc.l 0		; internal register : increment linked to period 16:16
 LSP_DSP_PAULA_internal_length2:	dc.l (silence+4)<<nb_bits_virgule_offset		; internal register : length of the sample currently played
 LSP_DSP_repeat_pointeur2:	dc.l silence<<nb_bits_virgule_offset
 LSP_DSP_repeat_length2:		dc.l (silence+4)<<nb_bits_virgule_offset
 ; channel 3
 LSP_DSP_PAULA_AUD3L:		dc.l silence<<nb_bits_virgule_offset	; Audio channel 0 location								0
 LSP_DSP_PAULA_AUD3LEN:		dc.l (silence+4)<<nb_bits_virgule_offset		; en bytes !									+4
-LSP_DSP_PAULA_AUD3PER:		dc.l 0		; period , a transformer en increment										+8
+//->LSP_DSP_PAULA_AUD3PER:		dc.l 0		; period , a transformer en increment										+8
 LSP_DSP_PAULA_AUD3VOL:		dc.l 0		; volume													+12
 LSP_DSP_PAULA_AUD3DAT:		dc.l 0		; long word en cours d'utilisation / stocké / buffering							+16
 LSP_DSP_PAULA_internal_location3:   dc.l silence<<nb_bits_virgule_offset		; internal register : location of the sample currently played			+20
-LSP_DSP_PAULA_internal_increment3:  dc.l 0		; internal register : increment linked to period 16:16							+24
+//->LSP_DSP_PAULA_internal_increment3:  dc.l 0		; internal register : increment linked to period 16:16							+24
 LSP_DSP_PAULA_internal_length3:	dc.l (silence+4)<<nb_bits_virgule_offset		; internal register : length of the sample currently played			+28
 LSP_DSP_repeat_pointeur3:	dc.l silence<<nb_bits_virgule_offset									;			+32
 LSP_DSP_repeat_length3:		dc.l (silence+4)<<nb_bits_virgule_offset									;			+36
