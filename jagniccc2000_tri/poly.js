@@ -8,6 +8,8 @@
 	unreg LR,LR.a,SP,SP.a
 	regtop 31
 
+GOURAUD EQU 0
+
 * rez
 max_x	equ 256
 max_y	equ 200
@@ -173,7 +175,7 @@ x2		reg 99
 y1		reg 99
 x1		reg 99
 counter		reg 99
-y_min		reg 99
+min_y		reg 99
 
 DRAW_LINES	reg 99
 POLY_LOOP	reg 99
@@ -195,7 +197,7 @@ point		reg 99
 	shlq	#16,tmp2
 	or	tmp0,tmp2
 
-	movei	#max_y,y_min
+	movei	#max_y,min_y
 
 	WAITBLITTER	; wait for last blit to finish before set new color
 	store	tmp2,(blitter+_BLIT_PATD)
@@ -216,8 +218,8 @@ polygon::
 	moveta	x1,x0.a
 	moveta	y1,y0.a
 
-.poly_loop
 	subq	#1,counter
+.poly_loop
 	movefa	x1.a,x1
 	jump	n,(DRAW_LINES)	; polygon closed => now draw
 	movefa	y1.a,y1
@@ -239,167 +241,102 @@ polygon::
 * Bresenham-Algo.
 ****************
 ptr	reg 99
-y_count	reg 99
 LOOP	reg 99
-step	reg 99
-delta	reg 99
-delta_y	reg 99
+dx	reg 99
+dy	reg 99
+x_min	reg 99
+x_max	reg 99
+y_max	reg 99
 
-delta_x	reg 99
-d_x	reg 99
 
+rez	equ 5
+
+	regmap
 Edge::
-	move	y2,delta_y
-	move	y2,tmp0
-	sub	y1,delta_y
-	move	y1,tmp1
+	movei	#.loop,LOOP
+	shlq	#rez,x1
+	move	y2,dy
+	shlq	#rez,x2
+	sub	y1,dy
+	move	x2,dx
 	jr	nn,.cont0
-	move	x1,tmp2		; (x1,y1) <-> (x2,y2)
+	sub	x1,dx
+
+	move	x1,tmp0
 	move	x2,x1
-	move	tmp2,x2
-	move	tmp0,y1
-	move	tmp1,y2
-	neg	delta_y
-
-.cont0
-	cmp	y1,y_min
-	jr	n,.n
-	move	x2,delta_x
-	move	y1,y_min
-.n
-	movei	#max_y,y_count
-	sub	x1,delta_x
-	jr	nn,.cont1
-	moveq	#1,d_x
-	neg	delta_x
-	subq	#2,d_x
-.cont1
-	cmp	delta_x,delta_y
-	movei	#.cont5,LOOP
-	jump	nn,(LOOP)	; delta_x < delta_y => LOOP
-	cmpq	#0,delta_y
-	jump	z,(LOOP)
-***************
-	;; delta_x > delta_y
-	shlq	#1,delta_y
-	movei	#.loop0,LOOP
-	move	delta_y,delta
-	move	delta_x,step
-	sub	delta_x,delta
-	shlq	#1,delta_x
-
-	sub	y1,y_count
-	movefa	x_save.a,ptr
-	jump	n,(POLY_LOOP)
-//->	nop				; Atari says, NOP is needed ;-)
-	jump	z,(POLY_LOOP)
-	shlq	#2,y1			; as ptr for x-save
-	add	y1,ptr
-
-	load	(ptr),tmp0		; get current min/max X
-	sub	delta_y,delta_x
-.loop0
 	move	tmp0,x2
-	shlq	#16,tmp0
-	sharq	#16,x2		; max X
-	sharq	#16,tmp0	; min X
+	move	y1,tmp0
+	move	y2,y1
+	move	tmp0,y2
 
-.loop_x_step
-	cmp	x1,x2
-	jr	n,.cont2
-	cmp	tmp0,x1
-	move	x1,x2
-.cont2
-	move	x2,tmp3
-	jr	n,.cont3
-	shlq	#16,tmp3
-	move	x1,tmp0
-.cont3
-	cmpq	#0,delta
-	jr	nn,.cont4
-	add	d_x,x1
-	subq	#1,step
-	jr	nn,.loop_x_step
-	add	delta_y,delta
-
-	jump	(POLY_LOOP)
-
-.cont4
-	or	tmp0,tmp3
-	sub	delta_x,delta
-	subq	#1,y_count
-	store	tmp3,(ptr)
-	jump	z,(POLY_LOOP)	  ;exit
-	subq	#1,step
-	addqt	#4,ptr
-	jump	nn,(LOOP)
-	load	(ptr),tmp0
-
-	jump	(POLY_LOOP)
-
-****************
-.cont5
-	shlq	#1,delta_x
-	movei	#.loop1,LOOP
-
-	move	delta_x,delta
-	move	delta_y,step
-	sub	delta_y,delta
-	shlq	#1,delta_y
-
-	sub	y1,y_count
+	neg	dx
+	neg	dy
+.cont0
+	cmp	y1,min_y
+	jr	n,.nn
+	shlq	#2,y2
+	move	y1,min_y
+.nn
+	move	y1,tmp1
+	shlq	#2,y1
+	cmpq	#0,dy
 	movefa	x_save.a,ptr
-	jump	n,(POLY_LOOP)
-//->	nop			; Atari says, NOP is needed ;-)
-	jump	z,(POLY_LOOP)
+	jr	ne,.no_hori
+	add	ptr,y1
 
-	shlq	#2,y1		; ptr for x-save
-	add	y1,ptr
+	jump	(LOOP)
+	add	ptr,y2
 
-	load	(ptr),tmp0
-	sub	delta_x,delta_y
-.loop1
-	move	tmp0,x2		; min/max x
-	shlq	#16,tmp0
-	sharq	#16,x2
-	sharq	#16,tmp0
-
-	cmp	x1,x2
-	jr	n,.cont6
-	cmp	tmp0,x1
+.no_hori
+	abs	dx
+	moveq	#1,tmp0
+	jr	cc,.pos
+	div	dy,dx
+	subq	#2,tmp0
+.pos:
+	add	ptr,y2
+	load	(y1),x_max
 	move	x1,x2
-.cont6
-	jr	n,.cont7
-	shlq	#16,x2
-	move	x1,tmp0
-.cont7
-	or	tmp0,x2
-	cmpq	#0,delta
-	store	x2,(ptr)
-	addqt	#4,ptr
-	jr	nn,.cont8
-	subq	#1,y_count
+	move	x_max,x_min
+	sharq	#rez,x2
+	shlq	#16,x_max
+	shrq	#16,x_min
+	shrq	#16,x_max
+	jr	.into
+	imult	tmp0,dx
+.loop
+	load	(y1),x_max
+	move	x1,x2
+	move	x_max,x_min
+	sharq	#rez,x2
+	shlq	#16,x_max
+	shrq	#16,x_min
+	shrq	#16,x_max
+.into
+	cmp	x2,x_min
+	jr	n,.larger2
+	cmp	x2,x_max
+	move	x2,x_min
+.larger2
+	jr	nn,.smaller2
+	shlq	#16,x_min
+	move	x2,x_max
+.smaller2
+	or	x_max,x_min
+	add	dx,x1
+	store	x_min,(y1)
+	cmp	y1,y2
+	jump	ne,(LOOP)
+	addqt	#4,y1
 
-	jump	z,(POLY_LOOP)	  ; exit
-	subq	#1,step
-	load	(ptr),tmp0
-	jump	nn,(LOOP)
-	add	delta_x,delta
 	jump	(POLY_LOOP)
-	nop
-.cont8
-	jump	z,(POLY_LOOP)		; y_count=0 => exit
-	sub	delta_y,delta
-	subq	#1,step
-	load	(ptr),tmp0
-	jump	nn,(LOOP)	; step >= 0 => LOOP
-	add	d_x,x1
-	jump	(POLY_LOOP)
-	nop
+	subq	#1,counter
 
- UNREG step,point,x1,x2,y1,y2,d_x,delta,delta_x,delta_y,y_count
- UNREG x0.a,y0.a,x1.a,y1.a
- UNREG LOOP,POLY_LOOP,DRAW_LINES
+ UNREG x_min,x_max,x1,x2,y1,y2,dx,dy
+ UNREG x0.a,y0.a
+ UNREG point,ptr,LOOP
+
+	regmap
 ****************
 * draw H-Lines
 
@@ -410,31 +347,31 @@ LOOP		reg 99
 leave_it	reg 99
 x1		reg 99
 x2		reg 99
-x2_next		reg 99
 y1		reg 99
 CONT1		reg 99
 bcounter	reg 99
+x2_next		reg 99
 
 DrawLines::
-
- IFND NO_DRAW
 	movefa	x_save.a,xptr
-	move	y_min,y1
-	shlq	#2,y_min
+	movei	#B_PATDSEL|B_GOURD*GOURAUD,bstart
+	movei	#max_x<<16|0,leave_it
+ IF 1
+	move	min_y,y1
+	shlq	#2,min_y
 	movei	#.loop3,LOOP
-	add	y_min,xptr
-	movei	#max_x<<16,leave_it
+	add	min_y,xptr
+	movei	#.cont1,CONT1
 	load	(xptr),x2
-	movei	#B_PATDSEL,bstart
-	store	leave_it,(xptr)	; restore min/max
+	store	leave_it,(xptr)
 	addqt	#4,xptr
+	load	(xptr),x2_next
 .loop3
 	move	x2,x1
+	store	leave_it,(xptr)
 	shlq	#16,x2
 	shrq	#16,x1
 	shrq	#16,x2
-	load	(xptr),x2_next
-	store	leave_it,(xptr)	; restore min/max
 	sub	x1,x2
 	shlq	#16,x1
 	addq	#1,x2
@@ -447,11 +384,12 @@ DrawLines::
 	store	x2,(blitter+_BLIT_COUNT)
 	store	bstart,(blitter+_BLIT_CMD)
 .cont1
+	addq	#1,y1
 	move	x2_next,x2
-	cmp	leave_it,x2_next
+	cmp	x2_next,leave_it
 	addqt	#4,xptr
 	jump	nz,(LOOP)
-	addq	#1,y1
+	load	(xptr),x2_next
  ENDIF
 	jump	(FRAME_LOOP)
 	nop
