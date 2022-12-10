@@ -43,3 +43,7 @@ A prove of concept demo of a Voxel Space demo.
 ## voxelFlight_wip
 
 Based on `voxelFlight` but growing
+
+## yarc
+
+Yet Another Rotating Cube - Sillyventure WE 2022 entry
