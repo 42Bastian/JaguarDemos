@@ -1,0 +1,11 @@
+Title: YARC - Yet Another Rotating Cube
+Author: 42Bastian
+Music: Cream of the Earth, Romeo Knight / Red Sector Inc. (modified for Jaguar)
+Player: ericde45
+Compo: Jaguar intro
+
+More a techical tryout for line drawing with Blitter. 68k is switched off after boot, only GPU/DSP running.
+
+Files:
+yarc.cof (Runs fine on BPE and JagGD)
+yarc.j64 (Runs fine on BPE (disable BIOS!) and JagGD)
