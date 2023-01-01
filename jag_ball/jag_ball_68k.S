@@ -647,11 +647,11 @@ swap1:		stop	#$2000
 
 Objekte:
 		BRA_OBJ 30,"<",-7		; y<30 => STOP
-		BRA_OBJ 600,">",-7		; y>500 => STOP
+		BRA_OBJ 500,">",-7		; y>500 => STOP
 * Info
 		DC.W 1,obj_sc_len
 		DC.L TextScreen
-		DC.W 22,60,TextHeight
+		DC.W 24,60,TextHeight
 		DC.W NEXT_OBJ
 		DC.B 0,1
 		DC.W TextWidth,TextWidth ; Breite
