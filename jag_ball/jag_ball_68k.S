@@ -666,7 +666,7 @@ screen1_type:	DC.W 0,obj_bm_len
 		DC.W 20,35,max_y
 		DC.W NEXT_OBJ
 		DC.B 4,3
-		DC.W (320*2*3)>>3,(320*2*3)>>3
+		DC.W (320*2*3)>>3,(320*2*1)>>3
 		DC.B 0,4
 		DC.W 0
 		STOP_OBJ
@@ -676,7 +676,7 @@ screen2_type:	DC.W 0,obj_bm_len
 		DC.W 20,35,max_y
 		DC.W NEXT_OBJ
 		DC.B 4,3
-		DC.W (320*2*3)>>3,(320*2*3)>>3
+		DC.W (320*2*3)>>3,(320*2*1)>>3
 		DC.B 0,4
 		DC.W 0
 * EOL
