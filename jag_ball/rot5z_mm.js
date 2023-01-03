@@ -211,6 +211,7 @@ loop_xyz
 	moveta y0,r0
 	load (hi_phrase),x0
 	addq #8,points_x0
+	move x0,color
 	moveta x0,r1
 	store rot_mat_ptr,(mtx_addr)	; GPU increases address!
 	nop			; *** WRITE BACK score-board clear
@@ -223,14 +224,13 @@ loop_xyz
 	sharq #15,y1
 	sharq #15,z1
 
-	loadw (color_ptr),color
-	addq #2,color_ptr
-
+	shrq #16,color
 	move y1,intensity
 	move y1,dummy
 	addq #32,intensity
 	add middle_x,x1
-	shrq #3,dummy
+	addq #32,intensity
+	shrq #2,dummy
 	add middle_y,z1
 	sub dummy,x1
 	sub dummy,z1

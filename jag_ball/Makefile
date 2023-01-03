@@ -13,6 +13,10 @@ ifdef NODRAW
 TJFLAGS+= -D NO_DRAW
 endif
 
+ifeq ($(BPE),1)
+_68KFLAGS+= -DBPE
+endif
+
 ifdef DEBUG
 _68KFLAGS+= -DDEBUG
 endif
