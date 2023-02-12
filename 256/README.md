@@ -1,5 +1,9 @@
 # 256 Byte Intros
 
+## rodot
+
+ROtating DOTs - 256Byte intro for Lovebyte 2023
+
 ## Outline2022
 
 BootIntros done for Outline 2022 in Ommen

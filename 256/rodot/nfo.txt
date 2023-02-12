@@ -1,0 +1,10 @@
+; Title: rodot
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: 256 Byte boot intro. Only GPU code!
+;
+; Files:
+; rodot.bin  : Assembled demo
+; rodot.j64  : Jaguar ROM
+; rodot.js   : Source (LYXASS syntax)
+; rodot.jpg  : screen shot
