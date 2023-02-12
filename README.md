@@ -8,6 +8,10 @@ the Jaguar BIOS and directly executed.
 The encrypted size is limited to 10 time 64 bytes, though it is possible to
 use the rest of the ROM ;-)
 
+## 64
+
+A collection of 64 (or below) intros
+
 ## 128
 
 A collection of 128 byte intros.

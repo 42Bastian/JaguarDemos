@@ -1,0 +1,86 @@
+# -*-makefile-*-
+
+CALLBPE=/fun/jaguar/BigPEmu/BigPEmu.exe
+JAGGD=jaggd.exe
+CALLVJ=/fun/jaguar/virtualjaguar_2.1.3/virtualjaguar.exe
+MACOS=@prlexec --vm "Windows 11" -r
+
+ifeq ($(findstring aarch64,$(MACHTYPE)),aarch64)
+override CALLBPE:=$(MACOS) $(CALLBPE)
+override JAGGD:=jaggd
+override CALLVJ:=$(MACOS) $(CALLVJ)
+endif
+
+export BIOS=1
+#
+# SKUNK
+#
+.PHONY: reset
+reset:
+	jcp -r
+	wait
+
+.PHONY: flash
+flash: $(DEMO).j64
+	jcp -ef $<
+
+.PHONY: upload
+.ONESHELL:
+upload: $(DEMO).cof
+	@jcp -q $< 0x4000
+
+#
+# JagGD
+#
+.PHONY: jaggd_reset
+jaggd_reset:
+	$(JAGGD) -r
+
+.PHONY: jaggd
+jaggd:  $(DEMO).j64
+	$(JAGGD) -rd -uxr $<,a:0x800000
+
+.PHONY: jaggd_cof
+jaggd_cof: $(DEMO).cof
+	$(JAGGD) -rd -ux $<,a:0x4000,x:0x4000
+
+#
+# VirtualJaguar
+#
+
+.PHONY: vjd_cof
+vjd_cof: $(DEMO).cof
+	$(CALLVJ) -D $<
+
+.PHONY: vj_cof
+vj_cof: $(DEMO).cof
+	$(CALLVJ) $< &
+
+.PHONY: vj
+vjd: vj.j64
+ifeq ($(BIOS),1)
+	$(CALLVJ) -D -b $< &
+else
+	$(CALLVJ) -D  $< &
+endif
+
+.PHONY: vj
+vj: vj.j64
+ifeq ($(BIOS),1)
+	$(CALLVJ) -b $< &
+else
+	$(CALLVJ) $< &
+endif
+
+#
+# BigPEmu
+#
+.PHONY: bpe_cof
+bpe_cof: $(DEMO).cof
+	$(CALLBPE) $< -devmode &
+	true
+
+.PHONY: bpe
+bpe: $(DEMO).j64
+	$(CALLBPE) $< -devmode &
+	true
