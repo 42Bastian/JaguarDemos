@@ -1,0 +1,2 @@
+256 Byte GPU Intro
+Decoded by boot ROM and directly started.
