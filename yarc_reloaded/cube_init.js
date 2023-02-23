@@ -52,10 +52,10 @@ cpy_logo:
 	addq	#4,r0
 
  IF MOD = 1
-	moveq	#$10,r0
-	shlq	#4,r0
-	movei	#JOYSTICK,r1
-	storew	r0,(r1)
+;;->	moveq	#$10,r0
+;;->	shlq	#4,r0
+;;->	movei	#JOYSTICK,r1
+;;->	storew	r0,(r1)
 	nop
 	movei	#DSP_code,r0
 	movei	#DSP_RAM,r1
