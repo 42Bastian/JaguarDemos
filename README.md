@@ -52,6 +52,10 @@ Based on `voxelFlight` but growing
 
 Yet Another Rotating Cube - Sillyventure WE 2022 entry
 
+## yarc_reload
+
+Evolution of yarc: No more 68K, direct boot.
+
 ## jag_ball
 
 Port of jag_ball4 for rmac/rln and latest lyxass.
