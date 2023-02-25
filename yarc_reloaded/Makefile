@@ -95,4 +95,4 @@ clean:
 	$(Q)rm -f *.o
 	rm -f *.equ
 	rm -f *~
-	rm -f *.j64 *.cof *.rom *.abs *.img *.bin *.do
+	rm -f vj.j64 *.cof *.rom *.abs *.img *.bin *.do
