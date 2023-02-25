@@ -7,10 +7,10 @@
 	include <js/symbols/jagregeq.js>
 	include <js/symbols/joypad.js>
 	include "canvas.h"
+	include "cube_init.equ"
 
 	UNREG	SP,SP.a,LR,LR.a
 
-DEBUG::		EQU 1
 CHANGE_OBJECTS  EQU 1
 
 JITTER		EQU 1
@@ -18,10 +18,6 @@ JITTER		EQU 1
 	;; variables
 	RSSET	$1000
 	RSB	obl,512
-
-	RSL	TextScreen
-	RSL	font
-	RSL	Cursor
 
 FP_BITS		equ 12
 
@@ -150,7 +146,7 @@ init::
 
 	movei	#IRQ_STACK,IRQ_SP
 	moveta	IRQ_SP,IRQ_SP.a
-	movei	#gpu_stack+4*4,SP
+	movei	#stacktop,SP
 ;;; ------------------------------
 	include <js/inc/videoinit.inc>
 ;;; ------------------------------
@@ -181,18 +177,23 @@ init::
 	shlq	#20,r14
 	store	r4,(r14+32)
 
- IF DEBUG = 1
 	movei	#254,r0
 	movei	#$1000F7F0,r1
 	movei	#txt_screen,r2
-	move	r25,r3
+	movei	#ASCII,r3
+	movei	#InitTxtScreen,r4
+	BL	(r4)
+ IFD DEBUG
+	movei	#254,r0
+	movei	#$1000F7F0,r1
+	movei	#txt_screen,r2
+	movei	#hexfont,r3
 	movei	#InitHexScreen,r4
 	BL	(r4)
- ELSE
-	movei	#$1000F7F0,r0
-	movei	#$f00400+254*2,r1
-	store	r0,(r1)
  ENDIF
+	movei	#Hello,r0
+	movei	#PrintString,r1
+	BL	(r1)
 
 	movei	#1<<14|%11111<<9|%01000<<4,r0
 	store	r0,(IRQ_FLAGADDR)
@@ -302,7 +303,7 @@ cosingen:
 	addq	#6,r0
 	moveta	r0,LOOP.a
 loop:
- IF DEBUG = 1
+ IFD DEBUG
 	movefa	BG.a,r0
 	moveq	#0,r1
 	storew	r1,(r0)
@@ -315,7 +316,7 @@ waitStart:
 	movefa	pit.a,r0
 	loadw	(r0),r0
 	moveta	r0,time.a
- IF DEBUG = 1
+ IFD DEBUG
 	movefa	BG.a,r0
 	movei	#$88ff,r1
 	storew	r1,(r0)
@@ -460,14 +461,14 @@ waitStart:
 .norot
 ;;; ------------------------------
 ;;; time
- IF DEBUG = 1
+ IFD DEBUG
 	movefa	pit.a,tmp1
 	movefa	time.a,tmp0
 	loadw	(tmp1),tmp1
 	sub	tmp1,tmp0
 
-	moveq	#0,r1
-	movei	#PrintDEC2,r2
+	movei	#$20000,r1
+	movei	#hx_PrintDEC2_YX,r2
 	BL	(r2)
  ENDIF
 ;;; ------------------------------
@@ -1036,8 +1037,9 @@ x1	reg 0!
 draw_e::
 draw_size	equ draw_e-draw
 	echo "DRAW: %ddraw_size"
- IF DEBUG = 1
-	include "hexscr.js"
+	include <js/inc/txtscr.inc>
+ IFD DEBUG
+	include <js/inc/hexscr.inc>
  ENDIF
 	align 32
 
@@ -1230,12 +1232,19 @@ ball_faces:
 	init_poly2 39,40,41
 	init_poly2 40,31,41
  ENDIF
+
 	align 4
+
 varbase_::
 	RSSET	varbase_
-	RSL	gpu_stack,32
+	RSL	stack,16
+	RSL	stacktop,1
 	RSL	LastJoy,2
 	RSL	endofram
+	include <js/var/txtscr.var>
+ IFD DEBUG
+	include <js/var/hexscr.var>
+ ENDIF
 
 	RSSET $1fe000
 	RSL	rdots,50*3

@@ -37,12 +37,11 @@ ScreenMode	EQU CRY16|VIDEN|PWIDTH4|BGEN|CSYNC
 	movei	#obl1_60hz,r27
 pal:
 	movei	#obl_size/8,r26
-	movei	#hexfont,r25
 
 	movei	#logo_screen,r0
 	movei	#logo,r1
 	movei	#8*9/4,r2
-	nop
+
 cpy_logo:
 	load	(r1),r3
 	addq	#4,r1
@@ -52,14 +51,10 @@ cpy_logo:
 	addq	#4,r0
 
  IF MOD = 1
-;;->	moveq	#$10,r0
-;;->	shlq	#4,r0
-;;->	movei	#JOYSTICK,r1
-;;->	storew	r0,(r1)
-	nop
 	movei	#DSP_code,r0
 	movei	#DSP_RAM,r1
 	movei	#(DSP_code_e-DSP_code),r2
+	nop
 cpy_dsp:
 	load	(r0),r3
 	addq	#4,r0
@@ -85,6 +80,7 @@ cpy_dsp:
 	store	r0,(r14+$14)	; GO
  ENDIF
 
+
 	movei	#$f03000+8000,r0
 	movei	#GPUcode+4,r1
 	load	(r1),r2		; dest
@@ -100,20 +96,13 @@ cpy:	load	(r1),r5
 	store	r5,(r2)
 	jr	pl,cpy
 	addq	#4,r2
+
+
 	jump	(r3)
 	nop
 
-	align 4
-GPUcode:
-	.ibytes "cube.o"
 
 	align 4
-
-hexfont:
-	.ibytes <font/hexfont_8x5.bin>
-
-	align 4
-
 logo:
 	;;    0123456789ABCDEF0123456789ABCDEF
 	dc.l %11111111111111111111111111111110,0
@@ -163,3 +152,19 @@ LSP_music_end:
 
 	.phrase
  ENDIF
+
+ IFD DEBUG
+	align 4
+hexfont::
+	.ibytes <font/hexfont_8x5.bin>
+ ENDIF
+	align 4
+ASCII::
+	.ibytes <font/light8x8.fnt>
+	;;   0123456789012345678901234567890123456789a
+Hello::
+	dc.b "YARC reloaded / 100% GPU/DSP code",0
+
+	align 16
+GPUcode:
+	.ibytes "cube.o"
