@@ -79,7 +79,7 @@ $(DEMO).XXX: $(DEMO).bin
 $(DEMO).j64: $(DEMO).XXX
 	$Qcp $< $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >>$@
-	truncate -s 8K $@
+	truncate -s 16K $@
 
 vj: $(DEMO).cof
 	$Qvirtualjaguar $<

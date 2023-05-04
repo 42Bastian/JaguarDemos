@@ -29,7 +29,7 @@ ScreenMode	EQU CRY16|VIDEN|PWIDTH4|BGEN|CSYNC
 screen		EQU $1d0000
 
 obl		reg 31
-loop		reg 30
+LOOP		reg 30
 loopy		reg 29
 loopx		reg 28
 screen_ptr	reg 27
@@ -88,7 +88,7 @@ cpy:
 	movei	#$f00058,bg_col
  ENDIF
 	bset	#5,r13		// = 32
-	move	pc,loop
+	move	pc,LOOP
 loop:
 	moveq	#screen>>16,screen_ptr
 	shlq	#16,screen_ptr
@@ -195,7 +195,7 @@ odd:
 	subq	#1,r2
 	jump	ne,(loopy)
 	nop
-	jump	(loop)
+	jump	(LOOP)
 	addq	#2,r6
 
 	;; GPU RAM cleared by ROM,
