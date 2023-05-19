@@ -8,6 +8,10 @@ the Jaguar BIOS and directly executed.
 The encrypted size is limited to 10 time 64 bytes, though it is possible to
 use the rest of the ROM ;-)
 
+Most of these intro need a Model-M BIOS.
+
+If run with BigPEmu, be sure to select _Boot ROM Image_.
+
 ## 64
 
 A collection of 64 (or below) intros
