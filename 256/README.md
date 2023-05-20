@@ -8,6 +8,10 @@ ROtating DOTs - 256Byte intro for Lovebyte 2023
 
 BootIntros done for Outline 2022 in Ommen
 
+## Outline2023
+
+BootIntros done for Outline 2022 in Ommen
+
 ### blobs_n_noise
 
 A plasma like pattern with bytebeat noise. GPU and 68k Code.

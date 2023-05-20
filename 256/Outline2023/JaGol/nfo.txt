@@ -1,0 +1,7 @@
+; Title: JaGol
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: Boot intro for Atari Jaguar: Jaguar Game Of Live with 19200 cells
+; JaGol.bin : raw intro
+; JaGol.j64 : ROM file for JagGD or BigPEmu
+; Source will be on GH after the show

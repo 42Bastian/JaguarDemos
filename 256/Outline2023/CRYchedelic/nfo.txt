@@ -1,0 +1,7 @@
+; Title: CRYchedelic
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: Boot intro for Jaguar: Realtime CRY mode circle pattern.
+; CRYchedlic.bin : raw intro
+; CRYchedlic.j64 : ROM file for JagGD or BigPEmu
+; Source will be on GH after the show
