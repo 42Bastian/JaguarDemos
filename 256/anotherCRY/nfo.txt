@@ -1,0 +1,8 @@
+; Title: anotherCRY
+; Party: Sommarhack 2023
+; Compo: 256b
+; Author: 42Bastian
+; Info: Boot intro for Jaguar: Realtime CRY mode line drawing with Blitter
+; anotherCRY.bin : raw intro
+; anotherCRY.j64 : ROM file for JagGD or BigPEmu
+; Source will be on GH after the show
