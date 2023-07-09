@@ -31,3 +31,7 @@ Tunnel effect.
 ## bootMona
 
 Port of Mona from Ilmenit as Boot intro, pure GPU code.
+
+## anotherCRY
+
+CRY color cycling with Blitter line drawing
