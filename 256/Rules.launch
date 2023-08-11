@@ -21,12 +21,12 @@ reset:
 	wait
 
 .PHONY: flash
-flash: $(DEMO).j64
+flash: $(DEMO)$(DEMO_EXT).j64
 	jcp -ef $<
 
 .PHONY: upload
 .ONESHELL:
-upload: $(DEMO).cof
+upload: $(DEMO)$(DEMO_EXT).cof
 	@jcp -q $< 0x4000
 
 #
@@ -37,11 +37,11 @@ jaggd_reset:
 	$(JAGGD) -r
 
 .PHONY: jaggd
-jaggd:  $(DEMO).j64
+jaggd:  $(DEMO)$(DEMO_EXT).j64
 	$(JAGGD) -rd -uxr $<,a:0x800000
 
 .PHONY: jaggd_cof
-jaggd_cof: $(DEMO).cof
+jaggd_cof: $(DEMO)$(DEMO_EXT).cof
 	$(JAGGD) -rd -ux $<,a:0x4000,x:0x4000
 
 #
@@ -49,11 +49,11 @@ jaggd_cof: $(DEMO).cof
 #
 
 .PHONY: vjd_cof
-vjd_cof: $(DEMO).cof
+vjd_cof: $(DEMO)$(DEMO_EXT).cof
 	$(CALLVJ) -D $<
 
 .PHONY: vj_cof
-vj_cof: $(DEMO).cof
+vj_cof: $(DEMO)$(DEMO_EXT).cof
 	$(CALLVJ) $< &
 
 .PHONY: vj
@@ -76,11 +76,11 @@ endif
 # BigPEmu
 #
 .PHONY: bpe_cof
-bpe_cof: $(DEMO).cof
+bpe_cof: $(DEMO)$(DEMO_EXT).cof
 	$(CALLBPE) $< -devmode &
 	true
 
 .PHONY: bpe
-bpe: $(DEMO).j64
+bpe: $(DEMO)$(DEMO_EXT).j64
 	$(CALLBPE) $< -devmode &
 	true
