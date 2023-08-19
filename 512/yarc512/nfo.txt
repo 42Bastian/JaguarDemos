@@ -1,0 +1,4 @@
+-- yarc512 - yet another rotating cube in 512 bytes
+-- Release: Silliventure SE 2023
+-- Size: 512 Bytes
+-- Author: 42Bastian
