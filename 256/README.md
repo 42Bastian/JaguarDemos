@@ -39,3 +39,11 @@ CRY color cycling with Blitter line drawing
 ## colorTunnel
 
 A variation of JagTuEf, quicker, more colors, no 68k
+
+## tj_julia
+
+Tom & Jerry compute a Julia set walk in parallel.
+
+## algorip
+
+Ripped algo from algorift by Marquee Desgin

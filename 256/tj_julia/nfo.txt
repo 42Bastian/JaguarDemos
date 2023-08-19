@@ -1,0 +1,5 @@
+-- Tom & Jerry & Julia
+-- Julia set walk using Tom & Jerry in parallel
+-- Release: Silliventure SE 2023
+-- Size: 256 Bytes
+-- Author: 42Bastian
