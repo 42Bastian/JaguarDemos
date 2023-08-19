@@ -1,0 +1,4 @@
+-- algorip - Ripped algo from algorift, but no pre-calc
+-- Release: Silliventure SE 2023
+-- Size: 256 Bytes (actually 204)
+-- Author: 42Bastian (algorift by Marquee Design)
