@@ -105,7 +105,7 @@ cpy_dsp:
 	;; Setup min/max X table
 	movefa	x_save.a,tmp0
 	movei	#max_y,tmp1
-	movei	#max_x<<16|0,tmp2	; minX:maxX
+	movei	#max_x<<(16+rez)|0,tmp2	; minX:maxX (+5 => rez in poly.js)
 .loop0
 	subq	#1,tmp1
 	store	tmp2,(tmp0)
@@ -190,7 +190,7 @@ pal:
 	moveta	r0,info_counter.a
 	moveta	r0,info_index.a
 	movei	#info_table,INFO_TABLE
-	nop
+
 	MBL	poly
 
 	UNREG tmp0,tmp1,tmp2,tmp3

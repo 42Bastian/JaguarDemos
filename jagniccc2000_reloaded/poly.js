@@ -18,9 +18,21 @@ op::
 
 	subqt	#1,info_counter.a
 
+	movefa	VBLFlag,IRQScratch0.a
+	cmpq	#0,IRQScratch0.a
+	jr	ne,.no_swap
 	moveq	#1,IRQScratch0.a
 	moveta	IRQScratch0.a,VBLFlag
+	move	obl0.a,r0
+	move	obl1.a,r1
+	move	r1,obl0.a
+	move	r0,obl1.a
 
+	moveta	screen0.a,r0
+	move	screen1.a,r1
+	movefa	r0,screen1.a
+	move	r1,screen0.a
+.no_swap
 	move	obl0.a,IRQScratch0.a
 	movei	#$1040,IRQScratch1.a
 	moveq	#20-1,IRQScratch3.a
@@ -46,7 +58,7 @@ irq_return
 	ENDMODULE irq
 
 	MODULE poly,MODend_irq
-
+poly::
 	movei	#frameLoop, FRAME_LOOP
 	movei	#BLIT_A1_BASE,blitter
 	movei	#DrawLines,tmp1
@@ -89,6 +101,7 @@ main_loop:
 	movefa	VID_PIT.a,r0
 	loadw	(r0),r0
 	sub	r0,lastPIT
+	nop
 	jr	pl,.notfirst
 	move	lastPIT,r0
 	moveq	#0,lastPIT
@@ -118,12 +131,15 @@ main_loop:
 	movefa	VID_PIT.a,lastPIT
 	loadw	(lastPIT),lastPIT
 
+	movefa	frameCounter.a,r1
 	movei	#$ffff,r0
+	shlq	#29,r1
+	movei	#PrintDEC_YX,r4
+	jr	ne,.no_time
 	xor	lastPIT,r0
 	movei	#$0002000e,r1
-	movei	#PrintDEC_YX,r4
 	BL	(r4)
-
+.no_time:
 	movefa	frameCounter.a,r0
 	movei	#$00020000|23,r1
 	BL	(r4)
@@ -151,15 +167,7 @@ main_loop:
 	movei	#$f00058,r4
 	storew	r4,(r4)
  ENDIF
-	movefa	obl0.a,r0
-	movefa	obl1.a,r1
-	moveta	r1,obl0.a
-	moveta	r0,obl1.a
-
 	movefa	screen0.a,screen_ptr
-	movefa	screen1.a,r1
-	moveta	screen_ptr,screen1.a
-	moveta	r1,screen0.a
 
 	movefa	frameCounter.a,tmp1
 	loadw	(frame_ptr),control ; Frame control word
@@ -187,15 +195,16 @@ main_loop:
 //->	WAITBLITTER	; done later down the road
 
 .no_cls:
-	btst	#1,control
 	move	control,tmp0
+	shlq	#16,tmp0
+	shrq	#24,tmp0		; number of colors
+
+	btst	#1,control
 	jr	eq,.no_palette
 	loadw	(frame_ptr),tmp1
 
 ********************
 * set new palette
-	shlq	#16,tmp0
-	shrq	#24,tmp0		; number of colors
 .palloop
 	addqt	#2,frame_ptr
 	loadw	(frame_ptr),tmp2
@@ -248,7 +257,7 @@ point		reg 99
 	shlq	#16,tmp2
 	or	tmp0,tmp2
 
-	movei	#max_y,min_y
+	movei	#max_y*4,min_y
 
 	WAITBLITTER	; wait for last blit to finish before set new color
 	store	tmp2,(blitter+_BLIT_PATD)
@@ -298,84 +307,58 @@ dy	reg 99
 x_min	reg 99
 x_max	reg 99
 
-rez	equ 5
+rez	equ 5			; note: fix also jagniccc.js !!
 
-;;->	regmap
 Edge::
-	movei	#.loop,LOOP
 	shlq	#rez,x1
 	move	y2,dy
 	shlq	#rez,x2
 	sub	y1,dy
 	move	x2,dx
-	jr	nn,.cont0
+	jr	nn,.noswap
 	sub	x1,dx
 
-	move	x1,tmp0
 	move	x2,x1
-	move	tmp0,x2
-	move	y1,tmp0
 	move	y2,y1
-	move	tmp0,y2
 
 	neg	dx
 	neg	dy
-.cont0
-	cmp	y1,min_y
-	jr	n,.nn
-	shlq	#2,y2
-	move	y1,min_y
-.nn
-	move	y1,tmp1
-	shlq	#2,y1
-	cmpq	#0,dy
-	movefa	x_save.a,ptr
-	jr	ne,.no_hori
-	add	ptr,y1
-
-	jump	(LOOP)
-	add	ptr,y2
-
-.no_hori
+.noswap
 	abs	dx
-	moveq	#1,tmp0
 	jr	cc,.pos
 	div	dy,dx
-	subq	#2,tmp0
-.pos:
-	add	ptr,y2
-	load	(y1),x_max
-	move	x1,x2
-	move	x_max,x_min
-	sharq	#rez,x2
-	shlq	#16,x_max
-	shrq	#16,x_min
-	shrq	#16,x_max
-	jr	.into
-	imult	tmp0,dx
+	neg	dx
+.pos
+	shlq	#2,y1
+__PC:	move	PC,LOOP
+	cmp	y1,min_y
+	movefa	x_save.a,ptr
+	jr	n,.nn
+	addqt	#.loop-__PC,LOOP
+	move	y1,min_y
+.nn
+	add	ptr,y1
 .loop
 	load	(y1),x_max
-	move	x1,x2
 	move	x_max,x_min
-	sharq	#rez,x2
 	shlq	#16,x_max
 	shrq	#16,x_min
 	shrq	#16,x_max
-.into
-	cmp	x2,x_min
+
+	cmp	x1,x_min
 	jr	n,.larger2
-	cmp	x2,x_max
-	move	x2,x_min
+	cmp	x1,x_max
+	move	x1,x_min
 .larger2
 	jr	nn,.smaller2
 	shlq	#16,x_min
-	move	x2,x_max
+	move	x1,x_max
 .smaller2
-	or	x_max,x_min
 	add	dx,x1
+	or	x_max,x_min
+	subq	#1,dy
 	store	x_min,(y1)
-	cmp	y1,y2
-	jump	ne,(LOOP)
+	jump	nn,(LOOP)
 	addqt	#4,y1
 
 	jump	(POLY_LOOP)
@@ -385,7 +368,6 @@ Edge::
  UNREG x0.a,y0.a
  UNREG point,ptr,LOOP
 
-;;->	regmap
 ****************
 * draw H-Lines
 
@@ -403,49 +385,44 @@ x2_next		reg 99
 
 DrawLines::
 	movefa	x_save.a,xptr
-	movei	#B_PATDSEL|B_GOURD,bstart
-	movei	#max_x<<16|0,leave_it
- IF 1
-	move	min_y,y1
-	shlq	#2,min_y
-	movei	#.loop3,LOOP
+	moveq	#0,bstart
+	movei	#max_x<<(16+rez)|0,leave_it
+	bset	#16,bstart
 	add	min_y,xptr
-	movei	#.cont1,CONT1
-	load	(xptr),x2
-	store	leave_it,(xptr)
-	addqt	#4,xptr
-	load	(xptr),x2_next
+	shrq	#2,min_y
+	move	pc,LOOP
+	addq	#4,LOOP
 .loop3
+	load	(xptr),x2
+	cmp	x2,leave_it
 	move	x2,x1
-	store	leave_it,(xptr)
+	jump	eq,(FRAME_LOOP)
 	shlq	#16,x2
-	shrq	#16,x1
-	shrq	#16,x2
+	store	leave_it,(xptr)
+	shrq	#16+rez,x1
+	shrq	#16+rez,x2
 	sub	x1,x2
 	shlq	#16,x1
 	addq	#1,x2
-	or	y1,x1
+	or	min_y,x1
 	bset	#16,x2
 	rorq	#16,x1
 
+	addq	#1,min_y
+	addqt	#4,xptr
 	WAITBLITTER
 	store	x1,(blitter+_BLIT_A1_PIXEL)
 	store	x2,(blitter+_BLIT_COUNT)
+	jump	(LOOP)
 	store	bstart,(blitter+_BLIT_CMD)
-.cont1
-	addq	#1,y1
-	move	x2_next,x2
-	cmp	x2_next,leave_it
-	addqt	#4,xptr
-	jump	nz,(LOOP)
-	load	(xptr),x2_next
- ENDIF
-	jump	(FRAME_LOOP)
-	nop
+
 ;;->	regmap
 
 	UNREG bstart,xptr, leave_it, LOOP, x1,x2,x2_next,y1,CONT1,bcounter
+polygon_end:
 
+poly_size equ polygon_end - polygon
+	echo "Poly: %Dpoly_size"
 	include <js/inc/txtscr.inc>
 ;;->	regmap
 end:
