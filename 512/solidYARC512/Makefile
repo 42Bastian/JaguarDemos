@@ -25,7 +25,7 @@ RMAC= rmac
 RLN= rln
 
 _68KFLAGS=-4 ~oall -i$(BJL_ROOT)
-TJFLAGS= -w -d
+TJFLAGS+= -w -d
 
 ifeq ($(MODEL_M),1)
 PATCH_ADDRESS=4804

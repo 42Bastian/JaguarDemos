@@ -1,11 +1,11 @@
 ;; -*-asm-*-
-;;;  yarc512 - yet another rotaing cube in 512 bytes
+;;;  solidYARC512 - yet another rotaing cube in 512 bytes with filled polys
 ;;; ----------------------------------------
 ;;; Author: 42Bastian
-;;; Release: Sillyventure SE 2023
+;;; Release: September '23
 ;;; ----------------------------------------
-;;; Model M: 10 bytes free
-;;; Model K: 10 bytes free
+;;; Model M: 0 bytes free
+;;; Model K: 0 bytes free
 ;;; ----------------------------------------
 
 	gpu
