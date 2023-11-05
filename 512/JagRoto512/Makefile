@@ -5,20 +5,27 @@ TIMING ?= 0
 PAL?=1
 V?=0
 
+DEMO_EXT=
+ifneq ($(MODEL_M),1)
+DEMO_EXT=_K
+else
+DEMO_EXT=_M
+endif
+
 ifeq ($(V),0)
 Q=@
 else
 Q=#
 endif
 
-all: $(DEMO).j64
+all: $(DEMO)$(DEMO_EXT).j64
 
 TJASS= lyxass
 RMAC= rmac
 RLN= rln
 
 _68KFLAGS=-4 ~oall -i$(BJL_ROOT)
-TJFLAGS= -w -d
+TJFLAGS+= -w -d
 
 ifeq ($(MODEL_M),1)
 PATCH_ADDRESS=4804
@@ -43,6 +50,10 @@ TJFLAGS+= -D _PAL
 _68KFLAGS+= -D_PAL
 else
 $(warning NTSC/60Hz does not work well!)
+endif
+
+ifeq ($(BPE),1)
+TJFLAGS+= -D BPE
 endif
 
 .PRECIOUS: %.img %.bin
@@ -74,38 +85,19 @@ $(DEMO).XXX: $(DEMO).bin
 	$Qjagcrypt -q -u -tursi $<
 
 .ONESHELL:
-$(DEMO).j64: $(DEMO).XXX
+$(DEMO)$(DEMO_EXT).j64: $(DEMO).XXX
 	$Qcp $< $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >>$@
-	truncate -s 8K $@
-
-vj: $(DEMO).cof
-	$Qvirtualjaguar $<
-
-vjd: $(DEMO).cof
-	$Qvirtualjaguar -D $<
-
-.PHONY: jaggd
-jaggd: $(DEMO).j64
-	$Qjaggd -q -rd -uxr $<,a:0x800000
-
-.PHONY: jaggd_cof
-jaggd_cof: $(DEMO).cof
-	$Qjaggd.exe -q -rd -ux $<,a:0x4000,x:0x4000
+	truncate -s 32K $@
 
 .ONESHELL:
 vj.j64: $(DEMO).XXX
 	$Qcp $< $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >>$@
-	truncate -s 1M $@
+	truncate -s 128K $@
 
-vjd_rom: vj.j64
-	$Qvirtualjaguar -b -D $<
-
-vj_rom: vj.j64
-	$Qvirtualjaguar -b $<
-
+include ../Rules.launch
 
 .PHONY: clean
 clean:
-	$Qrm -f  vj.j64 *.equ *.XXX *~ *.img *.bak *.cof *.o
+	$Qrm -f *.equ *.XXX *~ *.img *.bak *.cof *.o vj.j64 *.bin
