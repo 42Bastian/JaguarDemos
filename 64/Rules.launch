@@ -81,6 +81,6 @@ bpe_cof: $(DEMO).cof
 	true
 
 .PHONY: bpe
-bpe: $(DEMO).j64
+bpe: $(DEMO)$(DEMO_EXT).j64
 	$(CALLBPE) $< -devmode &
 	true

@@ -47,3 +47,9 @@ Tom & Jerry compute a Julia set walk in parallel.
 ## algorip
 
 Ripped algo from algorift by Marquee Desgin
+
+## BubbleUnivers4Jag
+
+A port of the Bubble Universe Demo for the Jaguar
+
+See bubble_universe for the Processing source.

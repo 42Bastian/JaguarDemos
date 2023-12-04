@@ -11,7 +11,14 @@ else
 Q=#
 endif
 
-all: $(DEMO).j64
+DEMO_EXT=
+ifneq ($(MODEL_M),1)
+DEMO_EXT=_K
+else
+DEMO_EXT=_M
+endif
+
+all: $(DEMO)$(DEMO_EXT).j64
 
 TJASS= lyxass
 RMAC= rmac
@@ -76,7 +83,7 @@ $(DEMO).XXX: $(DEMO).bin
 	$Qjagcrypt -q -u -tursi $<
 
 .ONESHELL:
-$(DEMO).j64: $(DEMO).XXX
+$(DEMO)$(DEMO_EXT).j64: $(DEMO).XXX
 	$Qcp $< $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >>$@
 	truncate -s 32K $@
