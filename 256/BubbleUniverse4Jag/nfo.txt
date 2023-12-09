@@ -1,0 +1,5 @@
+-- BubbleUniverse4Jag
+-- Port of the Bubble Universe for the Jaguar (see githup for Processing source)
+-- Release: Silliventure WE 2023
+-- Size: 256 Bytes
+-- Author: 42Bastian
