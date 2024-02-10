@@ -1,0 +1,10 @@
+; Title: snake128
+; Compo: 128b oldschool
+; Author: 42Bastian
+; Info: 128 Byte GPU bootIntro again exploiting the marvelous CRY mode :-)
+;
+; Files:
+; snake128.bin  : Assembled demo
+; snake128.j64  : Jaguar ROM
+; snake128.js   : Source (LYXASS syntax)
+; snake128.png  : screen shot

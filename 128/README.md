@@ -1,5 +1,9 @@
 # 128 Byte Intros
 
+## Snake128
+
+Lovebyte 2024 Entry, sinus wave with CRY
+
 ## sbl
 
 Second stage Boot Loader.
