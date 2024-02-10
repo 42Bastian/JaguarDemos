@@ -1,0 +1,10 @@
+; Title: raster32
+; Compo: 32b oldschool
+; Author: 42Bastian
+; Info: Moving raster in 32 bytes GPU code directly booting.
+;
+; Files:
+; raster32.bin  : Assembled demo
+; raster32.j64  : Jaguar ROM
+; raster32.js   : Source (LYXASS syntax)
+; raster32.png  : screen shot
