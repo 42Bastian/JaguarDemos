@@ -1,5 +1,9 @@
 # 256 Byte Intros
 
+## drueller
+
+A drilling twister for Lovebyte 2024
+
 ## rodot
 
 ROtating DOTs - 256Byte intro for Lovebyte 2023

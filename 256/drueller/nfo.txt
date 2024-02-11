@@ -1,0 +1,10 @@
+; Title: drueller
+; Compo: 256b oldschool
+; Author: 42Bastian
+; Info: 254 Byte GPU bootIntro (252 if for real HW).
+;
+; Files:
+; drueller.bin  : Assembled demo
+; drueller.j64  : Jaguar ROM
+; drueller.js   : Source (LYXASS syntax)
+; drueller.png  : screen shot
