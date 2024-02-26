@@ -4,27 +4,41 @@
 
 	include <js/macro/help.mac>
 	include <js/macro/joypad1.mac>
+	include <js/macro/module.mac>
 	include <js/symbols/blit_eq.js>
 	include <js/symbols/jagregeq.js>
 
-	.include "canvas.h"
+	include "canvas.h"
+	include "globalreg.h"
 
-MOD::		EQU 1
+MOD	EQU 1
 
 ScreenMode	EQU CRY16|VIDEN|PWIDTH4|BGEN|CSYNC
 
-	run $6000
+	run $6020
+;;->	run $802020
 
-	movei	#$f02100,r1
+	movei	#$f02100,IRQ_FLAGADDR
+	moveta	IRQ_FLAGADDR,IRQ_FLAGADDR.a
+
 	movei	#1<<14|%11111<<9,r0	; clear all ints, REGPAGE = 1
-	store	r0,(r1)
+	store	r0,(IRQ_FLAGADDR)
 	nop
 	nop
-	nop
+
+	INITMODULE irq
+	INITMODULE main
 
 	movei	#ScreenMode,r0
 	movei	#$f00028,r1
 	storew	r0,(r1)
+
+	movei	#IRQ_STACK,IRQ_SP
+	moveta	IRQ_SP,IRQ_SP.a
+	movei	#stacktop,SP
+;;; ------------------------------
+	include <js/inc/videoinit.inc>
+;;; ------------------------------
 
 	movei	#$f14003,r0
 	loadb	(r0),r0
@@ -37,11 +51,13 @@ ScreenMode	EQU CRY16|VIDEN|PWIDTH4|BGEN|CSYNC
 	movei	#obl1_60hz,r27
 pal:
 	movei	#obl_size/8,r26
+;;->	movei	#hexfont,r25
+	movei	#ASCII,r25
 
 	movei	#logo_screen,r0
 	movei	#logo,r1
 	movei	#8*9/4,r2
-
+	nop
 cpy_logo:
 	load	(r1),r3
 	addq	#4,r1
@@ -50,11 +66,14 @@ cpy_logo:
 	jr	nz,cpy_logo
 	addq	#4,r0
 
- IF MOD = 1
+	moveq	#$10,r0
+	shlq	#4,r0
+	movei	#JOYSTICK,r1
+	storew	r0,(r1)
+	nop
 	movei	#DSP_code,r0
 	movei	#DSP_RAM,r1
 	movei	#(DSP_code_e-DSP_code),r2
-	nop
 cpy_dsp:
 	load	(r0),r3
 	addq	#4,r0
@@ -68,7 +87,6 @@ cpy_dsp:
 	store	r0,(r14)
 	movei	#LSP_module_sound_bank,r0
 	store	r0,(r14+4)
-	store	r0,(r14+4)
 
 	moveq	#0,r0
 	bset	#14,r0
@@ -78,29 +96,74 @@ cpy_dsp:
 	store	r0,(r14+$10)	; PC
 	moveq	#1,r0
 	store	r0,(r14+$14)	; GO
+
+	;; get OP lists from 68k
+	move	r28,r1
+	moveq	#16,r2
+	shlq	#1,r2
+	add	r2,r28
+	moveta	r28,obl0.a
+	add	r2,r27		; skip branch objects
+	moveta	r27,obl1.a
+	move	r26,r0
+	subq	#4,r0
+	moveta	r0,obl_size.a
+
+	movei	#obl,r0
+	nop
+	move	r0,r4
+.cpyobl0:
+	loadp	(r1),r3
+	addq	#8,r1
+	subq	#1,r26
+	storep	r3,(r0)
+	jr	nz,.cpyobl0
+	addq	#8,r0
+
+	rorq	#16,r4
+	moveq	#$f,r14
+	shlq	#20,r14
+	store	r4,(r14+32)
+
+ IFD DEBUG
+	movei	#254,r0
+	movei	#$1000F7F0,r1
+	movei	#txt_screen,r2
+	movei	#hexfont,r3
+	movei	#InitHexScreen,r4
+	BL	(r4)
  ENDIF
 
+	movei	#254,r0
+	movei	#$1000F7F0,r1
+	movei	#txt_screen,r2
+	movei	#ASCII,r3
+	movei	#InitTxtScreen,r4
+	BL	(r4)
 
-	movei	#$f03000+8000,r0
-	movei	#GPUcode+4,r1
-	load	(r1),r2		; dest
-	move	r2,r3
-	addq	#4,r1
-	load	(r1),r4		; size
-	addq	#4,r1
+	movei	#hello,r0
+	moveq	#0,r1
+	movei	#PrintString_YX,r2
+	BL	(r2)
 
+	movei	#1<<14|%11111<<9|%01000<<4,r0
+	store	r0,(IRQ_FLAGADDR)
 	nop
-cpy:	load	(r1),r5
-	addq	#4,r1
-	subq	#4,r4
-	store	r5,(r2)
-	jr	pl,cpy
-	addq	#4,r2
-
-
-	jump	(r3)
 	nop
 
+	MBL	main
+
+ IFD DEBUG
+	align 4
+hexfont::
+	.ibytes <font/hexfont_8x5.bin>
+ ENDIF
+	align 4
+ASCII::
+	.ibytes <font/light8x8.fnt>
+	;;   0123456789012345678901234567890123456789a
+hello::
+	dc.b "YARC reloaded / 100% GPU/DSP code",0
 
 	align 4
 logo:
@@ -136,7 +199,6 @@ obl_size	EQU obl1-obl0
 
 	echo "OBL size %Dobl_size"
 
-	.phrase
  IF MOD = 1
 DSP_code:
 	ibytes	"lsp_v15.bin"
@@ -149,22 +211,5 @@ LSP_module_music_data:
 LSP_module_sound_bank:
 	.ibytes "mod/my.lsbank"
 LSP_music_end:
-
-	.phrase
  ENDIF
-
- IFD DEBUG
-	align 4
-hexfont::
-	.ibytes <font/hexfont_8x5.bin>
- ENDIF
-	align 4
-ASCII::
-	.ibytes <font/light8x8.fnt>
-	;;   0123456789012345678901234567890123456789a
-Hello::
-	dc.b "YARC reloaded / 100% GPU/DSP code",0
-
-	align 16
-GPUcode:
-	.ibytes "cube.o"
+	include "cube.js"

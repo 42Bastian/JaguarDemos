@@ -1,15 +1,6 @@
 ;-*-Asm-*-
-	GPU
 
-	include <js/macro/help.mac>
-	include <js/macro/joypad1.mac>
-	include <js/symbols/blit_eq.js>
-	include <js/symbols/jagregeq.js>
-	include <js/symbols/joypad.js>
-	include "canvas.h"
-	include "cube_init.equ"
 
-	UNREG	SP,SP.a,LR,LR.a
 
 CHANGE_OBJECTS  EQU 1
 
@@ -37,33 +28,6 @@ BLIT_WID	EQU BLIT_WID192
 BLIT_WID	EQU BLIT_WID160
  ENDIF
 
-	;; global registers
-IRQ_SP.a	REG 31
-IRQ_RTS.a	REG 30
-IRQ_FLAGADDR.a	REG 29
-IRQ_FLAG.a	REG 28
-obl1.a		reg 27
-obl0.a		reg 26
-obl_size.a	reg 25
-LR.a		reg 24
-SP.a		reg 23
-
-IRQScratch4.a	REG  4
-IRQScratch3.a	REG  3
-IRQScratch2.a	REG  2
-IRQScratch1.a	REG  1
-IRQScratch0.a	REG  0
-
-IRQ_SP		REG 31
-VBLFlag		REG 22
-IRQ_RTS		REG 30 ; only for VJ needed
-IRQ_FLAGADDR	REG 29
-LR		REG 24
-SP		REG 23
-
-tmp2		reg 2
-tmp1		reg 1
-tmp0		reg 0
 
 IRQ_STACK	EQU $f03020
 
@@ -75,17 +39,7 @@ MACRO WAITBLITTER
 	nop
 ENDM
 
-	run $f03010
-	;; r28 - obl0
-	;; r27 - obl1
-	;; r26 - obl size
-	;; r25 - hexfont
-
-	movei	#init,r0
-	jump	(r0)
-	nop
-
-	org	$f03020
+	MODULE irq,$f03020
 timer::
 	load	(IRQ_FLAGADDR.a),IRQ_FLAG.a
 	movei	#timer_irq,IRQScratch0.a
@@ -134,71 +88,10 @@ cpu_irq:
 	jr	irq_return
 	nop
 
-;;; ------------------------------------------------------------
-init::
-	movei	#$f02100,IRQ_FLAGADDR
-	moveta	IRQ_FLAGADDR,IRQ_FLAGADDR.a
+	ENDMODULE irq
 
-;;->	movei	#1<<14|%11111<<9,r0	; clear all ints, REGPAGE = 1
-;;->	store	r0,(IRQ_FLAGADDR)
-;;->	nop
-;;->	nop
+	MODULE main,MODend_irq
 
-	movei	#IRQ_STACK,IRQ_SP
-	moveta	IRQ_SP,IRQ_SP.a
-	movei	#stacktop,SP
-;;; ------------------------------
-	include <js/inc/videoinit.inc>
-;;; ------------------------------
-	;; get OP lists from 68k
-	move	r28,r1
-	moveq	#16,r2
-	shlq	#1,r2
-	add	r2,r28
-	moveta	r28,obl0.a
-	add	r2,r27		; skip branch objects
-	moveta	r27,obl1.a
-	move	r26,r0
-	subq	#4,r0
-	moveta	r0,obl_size.a
-
-	movei	#obl,r0
-	move	r0,r4
-.cpyobl0:
-	loadp	(r1),r3
-	addq	#8,r1
-	subq	#1,r26
-	storep	r3,(r0)
-	jr	nz,.cpyobl0
-	addq	#8,r0
-
-	rorq	#16,r4
-	moveq	#$f,r14
-	shlq	#20,r14
-	store	r4,(r14+32)
-
-	movei	#254,r0
-	movei	#$1000F7F0,r1
-	movei	#txt_screen,r2
-	movei	#ASCII,r3
-	movei	#InitTxtScreen,r4
-	BL	(r4)
- IFD DEBUG
-	movei	#254,r0
-	movei	#$1000F7F0,r1
-	movei	#txt_screen,r2
-	movei	#hexfont,r3
-	movei	#InitHexScreen,r4
-	BL	(r4)
- ENDIF
-	movei	#Hello,r0
-	movei	#PrintString,r1
-	BL	(r1)
-
-	movei	#1<<14|%11111<<9|%01000<<4,r0
-	store	r0,(IRQ_FLAGADDR)
-	nop
-	nop
 ;;; -----------------------------------------------------------------------
 blitter		reg 14
 sinptr		reg 15
@@ -467,7 +360,7 @@ waitStart:
 	loadw	(tmp1),tmp1
 	sub	tmp1,tmp0
 
-	movei	#$20000,r1
+	movei	#$20001,r1
 	movei	#hx_PrintDEC2_YX,r2
 	BL	(r2)
  ENDIF
@@ -1232,19 +1125,19 @@ ball_faces:
 	init_poly2 39,40,41
 	init_poly2 40,31,41
  ENDIF
-
 	align 4
-
 varbase_::
 	RSSET	varbase_
-	RSL	stack,16
+	RSL	gpu_stack,8
 	RSL	stacktop,1
 	RSL	LastJoy,2
-	RSL	endofram
 	include <js/var/txtscr.var>
  IFD DEBUG
 	include <js/var/hexscr.var>
  ENDIF
+	RSL	endofram
+
+	ENDMODULE main
 
 	RSSET $1fe000
 	RSL	rdots,50*3

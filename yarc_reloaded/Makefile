@@ -33,21 +33,25 @@ ALL: $(DEMO).j64
 
 OBL_START=1000
 
+.ONESHELL:
 obl0_50.img: obl0.S canvas.h
 	$(Q)$(RMAC) -D_PAL $(_68KFLAGS) $< -o $@.o
 	$(RLN) -rw -z -n -a $(OBL_START) x x -o $@ $@.o
 	rm -f $@.o
 
+.ONESHELL:
 obl1_50.img: obl1.S canvas.h
 	$(Q)$(RMAC) -D_PAL $(_68KFLAGS) $< -o $@.o
 	$(RLN) -rw -z -n -a $(OBL_START) x x -o $@ $@.o
 	rm -f $@.o
 
+.ONESHELL:
 obl0_60.img: obl0.S canvas.h
 	$(Q)$(RMAC) $(_68KFLAGS) $< -o $@.o
 	$(RLN)  -rw -z -n -a $(OBL_START) x x -o $@ $@.o
 	rm -f $@.o
 
+.ONESHELL:
 obl1_60.img: obl1.S canvas.h
 	$(Q)$(RMAC) $(_68KFLAGS) $< -o $@.o
 	$(RLN) -rw -z -n -a $(OBL_START) x x -o $@ $@.o
@@ -55,34 +59,20 @@ obl1_60.img: obl1.S canvas.h
 
 OBL=obl0_50.img obl1_50.img obl0_60.img obl1_60.img
 
-%.do: %.das
-	$(RMAC) $(_68KFLAGS) $< -o $@
-
-lsp_v15.bin: lsp_init.das
-
-%.bin : %.do
-	$(RLN) -z  -n -a 0 x x -o $@ $<
-
-cube_init.o: cube_init.js $(OBL) lsp_v15.bin cube.js
-	$Qtouch cube.o
-	$(TJASS) $(TJFLAGS) -o $@ cube_init.js
-	$(TJASS) $(TJFLAGS) -o cube.o cube.js
-	$(TJASS) $(TJFLAGS) -o $@ cube_init.js
+cube_init.o: $(OBL) cube.js lsp_v15.bin
 
 %.bin : %.js
-	$(TJASS) -d $(TJFLAGS) -o $@ $<
+	$(Q)$(TJASS) -d $(TJFLAGS) -o $@ $<
 
 %.img: %.o
 	$(Q)$(RLN) -rw -z -n -a $(OBL_START) x x -o $@ $<
 
-$(DEMO).j64: $(DEMO)_init.o $(DEMO).o sbl.XXX
-	$Qcp sbl.XXX $@
-	cat $(DEMO)_init.o >> $@
-	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >>$@
-	truncate -s 1M $@
+%.o : %.js
+	$(Q)$(TJASS) $(TJFLAGS) $<
 
-vj.j64: $(DEMO)_init.o  $(DEMO).o sbl.XXX
-	$Qcp sbl.XXX $@
+.ONESHELL:
+$(DEMO).j64: $(DEMO)_init.o
+	$(Q)cp sbl.XXX $@
 	cat $(DEMO)_init.o >> $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >>$@
 	truncate -s 1M $@
@@ -95,4 +85,4 @@ clean:
 	$(Q)rm -f *.o
 	rm -f *.equ
 	rm -f *~
-	rm -f vj.j64 *.cof *.rom *.abs *.img *.bin *.do
+	rm -f *.j64 *.cof *.rom *.abs *.img $(DEMO)*.bin
