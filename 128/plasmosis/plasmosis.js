@@ -1,9 +1,9 @@
 ;; -*-asm-*-
-;;;  raster32
+;;;  Plasmosis
 ;;; ----------------------------------------
 ;;; Author: 42Bastian
-;;; Release: LoveByte 2024
-;;; Size: 28 Bytes
+;;; Release: post-LoveByte 2024
+;;; Size: 128 Bytes
 ;;; ----------------------------------------
 
 	gpu
