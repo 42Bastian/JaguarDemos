@@ -1,5 +1,8 @@
 # 128 Byte Intros
 
+## Plasmosis
+
+A variation of the Lovebyte 2024 entry Text Plasmosis
 ## Snake128
 
 Lovebyte 2024 Entry, sinus wave with CRY
