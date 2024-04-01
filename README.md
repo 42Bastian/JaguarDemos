@@ -8,9 +8,11 @@ the Jaguar BIOS and directly executed.
 The encrypted size is limited to 10 time 64 bytes, though it is possible to
 use the rest of the ROM ;-)
 
-Most of these intro need a Model-M BIOS.
+Most of these intros need a Model-M BIOS.
 
 If run with BigPEmu, be sure to select _Boot ROM Image_.
+
+These intros do _not_ work with SKUNK as SKUNK's firmware is in the boot header.
 
 ## 64
 
