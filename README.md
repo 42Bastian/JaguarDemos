@@ -46,7 +46,7 @@ Port/Remix of the STNICCC 2000 Demo by Oxygene
 
 Triple-buffering and DDA for poly-egdes => 86 polys/s.
 
-## [JagNICCC2000_reloaded](jagniccc2000_reload)
+## [JagNICCC2000_reloaded](jagniccc2000_reloaded)
 
 A 100% GPU version, booting directly.
 
