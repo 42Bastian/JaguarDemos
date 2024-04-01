@@ -34,7 +34,7 @@ A collection of 512 byte intros.
 
 Port/Remix of the STNICCC 2000 Demo by Oxygene
 
-## [JagNICCC2000_Tri](jagniccc2000_tr)
+## [JagNICCC2000_Tri](jagniccc2000_tri)
 
 Port/Remix of the STNICCC 2000 Demo by Oxygene
 
