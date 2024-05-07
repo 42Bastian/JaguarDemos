@@ -2,7 +2,7 @@
 
 
 BPE=/fun/jaguar/BigPEmu/BigPEmu.exe
-JAGGD=/bin/jaggd.exe
+JAGGD=jaggd.exe
 VJ=/fun/jaguar/virtualjaguar_2.1.3/virtualjaguar.exe
 MACOS=@prlexec --vm "Windows 11" -r
 
