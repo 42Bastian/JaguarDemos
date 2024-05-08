@@ -1,20 +1,20 @@
 # 256 Byte Intros
 
-## [drueller](drueller)
-
-A drilling twister for Lovebyte 2024
-
-## rodot
-
-ROtating DOTs - 256Byte intro for Lovebyte 2023
-
-## Outline2022
+## [Outline2022](Outline2022)
 
 BootIntros done for Outline 2022 in Ommen
 
 ## [Outline2023](Outline2023)
 
 BootIntros done for Outline 2022 in Ommen
+
+## [drueller](drueller)
+
+A drilling twister for Lovebyte 2024
+
+## [rodot](rodot)
+
+ROtating DOTs - 256Byte intro for Lovebyte 2023
 
 ### [blobs_n_noise](blobs_n_noise)
 
