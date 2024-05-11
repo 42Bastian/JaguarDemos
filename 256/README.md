@@ -57,3 +57,7 @@ Ripped algo from algorift by Marquee Desgin
 A port of the Bubble Universe Demo for the Jaguar
 
 See bubble_universe for the Processing source.
+
+## [outlineScroller](outlineScroller)
+
+Compo hack.

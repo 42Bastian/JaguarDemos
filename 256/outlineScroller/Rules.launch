@@ -1,0 +1,83 @@
+# -*-makefile-*-
+
+BPE=/fun/jaguar/BigPEmu/BigPEmu.exe
+JAGGD=/bin/jaggd.exe
+VJ=/fun/jaguar/virtualjaguar_2.1.3/virtualjaguar.exe
+MACOS=@prlexec --vm "Windows 11" -r
+
+ifeq ($(findstring aarch64,$(MACHTYPE)),aarch64)
+override BPE:=$(MACOS) $(BPE)
+override JAGGD:=jaggd
+override VJ:=$(MACOS) $(VJ)
+endif
+
+
+#
+# SKUNK
+#
+.PHONY: reset
+reset:
+	jcp -r
+	wait
+
+.PHONY: flash
+flash: $(DEMO).j64
+	jcp -ef $<
+
+.PHONY: upload
+.ONESHELL:
+upload: $(DEMO).cof
+	@jcp -q $< 0x4000
+
+#
+# JagGD
+#
+
+.PHONY: jaggd
+jaggd: $(DEMO).cof
+	$(JAGGD) -rd -ux $<
+#,a:0x4000,x:0x4000
+
+.PHONY: jaggd_rom
+jaggd_romn: $(DEMO).rom
+	$(JAGGD) -rd -ux $<,a:0x802000,x:0x802000
+
+#
+# VirtualJaguar
+#
+
+.PHONY: vjd
+vjd: $(DEMO).cof
+	$(VJ) -D $<
+
+.PHONY: vj
+vj: $(DEMO).cof
+	$(VJ) $< &
+
+.PHONY: vj_rom
+vjd_rom: $(DEMO).j64
+ifeq ($(BIOS),1)
+	$(VJ) -D -b $< &
+else
+	$(VJ) -D  $< &
+endif
+
+.PHONY: vj_rom
+vj_rom: $(DEMO).j64
+ifeq ($(BIOS),1)
+	$(VJ) -b $< &
+else
+	$(VJ) $< &
+endif
+
+#
+# BigPEmu
+#
+
+bpe: $(DEMO).cof
+	$(BPE) $< -devmode &
+	true
+
+bpe_rom: $(DEMO).j64
+	$(BPE) $< -devmode &
+	true
