@@ -1,0 +1,15 @@
+;;; TJ_raytrace
+;;; Jaguar Boot-intro: Animated raytracing using Tom & Jerry
+;;;                    160x216 resolution
+;;;                    9 bit FP , 2.7 .. 3.5 FPS ;-)
+;;;
+;;; 512b (4 bytes free)
+;;; Author: 42Bastian
+;;; Compo: Demo Oldschool
+;;; Runs on BPE, VJ, and real Jaguar with JagGD, not SKUNK!
+;;;
+;;; Files:
+;;; raytrace.js      - source (lyxass syntax)
+;;; raytrace_k/m.bin - raw binary for model K or M
+;;; raytrace_k/m.j64 - ROM image for model K or M
+;;; nfo.txt          - this file
