@@ -60,4 +60,4 @@ See bubble_universe for the Processing source.
 
 ## [outlineScroller](outlineScroller)
 
-Compo hack.
+Compo hack at Outline 2024
