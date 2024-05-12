@@ -13,3 +13,5 @@ Rotating cube with hidden surface
 As above, but with filled polygons.
 
 # [TJ_raytrace](TJ_raytrace)
+
+A raytrace "movie" running on Tom&Jerry in parallel.
