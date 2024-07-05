@@ -1,0 +1,14 @@
+;;; lissa512
+;;; Jaguar Boot-intro for Nordlicht 2024
+;;;
+;;; lissajous with 512 dots in 512b with bytebeat soundrollin'ball
+;;;
+;;; Author: 42Bastian
+;;; Compo: Intro 512
+;;; Runs on BPE, VJ, and real Jaguar with JagGD, not SKUNK!
+;;;
+;;; Files:
+;;; lissa512.js/dsp.js  - source (lyxass syntax)
+;;; lissa512_k/_m.bin   - raw binary for model K or M
+;;; lissa512_k/_m.j64   - ROM image for model K or M
+;;; nfo.txt             - this file
