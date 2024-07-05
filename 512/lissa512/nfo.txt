@@ -1,7 +1,7 @@
 ;;; lissa512
 ;;; Jaguar Boot-intro for Nordlicht 2024
 ;;;
-;;; lissajous with 512 dots in 512b with bytebeat soundrollin'ball
+;;; lissajous with 512 dots in 512b with bytebeat sound
 ;;;
 ;;; Author: 42Bastian
 ;;; Compo: Intro 512
