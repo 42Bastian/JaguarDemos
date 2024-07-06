@@ -61,3 +61,7 @@ See bubble_universe for the Processing source.
 ## [outlineScroller](outlineScroller)
 
 Compo hack at Outline 2024
+
+## [rolling_ball](rolling_ball)
+
+A noisy blitter demo for Sommarhack'24

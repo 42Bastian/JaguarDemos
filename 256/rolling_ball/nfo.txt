@@ -1,0 +1,12 @@
+;;; rollin'ball
+;;; Jaguar Boot-intro for Sommarhack '24
+;;;
+;;; Author: 42Bastian
+;;; Compo: Intro 256b
+;;; Runs on BPE, VJ, and real Jaguar with JagGD, not SKUNK!
+;;;
+;;; Files:
+;;; rb.js      - source (lyxass syntax)
+;;; rb.bin     - raw binary for mode M
+;;; rb_k/m.j64 - ROM image for model K or M
+;;; nfo.txt    - this file
