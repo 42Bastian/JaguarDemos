@@ -6,7 +6,7 @@ BootIntros done for Outline 2022 in Ommen
 
 ## [Outline2023](Outline2023)
 
-BootIntros done for Outline 2022 in Ommen
+BootIntros done for Outline 2023 in Ommen
 
 ## [drueller](drueller)
 
