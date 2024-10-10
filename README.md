@@ -14,6 +14,11 @@ If run with BigPEmu, be sure to select _Boot ROM Image_.
 
 These intros do _not_ work with SKUNK as SKUNK's firmware is in the boot header.
 
+## [raycast_wip](raycast_wip)
+
+Raycasting engine. Based on the one von BJL, but in development.
+Runs only on GPU/DSP. No 68k, only to copy code from ROM to RAM (once).
+
 ## [64](64)
 
 A collection of 64 (or below) intros
