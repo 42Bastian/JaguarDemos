@@ -1031,4 +1031,4 @@ phobyx_128x128:
 phobyx_128x128_palette:
 
 ;palette data: number of colors, then the palette entries
-	dc.w	$000C,$57A8,$67B8,$5798,$4788,$A940,$7850,$7688,$8898,$9860,$88C8,$77B8,$77E8
+	dc.w	$57A8,$67B8,$5798,$4788,$A940,$7850,$7688,$8898,$9860,$88C8,$77B8,$77E8

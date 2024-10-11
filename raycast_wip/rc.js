@@ -72,12 +72,11 @@ init:
 
 	INITMODULE main
 
-	movei	#$f00400,clut
 	movei	#IRQ_STACK,r0
 	moveta	r0,IRQ_SP.a
 	movei	#stacktop,SP
 ;;->	moveta	SP,SP.a
-
+	nop
 ;;; ------------------------------
 	include <js/inc/videoinit.inc>
 
@@ -85,9 +84,49 @@ init:
 	movei	#ScreenMode,r1
 	storew	r1,(r0)
 
-	moveq	#0,r0
-	store	r0,(clut)
+;;; init CLUT
+clut	reg	99
+clut2	reg	99
 
+	movei	#$f00400,clut
+	moveq	#0,tmp1
+	storew	tmp1,(clut)
+	addqt	#2,clut
+	movei	#$0070,tmp1
+	storew	tmp1,(clut)	; sky
+	movei	#$7f30,tmp1
+	addqt	#2,clut
+	storew	tmp1,(clut)	; floor
+
+	movei	#wall_colors,tmp0
+	movei	#$f00400+$40*2,clut
+	movei	#$f00400+$50*2,clut2
+	moveq	#16,tmp1
+.iclut0:
+	loadw	(tmp0),tmp2
+	addqt	#2,tmp0
+	storew	tmp2,(clut)
+	bclr	#7,tmp2
+	addqt	#2,clut
+	subq	#1,tmp1
+	storew	tmp2,(clut2)
+	jr	ne,.iclut0
+	addqt	#2,clut2
+
+;;; Phobyx texture
+	movei	#$f00400+32*2,clut
+	moveq	#12,tmp1
+	movei	#phobyx_128x128_palette,r2
+	nop
+.iclut1:
+	loadw	(r2),r3
+	addqt	#2,r2
+	subq	#1,tmp1
+	storew	r3,(clut)
+	jr	ne,.iclut1
+	addqt	#2,clut
+
+	UNREG	clut,clut2
 ;;; ------------------------------
  IF  MOD = 1
 	movei	#DSP_start,r0
@@ -133,50 +172,6 @@ singen:
 	jr	ne,singen
 	addqt	#4,r14
 
-;;; init CLUT
-	movei	#$f00400,tmp0
-	moveq	#0,tmp1
-	storew	tmp1,(tmp0)
-	addqt	#2,tmp0
-	movei	#$0070,tmp1
-	storew	tmp1,(tmp0)
-	movei	#$7f30,tmp1
-	addqt	#2,tmp0
-	storew	tmp1,(tmp0)
-
-	movei	#$00ff,tmp1
-	movei	#128-3,tmp2
-	movei	#$100,tmp3
-	nop
-.iclut0:
-	addqt	#2,tmp0
-	subq	#1,tmp2
-	storew	tmp1,(tmp0)
-	jr	ne,.iclut0
-	add	tmp3,tmp1
-
-	movei	#$007f,tmp1
-	movei	#128-2,tmp2
-	nop
-.iclut1:
-	addq	#2,tmp0
-	subq	#1,tmp2
-	storew	tmp1,(tmp0)
-	jr	pl,.iclut1
-	add	tmp3,tmp1
-
-;;; Phobyx texture
-	movei	#$f00400+32*2,tmp0
-	moveq	#12,tmp1
-	movei	#phobyx_128x128_palette:,r2
-	nop
-.iclut
-	loadw	(r2),r3
-	addq	#2,r2
-	subq	#1,tmp1
-	storew	r3,(tmp0)
-	jr	ne,.iclut
-	addqt	#2,tmp0
 
 ;;; Init PIT for time measurement
 	movei	#VID_PIT0,tmp1
@@ -381,28 +376,38 @@ logo:
 	dc.l %11111111111111111111111111111110,0
 
 ;;; ----------------------------------------
-	.long
+
 	include "world.inc"
 
 ;;; ----------------------------------------
-;;; Texture(s)
-	.long
-
-	include "phobyx_128x128.inc"
+;;; color
+	long
+wall_colors:
+	dc.w	$8fff,$80ff,$7fff,$40ff,$34ff,$10ff,$1fff,$3fff
+	dc.w	$ffff,$77ff,$f8ff,$08ff,$F2ff,$11ff,$88ff,$70ff
 
 ;;; ----------------------------------------
-	.phrase
+;;; Texture(s)
+	LONG
+textureTable:
+	.dc.l	phobyx_128x128,phobyx_128x128_xor
+
+	include "phobyx_128x128.inc"
+	include "phobyx_128x128_xor.inc"
+
+;;; ----------------------------------------
+	phrase
 	IF MOD = 1
 DSP_start:
 	ibytes "hively_player.bin"
 DSP_end:
-	.long
+	long
 song:
         .incbin "mod/gone.ahx.streambits"
-	.long
+	long
 binPrecalcTable:
 	ibytes "AHX_FilterPrecalc.bin"
-	.long
+	long
 panning_table:
 	ibytes "AHX_panning.bin"
 	ENDIF

@@ -1,8 +1,8 @@
 ;-*-Asm-*-
 
-START_X		equ 15
-START_Y		equ 17
-START_ANGLE	equ 128
+START_X		equ 6
+START_Y		equ 16
+START_ANGLE	equ 90
 
 WORLD_WIDTH	equ 31
 
@@ -174,12 +174,6 @@ mapY		reg 99
 	moveta	world,world0.a
 
 	unreg	mapX,mapY
-
-	;; prepare stripe drawing
-	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADD0|BLIT_YADD1,tmp1
-	WAITBLITTER 		; wait for CLS to finish
-	store	tmp1,(blitter+_BLIT_A1_FLAGS)
-
 ;;; ----------------------------------------
 ;;; draw loop
 	;; prepare stripe drawing
@@ -264,9 +258,6 @@ mapY		reg 99
 	sharq	#FP_BITS,sideDistY
 .zeroRayY
 
-	unreg rayDirX,rayDirY
-
-
 //->    while (hit == 0 ) {
 //->      //jump to next map square, either in x-direction, or in y-direction
 //->      if (sideDistX < sideDistY) {
@@ -335,82 +326,154 @@ perpWallDist	reg 99
 	movei	#rez_y*FP/2,height
 	div	perpWallDist,height
 
-	unreg	perpWallDist
 
+//->      int wallX; //where exactly  the wall was hit
+//->      if (side == 0) wallX = (posY - perpWallDist * rayDirY/fp);
+//->      else           wallX = (posX + perpWallDist * rayDirX/fp);
+//->
+//->      //x coordinate on the texture
+//->      int texX = (wallX*texWidth)/fp & (texWidth-1);
+//->
+//->      /* mirror texture depending on side */
+//->      if ( front || right ) texX ^= (texWidth-1);
+//->
+//->      // How much to increase the texture coordinate per screen pixel
+//->      int step = fp*texWidth / line_height;
+//->      // Starting texture coordinate
+//->      int texPos = 0;
+//->      if ( drawStart == 0 ) {
+//->        texPos = (drawStart - _height / 2 + line_height / 2) * step;
+//->      }
+
+wallX	reg 99
+
+	cmpq	#0,side
+	movefa	posX.a,wallX
+	jr	ne,.front2
+	move	rayDirX,tmp0
+
+	neg	perpWallDist
+	movefa	posY.a,wallX
+	move	rayDirY,tmp0
+.front2
+	imult	perpWallDist,tmp0
+	sharq	#FP_BITS,tmp0
+	add	tmp0,wallX
+
+	unreg	perpWallDist
+	unreg 	rayDirX,rayDirY
 //->    // side == 1 => left
 //->    // side == 0 => back
 //->    boolean front = (side == 0 && stepX < 0);
 //->    boolean right = (side == 1 && stepY < 0);
 
-	shlq	#7,side
+	moveq	#0,tmp2
+	shlq	#4,side
 	jr	eq,.frontCol
 	cmpq	#0,stepY
 	jr	pl,.leftBlock
 	nop
 	jr	.leftBlock
-	bset	#4,side
+	bset	#0,tmp2
 .frontCol
+	bset	#0,tmp2
 	cmpq	#0,stepX
 	jr	pl,.leftBlock
 	nop
-	bset	#3,side
+	bclr	#0,tmp2
 .leftBlock
 
-	moveq	#3,tmp2
-	and	x,tmp2
-//->	shlq	#7,tmp2
-//->	xor	tmp2,color
-	add	tmp2,color
-
-	xor	side,color
-
-//->	shlq	#7,side
-//->	jr	eq,.frontCol
-//->	cmpq	#0,stepY
-//->	jr	pl,.leftBlock
-//->	nop
-//->	jr	.leftBlock
-//->	bset	#4,side
-//->.frontCol
-//->	cmpq	#0,stepX
-//->	jr	pl,.leftBlock
-//->	nop
-//->	bset	#3,side
-//->.leftBlock
-//->
-//->	moveq	#1,tmp2
-//->	and	x,tmp2
-//->	shlq	#7,tmp2
-//->	xor	tmp2,color
-//->
-//->	xor	side,color
+bcount	reg 99
 
 	movei	#rez_y/2,y
-	move	height,tmp1
+	move	height,bcount
 	sub	height,y
 	jr	pl,.ok
-	shlq	#16+1,tmp1
+	shlq	#16+1,bcount
 	moveq	#0,y
-	movei	#rez_y<<16|1,tmp1
+	movei	#rez_y<<16|1,bcount
+	movei	#rez_y/2,height
 .ok
-	bset	#0,tmp1
+	bset	#0,bcount
 	shlq	#16,y
-	movei	#B_PATDSEL,tmp2
 	or	x,y
+
+	movei	#.no_texture,tmp0
+	btst	#7,color
+	movei	#textureTable,tmp1
+	jump	eq,(tmp0)
+	bclr	#7,color
+	add	color,tmp1
+	load	(tmp1),tmp1
+
+	btst	#0,tmp2
+	jr	ne,.xx
+	nop
+	not	wallX
+.xx
+	shlq	#32-7,wallX
+	shrq	#32-7,wallX
+
 	WAITBLITTER
+
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDPIX,tmp0
+	store	tmp1,(blitter)
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	moveq	#0,tmp0
+	store	wallX,(blitter+_BLIT_A1_PIXEL)
+	store	tmp0,(blitter+_BLIT_A1_FPIXEL)
+
+	movei	#128<<16,tmp2
+	div	height,tmp2
+	shrq	#1,tmp2
+	move	tmp2,tmp1
+	movei	#((-1) & 0xffff),tmp0
+	shrq	#16,tmp1
+	shlq	#16,tmp1
+	or	tmp1,tmp0
+	store	tmp0,(blitter+_BLIT_A1_STEP)
+
+	shlq	#16,tmp2
+	store	tmp2,(blitter+_BLIT_A1_FSTEP)
+
+	movefa	screen1.a,tmp0
+	store	tmp0,(blitter+_BLIT_A2_BASE)
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADDPIX,tmp0
+	movei	#0<<16|((rez_x-1) & 0xffff),tmp1
+	store	tmp0,(blitter+_BLIT_A2_FLAGS)
+	store	tmp1,(blitter+_BLIT_A2_STEP)
+	store	y,(blitter+_BLIT_A2_PIXEL)
+	store	bcount,(blitter+_BLIT_COUNT)
+	movei	#.next,tmp1
+	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA1|BLIT_UPDA2|BLIT_DSTA2|BLIT_UPDA1F,tmp0
+	jump	(tmp1)
+	store	tmp0,(blitter+_BLIT_CMD)
+
+.no_texture
+	add	side,color
+	xor	tmp2,color
+
+	movei	#B_PATDSEL,tmp2
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADD0|BLIT_YADD1,tmp3
+
+	WAITBLITTER
+
+	movefa	screen1.a,tmp0
+	store	tmp0,(blitter)
+	store	tmp3,(blitter+_BLIT_A1_FLAGS)
 	store	y,(blitter+_BLIT_A1_PIXEL)
-	store	tmp1,(blitter+_BLIT_COUNT)
+	store	bcount,(blitter+_BLIT_COUNT)
 	store	color,(blitter+_BLIT_PATD)
 //->	store	color,(blitter+_BLIT_PATD+4) ;VJ only
 	store	tmp2,(blitter+_BLIT_CMD)
-
+.next
 	subq	#1,x
 	movei	#.x_loop,tmp0
 	jump	pl,(tmp0)
 	nop
 .donex
 
-	unreg height,x,y,side,left,fp,buffer.a
+	unreg height,x,y,side,left,fp,buffer.a,bcount
 
 	unreg stepX,stepY,sideDistX,sideDistY,deltaDistX,deltaDistY
 	unreg cameraX,color

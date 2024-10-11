@@ -21,7 +21,6 @@ IRQScratch0.a	REG  0
 VBLFlag		REG 28
 	regtop 27
 
-clut		reg 99
 
 //->INFO_TABLE	reg 15
 blitter		reg 14
