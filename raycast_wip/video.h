@@ -3,8 +3,8 @@
 rez_x_txt	equ 320
 rez_y_txt	equ 3*8
 
-rez_x		equ 320
-rez_y		equ 200
+rez_x		equ 256
+rez_y		equ 240
 
 logo_screen	equ $0015f000
 MandelTexture	equ $00160000

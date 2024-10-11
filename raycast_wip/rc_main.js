@@ -135,7 +135,7 @@ planeY	reg 99
 	shrq	#32-10,tmp2
 	load	(sinptr+tmp0),dirX
 	load	(sinptr+tmp2),dirY
-	moveq	#7,tmp1
+	moveq	#6,tmp1
 	move	dirX,planeY
 	move	dirY,planeX
 	neg	dirX

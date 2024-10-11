@@ -115,17 +115,16 @@ clut2	reg	99
 
 ;;; Phobyx texture
 	movei	#$f00400+32*2,clut
-	moveq	#12,tmp1
 	movei	#phobyx_128x128_palette,r2
+	loadw	(r2),tmp1
 	nop
 .iclut1:
-	loadw	(r2),r3
 	addqt	#2,r2
+	loadw	(r2),r3
 	subq	#1,tmp1
 	storew	r3,(clut)
 	jr	ne,.iclut1
 	addqt	#2,clut
-
 
 ;;; Mandel
 	movei	#$f00400+16*2,clut
@@ -136,6 +135,30 @@ clut2	reg	99
 	subq	#1,tmp1
 	addqt	#16,tmp2
 	jr	ne,.iclut2
+	addqt	#2,clut
+
+	movei	#$f00400+112*2,clut
+	movei	#w3d_wall1_palette,r2
+	loadw	(r2),tmp1
+	nop
+.iclut3:
+	addqt	#2,r2
+	loadw	(r2),r3
+	subq	#1,tmp1
+	storew	r3,(clut)
+	jr	ne,.iclut3
+	addqt	#2,clut
+
+	movei	#$f00400+80*2,clut
+	movei	#w3d_wall2_palette,r2
+	loadw	(r2),tmp1
+	nop
+.iclut4:
+	addqt	#2,r2
+	loadw	(r2),r3
+	subq	#1,tmp1
+	storew	r3,(clut)
+	jr	ne,.iclut4
 	addqt	#2,clut
 
 	UNREG	clut,clut2
@@ -289,9 +312,6 @@ pal:
 	shlq	#8,r1
 	moveq	#31,r2
 	shlq	#1,r2
- IF MOD = 0
-	nop
- ENDIF
 .cpyobl:
 	loadp	(r10),r3
 	addqt	#8,r10
@@ -433,10 +453,12 @@ wall_colors:
 ;;; Texture(s)
 	LONG
 textureTable:
-	.dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture
+	.dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture,w3d_wall1
+	dc.l	w3d_wall2
 
 	include "phobyx_128x128.inc"
-
+	include "w3d_wall1.inc"
+	include "w3d_wall2.inc"
 
 ;;; ----------------------------------------
 	phrase

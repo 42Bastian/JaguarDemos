@@ -42,7 +42,9 @@ OBL=obl0_50.img obl1_50.img obl0_60.img obl1_60.img
 obl: $(OBL)
 
 $(DEMO).o : rc.js rc_main.js $(OBL) irq.inc world.inc  phobyx_128x128.inc\
-	    globalreg.h hively_player.bin
+	    globalreg.h hively_player.bin mandel.inc w3d_wall1.inc\
+	    w3d_wall2.inc
+
 	$(TJASS) -d $(TJFLAGS) rc.js
 
 hively_player.bin: hively_player_v21.S
@@ -60,6 +62,12 @@ rc.rom: rc_68k.o
 
 phobyx_128x128.inc: phobyx_128x128.tga
 	@tga2cry -f cry8 -o $@ -nodata -maxcolors 16 -basecolor 32 $<
+
+w3d_wall1.inc: w3d_wall1.tga
+	@tga2cry -f cry8 -o $@ -nodata -maxcolors 32 -basecolor 112 $<
+
+w3d_wall2.inc: w3d_wall2.tga
+	@tga2cry -f cry8 -o $@ -nodata -maxcolors 32 -basecolor 80 $<
 
 .ONESHELL:
 rc.j64: rc.rom
