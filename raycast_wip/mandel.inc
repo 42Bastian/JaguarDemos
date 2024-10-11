@@ -77,8 +77,7 @@ iter_end:
 	add	delta,_i0
 
 
-	moveq	#128/16,y_count
-	shlq	#4,y_count
+	movei	#127,y_count
 
 	movei	#XorTexture,texture_ptr
 	movei	#Xor2Texture,texture_ptr2
@@ -88,8 +87,7 @@ iter_end:
 __pc1	move	pc,XLOOP
 	addq	#xloop1-__pc1,XLOOP
 yloop1:
-	moveq	#128/16,x_count
-	shlq	#4,x_count
+	movei	#127,x_count
 xloop1:
 	move	x_count,tmp0
 	move	y_count,tmp1
@@ -105,11 +103,11 @@ xloop1:
 	storeb	tmp0,(texture_ptr2)
 	subq	#1,x_count
 	addqt	#1,texture_ptr2
-	jump	nz,(XLOOP)
+	jump	pl,(XLOOP)
 	addqt	#1,texture_ptr
 
 	subq	#1,y_count
-	jump	nz,(YLOOP)
+	jump	pl,(YLOOP)
 	add	delta,_i0
 
 	jump	(LR)
