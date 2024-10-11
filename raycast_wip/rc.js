@@ -70,8 +70,6 @@ init:
 
 	INITMODULE irq
 
-	INITMODULE main
-
 	movei	#IRQ_STACK,r0
 	moveta	r0,IRQ_SP.a
 	movei	#stacktop,SP
@@ -126,6 +124,18 @@ clut2	reg	99
 	jr	ne,.iclut1
 	addqt	#2,clut
 
+
+;;; Mandel
+	movei	#$f00400+16*2,clut
+	moveq	#16,tmp1
+	movei	#$f000,tmp2
+.iclut2:
+	storew	tmp2,(clut)
+	subq	#1,tmp1
+	addqt	#16,tmp2
+	jr	ne,.iclut2
+	addqt	#2,clut
+
 	UNREG	clut,clut2
 ;;; ------------------------------
  IF  MOD = 1
@@ -172,6 +182,9 @@ singen:
 	jr	ne,singen
 	addqt	#4,r14
 
+
+	INITMODULE mandel
+	MBL	mandel
 
 ;;; Init PIT for time measurement
 	movei	#VID_PIT0,tmp1
@@ -221,12 +234,14 @@ singen:
 //->	store	tmp0,(blitter+_BLIT_CMD)
 //->	WAITBLITTER	; done later down the road
 
+	nop
+	INITMODULE main
+
 	movei	#254,r0
 	movei	#$1003F7F0,r1
 	movei	#txt_screen,r2
 	movei	#ASCII,r3
 	movei	#InitTxtScreen,r4
-	nop
 	BL	(r4)
 
 	movei	#PrintString_YX,r5
@@ -331,6 +346,9 @@ tmp0	reg 0
 	include "rc_main.js"
 
 ;;; ----------------------------------------
+;;; Mandelbrot texture
+	include "mandel.inc"
+;;; ----------------------------------------
 ;;; Object lists (still needs rmac)
 
 	align 8
@@ -390,10 +408,10 @@ wall_colors:
 ;;; Texture(s)
 	LONG
 textureTable:
-	.dc.l	phobyx_128x128,phobyx_128x128_xor
+	.dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture
 
 	include "phobyx_128x128.inc"
-	include "phobyx_128x128_xor.inc"
+
 
 ;;; ----------------------------------------
 	phrase

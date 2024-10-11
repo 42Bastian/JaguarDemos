@@ -1,8 +1,8 @@
 ;-*-Asm-*-
 
-START_X		equ 6
-START_Y		equ 16
-START_ANGLE	equ 90
+START_X		equ 1
+START_Y		equ 12
+START_ANGLE	equ 200
 
 WORLD_WIDTH	equ 31
 
@@ -384,12 +384,20 @@ wallX	reg 99
 .leftBlock
 
 bcount	reg 99
+height.a	reg 99
+texY.a	reg 99
+
+	moveq	#0,y
+	moveta	y,texY.a
 
 	movei	#rez_y/2,y
+	moveta	height,height.a	; save height
 	move	height,bcount
 	sub	height,y
 	jr	pl,.ok
 	shlq	#16+1,bcount
+	neg	y
+	moveta	y,texY.a
 	moveq	#0,y
 	movei	#rez_y<<16|1,bcount
 	movei	#rez_y/2,height
@@ -398,40 +406,59 @@ bcount	reg 99
 	shlq	#16,y
 	or	x,y
 
+texture	reg 99
+
 	movei	#.no_texture,tmp0
 	btst	#7,color
 	movei	#textureTable,tmp1
 	jump	eq,(tmp0)
 	bclr	#7,color
 	add	color,tmp1
-	load	(tmp1),tmp1
+	load	(tmp1),texture
 
 	btst	#0,tmp2
-	jr	ne,.xx
-	nop
+	jr	ne,.no_tex_mirror
+	moveq	#0,tmp2
+
 	not	wallX
-.xx
+.no_tex_mirror
+	bset	#16+7,tmp2
 	shlq	#32-7,wallX
+	movefa	height.a,height
 	shrq	#32-7,wallX
+	div	height,tmp2
+
+	or	tmp2,tmp2	; scoreboard bug
+
+	movefa	texY.a,tmp0
+	shrq	#1,tmp2
+	mult	tmp2,tmp0
+	jr	eq,.oky
+	move	tmp2,tmp1
+
+	shrq	#16,tmp0
+	shlq	#16,tmp0
+	or	tmp0,wallX
+.oky
+	shrq	#16,tmp1
+
+	movei	#((-1) & 0xffff),tmp0
+	shlq	#16,tmp1
+	or	tmp0,tmp1
 
 	WAITBLITTER
 
 	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDPIX,tmp0
-	store	tmp1,(blitter)
+	store	texture,(blitter)
+
+	UNREG texture
+
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
 	moveq	#0,tmp0
 	store	wallX,(blitter+_BLIT_A1_PIXEL)
 	store	tmp0,(blitter+_BLIT_A1_FPIXEL)
 
-	movei	#128<<16,tmp2
-	div	height,tmp2
-	shrq	#1,tmp2
-	move	tmp2,tmp1
-	movei	#((-1) & 0xffff),tmp0
-	shrq	#16,tmp1
-	shlq	#16,tmp1
-	or	tmp1,tmp0
-	store	tmp0,(blitter+_BLIT_A1_STEP)
+	store	tmp1,(blitter+_BLIT_A1_STEP)
 
 	shlq	#16,tmp2
 	store	tmp2,(blitter+_BLIT_A1_FSTEP)
