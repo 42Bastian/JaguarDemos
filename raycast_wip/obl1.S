@@ -14,12 +14,12 @@ _stop0:
 	.qphrase
 obl0_scr:
  IF rez_x < 320
- scbitmap screen1,11,y_start+rez_y_txt,gr_phrase,gr_phrase,rez_y,320.0/rez_x,1.0,1.0,bpp,0,NOTRANS RELEASE,0,1
+ scbitmap screen1,11,y_start,gr_phrase,gr_phrase,rez_y,320.0/rez_x,1.0,1.0,bpp,0,NOTRANS RELEASE,0,1
  ELSE
- bitmap screen1,11,y_start+rez_y_txt,gr_phrase,gr_phrase,rez_y,bpp,0,NOTRANS RELEASE,0,1
+ bitmap screen1,11,y_start,gr_phrase,gr_phrase,rez_y,bpp,0,NOTRANS RELEASE,0,1
  ENDIF
  bitmap	txt_screen, 11,y_start,(rez_x_txt/64),(rez_x_txt/64),rez_y_txt, 0,127, TRANS RELEASE,0,1
- bitmap	logo_screen, 11,y_start+rez_y_txt+rez_y-9,1,1,9, 0,127,TRANS  RELEASE,0,1
+ bitmap	logo_screen, 11,y_start+rez_y-9,1,1,9, 0,127,TRANS  RELEASE,0,1
 obl0_scr_e:
  stop
 obl0_e:

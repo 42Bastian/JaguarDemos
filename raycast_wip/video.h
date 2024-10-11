@@ -23,8 +23,8 @@ gr_phrase	equ rez_x/8
 
  IF ^^defined _PAL
 vde		equ (PAL_VMID+PAL_HEIGHT)/2+1
-y_start		equ 31
+y_start		equ 25
  ELSE
 vde		equ (NTSC_VMID+NTSC_HEIGHT)/2+1
-y_start		equ 25
+y_start		equ 13
  ENDIF
