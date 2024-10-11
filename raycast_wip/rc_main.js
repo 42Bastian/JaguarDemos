@@ -1,10 +1,12 @@
 ;-*-Asm-*-
 
-START_X		equ 1
-START_Y		equ 12
-START_ANGLE	equ 200
+START_X		equ 2
+START_Y		equ 15
+START_ANGLE	equ 0
 
 WORLD_WIDTH	equ 31
+
+HORIZONTAL_SCAN EQU 1
 
 ;;; ****************************************
 ;;; Fixpoint (max. 7, else rounding errors appear)
@@ -323,16 +325,16 @@ perpWallDist	reg 99
 //->    //Calculate _height of line to draw on screen
 //->    int line_height;
 //->    line_height = (_height*fp / perpWallDist);
+
 	movei	#rez_y*FP/2,height
 	div	perpWallDist,height
-
 
 //->      int wallX; //where exactly  the wall was hit
 //->      if (side == 0) wallX = (posY - perpWallDist * rayDirY/fp);
 //->      else           wallX = (posX + perpWallDist * rayDirX/fp);
 //->
 //->      //x coordinate on the texture
-//->      int texX = (wallX*texWidth)/fp & (texWidth-1);
+//->      int texX = wallX & (texWidth-1);
 //->
 //->      /* mirror texture depending on side */
 //->      if ( front || right ) texX ^= (texWidth-1);
@@ -427,7 +429,9 @@ texture	reg 99
 	movefa	height.a,height
 	shrq	#32-7,wallX
 	div	height,tmp2
-
+ IF HORIZONTAL_SCAN = 1
+	shlq	#16,wallX
+ ENDIF
 	or	tmp2,tmp2	; scoreboard bug
 
 	movefa	texY.a,tmp0
@@ -437,18 +441,24 @@ texture	reg 99
 	move	tmp2,tmp1
 
 	shrq	#16,tmp0
+ IF HORIZONTAL_SCAN = 0
 	shlq	#16,tmp0
+ ENDIF
 	or	tmp0,wallX
 .oky
 	shrq	#16,tmp1
-
+ IF HORIZONTAL_SCAN = 0
 	movei	#((-1) & 0xffff),tmp0
 	shlq	#16,tmp1
 	or	tmp0,tmp1
-
+ ENDIF
 	WAITBLITTER
 
+ IF HORIZONTAL_SCAN = 1
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDINC,tmp0
+ ELSE
 	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDPIX,tmp0
+ ENDIF
 	store	texture,(blitter)
 
 	UNREG texture
@@ -456,30 +466,38 @@ texture	reg 99
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
 	moveq	#0,tmp0
 	store	wallX,(blitter+_BLIT_A1_PIXEL)
+	shlq	#16,tmp2
 	store	tmp0,(blitter+_BLIT_A1_FPIXEL)
 
-	store	tmp1,(blitter+_BLIT_A1_STEP)
-
-	shlq	#16,tmp2
+ IF HORIZONTAL_SCAN = 1
+	shrq	#16,tmp2
+	store	tmp1,(blitter+_BLIT_A1_INC)
+	store	tmp2,(blitter+_BLIT_A1_FINC)
+	moveq	#0,tmp1
+ ELSE
 	store	tmp2,(blitter+_BLIT_A1_FSTEP)
-
+ ENDIF
+	store	tmp1,(blitter+_BLIT_A1_STEP)
 	movefa	screen1.a,tmp0
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADDPIX,tmp1
 	store	tmp0,(blitter+_BLIT_A2_BASE)
-	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADDPIX,tmp0
-	movei	#0<<16|((rez_x-1) & 0xffff),tmp1
-	store	tmp0,(blitter+_BLIT_A2_FLAGS)
-	store	tmp1,(blitter+_BLIT_A2_STEP)
+	movei	#0<<16|((rez_x-1) & 0xffff),tmp0
+	store	tmp1,(blitter+_BLIT_A2_FLAGS)
+	store	tmp0,(blitter+_BLIT_A2_STEP)
 	store	y,(blitter+_BLIT_A2_PIXEL)
 	store	bcount,(blitter+_BLIT_COUNT)
 	movei	#.next,tmp1
+ IF HORIZONTAL_SCAN = 1
+	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA2|BLIT_DSTA2,tmp0
+ ELSE
 	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA1|BLIT_UPDA2|BLIT_DSTA2|BLIT_UPDA1F,tmp0
+ ENDIF
 	jump	(tmp1)
 	store	tmp0,(blitter+_BLIT_CMD)
 
 .no_texture
 	add	side,color
 	xor	tmp2,color
-
 	movei	#B_PATDSEL,tmp2
 	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADD0|BLIT_YADD1,tmp3
 

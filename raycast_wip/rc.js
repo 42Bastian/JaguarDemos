@@ -34,6 +34,8 @@ BLIT_WID	EQU BLIT_WID192
 BLIT_WID	EQU BLIT_WID160
  ENDIF
 
+	echo "%HBLIT_WID"
+
 
 LastJoy		equ $f03ff8
 stacktop	equ LastJoy-8
@@ -287,7 +289,9 @@ pal:
 	shlq	#8,r1
 	moveq	#31,r2
 	shlq	#1,r2
+ IF MOD = 0
 	nop
+ ENDIF
 .cpyobl:
 	loadp	(r10),r3
 	addqt	#8,r10
@@ -375,7 +379,25 @@ info_table:
 	dc.l Optimize,info,LSPInfo
 	;;    0123456789012345678901234567890123456789
 Hallo:	dc.b "       Raycasting Demo for Jaguar       ",0
-info:	dc.b "        Written 2024 / 42Bastian        ",0
+info:	dc.b "Written 2024 / 42Bastian       "
+ IF HORIZONTAL_SCAN = 1
+	dc.b "hor "
+ ELSE
+	dc.b "ver "
+ ENDIF
+ IF rez_x = 320
+	dc.b "320"
+ ENDIF
+ IF rez_x = 256
+	dc.b "256"
+ ENDIF
+ IF rez_x = 192
+	dc.b "192"
+ ENDIF
+ IF rez_x = 160
+	dc.b "160"
+ ENDIF
+	dc.b 0
 ms:	dc.b "01ms  X:00 Y:00 A:00                    ",0
 
 LSPInfo:
