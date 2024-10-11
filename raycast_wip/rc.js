@@ -269,6 +269,9 @@ singen:
 	movei	#obl1,r11
 	jr	eq,pal
 	nop
+	movei	#$100377F0,r1
+	movei	#$f00400+254*2,r0
+	store	r1,(r0)
 	movei	#obl0_60hz,r10
 	movei	#obl1_60hz,r11
 pal:
