@@ -1,10 +1,12 @@
 ;-*-asm-*-
 
+rez_y_screen	equ 240
+
 rez_x_txt	equ 320
 rez_y_txt	equ 3*8
 
-rez_x		equ 256
-rez_y		equ 240
+rez_x		equ 192
+rez_y		equ 120
 
 MandelTexture	equ $00160000
 XorTexture	equ MandelTexture+128*128

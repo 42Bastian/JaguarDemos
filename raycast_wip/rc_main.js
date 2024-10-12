@@ -34,7 +34,6 @@ planeY.a	reg 99
 posX.a		reg 99
 posY.a		reg 99
 
-	regmap
 	movei	#$f00058,r0
 	moveta	r0,BG.a
 
