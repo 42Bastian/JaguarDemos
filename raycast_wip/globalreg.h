@@ -9,7 +9,6 @@ obl0.a		reg 26
 screen0.a	reg 25
 screen1.a	reg 24
 VID_PIT.a	reg 21
-time.a		reg 20
 
 IRQScratch4.a	REG  4
 IRQScratch3.a	REG  3
@@ -18,7 +17,10 @@ IRQScratch1.a	REG  1
 IRQScratch0.a	REG  0
 
 
+IRQ_RTS		reg 30		; VJ only
+LR		reg 29
 VBLFlag		REG 28
+
 	regtop 27
 
 

@@ -14,6 +14,7 @@ MOD		EQU 1
 	include <js/macro/module.mac>
 	include <js/symbols/joypad.js>
 
+	UNREG	LR
 	include "globalreg.h"
 	include "video.h"
 	include "hively.inc"
@@ -190,23 +191,29 @@ cpy_dsp:
 	nop
  ENDIF
 
-;;; Build sine table
-	movei	#sintab,r15
-	move	r15,r14
-	movei	#128*4,r3
+;;; ----------------------------------------
+;;; Stretch DSP sine table to 256 entries
+;;;
+	movei	#$f1d200,r0
 	movei	#127,r1
 	moveq	#0,r2
-singen:
-	subq	#2,r1
-	move	r2,r0
-	shrq	#12-FP_BITS,r0
-	store	r0,(r14)
-	neg	r0
-	add	r1,r2
-	store	r0,(r14+r3)
-	jr	ne,singen
-	addqt	#4,r14
-
+	movei	#sintab,r15
+	move	r15,r3
+	store	r2,(r15)
+	addq	#4,r15
+cpy_sin:
+	load	(r0),r4
+	add	r4,r2
+	sharq	#15-FP_BITS+1,r2
+	store	r2,(r15)
+	move	r4,r2
+	sharq	#15-FP_BITS,r4
+	store	r4,(r15+4)
+	subq	#1,r1
+	addqt	#8,r15
+	jr	pl,cpy_sin
+	addq	#4,r0
+	move	r3,r15
 
 	INITMODULE mandel
 	MBL	mandel
@@ -235,35 +242,35 @@ singen:
 	movei	#screen0,r0
 	moveta	r0,screen0.a
 
-//->	store	r0,(blitter)
-//->	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
-//->	store	tmp0,(blitter+_BLIT_A1_FLAGS)
-//->	xor	tmp0,tmp0
-//->	movei	#1<<16|((rez_x*rez_y)>>2),tmp1
-//->	store	tmp0,(blitter+_BLIT_A1_PIXEL)
-//->	store	tmp1,(blitter+_BLIT_COUNT)
-//->	store	tmp0,(blitter+_BLIT_CMD)
-//->	nop
-//->	WAITBLITTER	; done later down the road
-//->
+	store	r0,(blitter)
+	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	xor	tmp0,tmp0
+	movei	#1<<16|((rez_x*rez_y)>>2),tmp1
+	store	tmp0,(blitter+_BLIT_A1_PIXEL)
+	store	tmp1,(blitter+_BLIT_COUNT)
+	store	tmp0,(blitter+_BLIT_CMD)
+	nop
+	WAITBLITTER	; done later down the road
+
 	movei	#screen1,r0
 	moveta	r0,screen1.a
 
-//->	store	r0,(blitter)
-//->	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
-//->	store	tmp0,(blitter+_BLIT_A1_FLAGS)
-//->	xor	tmp0,tmp0
-//->	movei	#1<<16|((rez_x*rez_y)>>2),tmp1
-//->	store	tmp0,(blitter+_BLIT_A1_PIXEL)
-//->	store	tmp1,(blitter+_BLIT_COUNT)
-//->	store	tmp0,(blitter+_BLIT_CMD)
-//->	WAITBLITTER	; done later down the road
+	store	r0,(blitter)
+	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	xor	tmp0,tmp0
+	movei	#1<<16|((rez_x*rez_y)>>2),tmp1
+	store	tmp0,(blitter+_BLIT_A1_PIXEL)
+	store	tmp1,(blitter+_BLIT_COUNT)
+	store	tmp0,(blitter+_BLIT_CMD)
+	WAITBLITTER	; done later down the road
 
 	nop
 	INITMODULE main
 
 	movei	#254,r0
-	movei	#$1003F7F0,r1
+	movei	#$1003f2F0,r1
 	movei	#txt_screen,r2
 	movei	#ASCII,r3
 	movei	#InitTxtScreen,r4

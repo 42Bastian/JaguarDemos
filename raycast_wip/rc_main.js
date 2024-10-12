@@ -1,12 +1,13 @@
 ;-*-Asm-*-
 
 START_X		equ 2
-START_Y		equ 15
+START_Y		equ 14
 START_ANGLE	equ 0
 
 WORLD_WIDTH	equ 31
 
 HORIZONTAL_SCAN EQU 1
+
 
 ;;; ****************************************
 ;;; Fixpoint (max. 7, else rounding errors appear)
@@ -33,6 +34,7 @@ planeY.a	reg 99
 posX.a		reg 99
 posY.a		reg 99
 
+	regmap
 	movei	#$f00058,r0
 	moveta	r0,BG.a
 
@@ -57,6 +59,12 @@ loop:
 waitStart:
 	jr	eq,waitStart
 	or	VBLFlag,VBLFlag
+
+//->waitStart:
+//->	or	VBLFlag,VBLFlag
+//->	jr	ne,waitStart
+//->	nop
+//->	moveq	#1,VBLFlag
 
 	movei	#$ffff,r1
 	movefa	VID_PIT.a,r0
@@ -135,7 +143,7 @@ planeY	reg 99
 	shrq	#32-10,tmp2
 	load	(sinptr+tmp0),dirX
 	load	(sinptr+tmp2),dirY
-	moveq	#6,tmp1
+	moveq	#5,tmp1
 	move	dirX,planeY
 	move	dirY,planeX
 	neg	dirX
@@ -371,6 +379,7 @@ wallX	reg 99
 
 	moveq	#0,tmp2
 	shlq	#4,side
+	moveq	#0,tmp0
 	jr	eq,.frontCol
 	cmpq	#0,stepY
 	jr	pl,.leftBlock
@@ -378,151 +387,151 @@ wallX	reg 99
 	jr	.leftBlock
 	bset	#0,tmp2
 .frontCol
-	bset	#0,tmp2
 	cmpq	#0,stepX
-	jr	pl,.leftBlock
+	jr	mi,.leftBlock
 	nop
-	bclr	#0,tmp2
+	bset	#0,tmp2
 .leftBlock
 
-bcount	reg 99
+bcount		reg 99
 height.a	reg 99
-texY.a	reg 99
+texY.a		reg 99
 
-	moveq	#0,y
-	moveta	y,texY.a
-
-	movei	#rez_y/2,y
-	moveta	height,height.a	; save height
+	moveta	tmp0,texY.a	; set texture start at 0
+	movei	#(rez_y/2),y
 	move	height,bcount
 	sub	height,y
+	moveta	height,height.a	; save height for texture Y pos adjustment
 	jr	pl,.ok
-	shlq	#16+1,bcount
+	shlq	#16+1,bcount	; move to Y position and double
+
 	neg	y
 	moveta	y,texY.a
 	moveq	#0,y
-	movei	#rez_y<<16|1,bcount
+	movei	#(rez_y<<16)|1,bcount
 	movei	#rez_y/2,height
 .ok
-	bset	#0,bcount
 	shlq	#16,y
+	bset	#0,bcount
 	or	x,y
 
 texture	reg 99
 
 	movei	#.no_texture,tmp0
 	btst	#7,color
-	movei	#textureTable,tmp1
+	movei	#textureTable,texture
 	jump	eq,(tmp0)
 	bclr	#7,color
-	add	color,tmp1
-	load	(tmp1),texture
 
-	btst	#0,tmp2
-	jr	ne,.no_tex_mirror
+	btst	#0,tmp2		; backside ?
 	moveq	#0,tmp2
+	jr	ne,.no_tex_mirror
+	bset	#16+7,tmp2
 
 	not	wallX
 .no_tex_mirror
-	bset	#16+7,tmp2
-	shlq	#32-7,wallX
 	movefa	height.a,height
+	div	height,tmp2	; stretch value
+
+	add	color,texture
+	load	(texture),texture
+
+	shlq	#32-7,wallX
+	moveq	#0,tmp1
 	shrq	#32-7,wallX
-	div	height,tmp2
+	movefa	texY.a,tmp0
  IF HORIZONTAL_SCAN = 1
 	shlq	#16,wallX
  ENDIF
-	or	tmp2,tmp2	; scoreboard bug
-
-	movefa	texY.a,tmp0
-	shrq	#1,tmp2
-	mult	tmp2,tmp0
+	or	tmp2,tmp1	; move stretch to tmp1 and handle scoreboard bug
+	cmpq	#0,tmp0		; != 0 => not full texture visible
 	jr	eq,.oky
-	move	tmp2,tmp1
-
+	shrq	#1,tmp2		; half stretch
+	mult	tmp2,tmp0
 	shrq	#16,tmp0
  IF HORIZONTAL_SCAN = 0
 	shlq	#16,tmp0
  ENDIF
 	or	tmp0,wallX
 .oky
-	shrq	#16,tmp1
+	shrq	#16+1,tmp1	; get integer part and divide by two
  IF HORIZONTAL_SCAN = 0
 	movei	#((-1) & 0xffff),tmp0
 	shlq	#16,tmp1
 	or	tmp0,tmp1
  ENDIF
-	WAITBLITTER
 
  IF HORIZONTAL_SCAN = 1
-	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDINC,tmp0
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDINC,tmp3
  ELSE
-	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDPIX,tmp0
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID128|BLIT_XADDPIX,tmp3
  ENDIF
+	WAITBLITTER
+
 	store	texture,(blitter)
 
 	UNREG texture
 
-	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	store	tmp3,(blitter+_BLIT_A1_FLAGS)
 	moveq	#0,tmp0
 	store	wallX,(blitter+_BLIT_A1_PIXEL)
-	shlq	#16,tmp2
+	shlq	#16,tmp2	; fractional part of stretch
 	store	tmp0,(blitter+_BLIT_A1_FPIXEL)
 
  IF HORIZONTAL_SCAN = 1
-	shrq	#16,tmp2
+	shrq	#16,tmp2	; x stretch => horizontal scan
 	store	tmp1,(blitter+_BLIT_A1_INC)
 	store	tmp2,(blitter+_BLIT_A1_FINC)
 	moveq	#0,tmp1
  ELSE
 	store	tmp2,(blitter+_BLIT_A1_FSTEP)
  ENDIF
-	store	tmp1,(blitter+_BLIT_A1_STEP)
 	movefa	screen1.a,tmp0
-	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADDPIX,tmp1
+	store	tmp1,(blitter+_BLIT_A1_STEP)
 	store	tmp0,(blitter+_BLIT_A2_BASE)
-	movei	#0<<16|((rez_x-1) & 0xffff),tmp0
+	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADDPIX,tmp1
+	movei	#1<<16|((-1) & 0xffff),tmp0
 	store	tmp1,(blitter+_BLIT_A2_FLAGS)
 	store	tmp0,(blitter+_BLIT_A2_STEP)
-	store	y,(blitter+_BLIT_A2_PIXEL)
-	store	bcount,(blitter+_BLIT_COUNT)
+
 	movei	#.next,tmp1
  IF HORIZONTAL_SCAN = 1
-	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA2|BLIT_DSTA2,tmp0
+	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA2|BLIT_DSTA2,tmp2
  ELSE
-	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA1|BLIT_UPDA2|BLIT_DSTA2|BLIT_UPDA1F,tmp0
+	movei	#BLIT_LFU_REPLACE|BLIT_SRCEN|BLIT_UPDA1|BLIT_UPDA2|BLIT_DSTA2|BLIT_UPDA1F,tmp2
  ENDIF
 	jump	(tmp1)
-	store	tmp0,(blitter+_BLIT_CMD)
+	store	y,(blitter+_BLIT_A2_PIXEL)
 
 .no_texture
-	add	side,color
 	xor	tmp2,color
-	movei	#B_PATDSEL,tmp2
+	moveq	#0,tmp2
+	add	side,color
+	bset	#16,tmp2	;B_PATDSEL
+
 	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADD0|BLIT_YADD1,tmp3
 
 	WAITBLITTER
 
 	movefa	screen1.a,tmp0
-	store	tmp0,(blitter)
 	store	tmp3,(blitter+_BLIT_A1_FLAGS)
+	store	tmp0,(blitter)
+	moveq	#0,tmp0
 	store	y,(blitter+_BLIT_A1_PIXEL)
-	store	bcount,(blitter+_BLIT_COUNT)
+	bset	#16,tmp0
 	store	color,(blitter+_BLIT_PATD)
-//->	store	color,(blitter+_BLIT_PATD+4) ;VJ only
-	store	tmp2,(blitter+_BLIT_CMD)
+	store	tmp0,(blitter+_BLIT_A1_STEP)
+
 .next
-	subq	#1,x
 	movei	#.x_loop,tmp0
+	subq	#1,x
+	store	bcount,(blitter+_BLIT_COUNT)
 	jump	pl,(tmp0)
-	nop
-.donex
+	store	tmp2,(blitter+_BLIT_CMD)
 
 	unreg height,x,y,side,left,fp,buffer.a,bcount
-
 	unreg stepX,stepY,sideDistX,sideDistY,deltaDistX,deltaDistY
 	unreg cameraX,color
-
 	unreg sideDistX.a,sideDistY.a,world0.a
 
 ;;; ------------------------------
@@ -593,10 +602,11 @@ posY	reg 99
 
 	movefa	VID_PIT.a,tmp0
 	loadw	(tmp0),tmp0
+	shlq	#16,tmp0
+	not	tmp0
+	shrq	#16,tmp0
 
-	movei	#$ffff,tmp1
 	movei	#PrintDEC2_YX,r4
-	xor	tmp1,tmp0
 	movei	#$00020000,r1
 	BL	(r4)
 .no_time:

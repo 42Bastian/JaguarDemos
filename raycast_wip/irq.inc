@@ -33,6 +33,11 @@ op::
 
 	moveta	IRQScratch0.a,VBLFlag
 
+//->	movefa	VBLFlag,IRQScratch0.a
+//->	subq	#1,IRQScratch0.a
+//->	jr	ne,.no_swap
+//->	moveta	IRQScratch0.a,VBLFlag
+
 	move	obl0.a,IRQScratch0.a
 	move	obl1.a,obl0.a
 	move	IRQScratch0.a,obl1.a
@@ -61,7 +66,7 @@ timer_irq::
 irq_return
 	addqt	#2,IRQ_RTS.a
 	addqt	#4,IRQ_SP.a
-;;->	moveta	IRQ_RTS.a,IRQ_RTS.a ; only for VJ needed
+	moveta	IRQ_RTS.a,IRQ_RTS.a ; only for VJ needed
 	store	IRQ_FLAG.a,(IRQ_FLAGADDR.a)
 	jump	(IRQ_RTS.a)
 	nop
