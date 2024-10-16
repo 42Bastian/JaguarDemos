@@ -5,7 +5,12 @@ GPU	EQU 1
 
 	gpu
 
+ IFND MOD
 MOD		EQU 1
+ ENDIF
+ IFND LOCK_VBL
+LOCK_VBL	EQU 0
+ ENDIF
 
 	include <js/symbols/jagregeq.js>
 	include <js/symbols/blit_eq.js>
@@ -93,9 +98,9 @@ clut2	reg	99
 	moveq	#0,tmp1
 	storew	tmp1,(clut)
 	addqt	#2,clut
-	movei	#$0070,tmp1
+	movei	#$8840,tmp1
 	storew	tmp1,(clut)	; sky
-	movei	#$7f30,tmp1
+	movei	#$f860,tmp1
 	addqt	#2,clut
 	storew	tmp1,(clut)	; floor
 

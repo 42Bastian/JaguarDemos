@@ -26,18 +26,19 @@ op::
 	load	(IRQ_SP.a),IRQ_RTS.a
 	bclr	#3,IRQ_FLAG.a
 
+ IF LOCK_VBL = 0
 	movefa	VBLFlag,IRQScratch0.a
 	cmpq	#0,IRQScratch0.a
 	jr	ne,.no_swap
 	moveq	#1,IRQScratch0.a
 
 	moveta	IRQScratch0.a,VBLFlag
-
-//->	movefa	VBLFlag,IRQScratch0.a
-//->	subq	#1,IRQScratch0.a
-//->	jr	ne,.no_swap
-//->	moveta	IRQScratch0.a,VBLFlag
-
+ ELSE
+	movefa	VBLFlag,IRQScratch0.a
+	subq	#1,IRQScratch0.a
+	jr	ne,.no_swap
+	moveta	IRQScratch0.a,VBLFlag
+ ENDIF
 	move	obl0.a,IRQScratch0.a
 	move	obl1.a,obl0.a
 	move	IRQScratch0.a,obl1.a

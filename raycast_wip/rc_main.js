@@ -1,7 +1,7 @@
 ;-*-Asm-*-
 
-START_X		equ 2
-START_Y		equ 14
+START_X		equ 4
+START_Y		equ 5
 START_ANGLE	equ 0
 
 WORLD_WIDTH	equ 31
@@ -12,7 +12,7 @@ HORIZONTAL_SCAN EQU 1
 ;;; ****************************************
 ;;; Fixpoint (max. 7, else rounding errors appear)
 
-FP_BITS		EQU 7
+FP_BITS		EQU 8
 FP		EQU (1<<FP_BITS)
 
 
@@ -37,8 +37,8 @@ posY.a		reg 99
 	movei	#$f00058,r0
 	moveta	r0,BG.a
 
-	movei	#START_X*FP+FP/2,tmp0
-	movei	#START_Y*FP+FP/2,tmp1
+	movei	#START_X*FP-FP/3,tmp0
+	movei	#START_Y*FP-FP/2,tmp1
 	moveta	tmp0,posX.a
 	moveta	tmp1,posY.a
 	movei	#START_ANGLE<<2,tmp0
@@ -46,6 +46,9 @@ posY.a		reg 99
 	movei	#worldMap,tmp0
 	moveta	tmp0,world.a
 
+ IF LOCK_VBL = 1
+	xor	VBLFlag,VBLFlag
+ ENDIF
 	move	PC,r0
 	addq	#6,r0
 	moveta	r0,LOOP.a
@@ -54,17 +57,18 @@ loop:
 	xor	tmp1,tmp1
 	storew	tmp1,(tmp0)
 
+ IF LOCK_VBL = 0
 	xor	VBLFlag,VBLFlag
 waitStart:
 	jr	eq,waitStart
 	or	VBLFlag,VBLFlag
-
-//->waitStart:
-//->	or	VBLFlag,VBLFlag
-//->	jr	ne,waitStart
-//->	nop
-//->	moveq	#1,VBLFlag
-
+ ELSE
+waitStart:
+	or	VBLFlag,VBLFlag
+	jr	ne,waitStart
+	nop
+	moveq	#2,VBLFlag
+ ENDIF
 	movei	#$ffff,r1
 	movefa	VID_PIT.a,r0
 	storew	r1,(r0)
@@ -120,10 +124,13 @@ fp		reg 99
 world		reg 99
 stripeCount	reg 99
 
-buffer.a	reg 99
+cameraX0.a	reg 99
+deltaCameraX.a	reg 99
+
 sideDistX.a	reg 99
 sideDistY.a	reg 99
 
+dump	reg 99
 	movefa	angle.a,tmp2
 
 ;;->  dirX = -co(angle);
@@ -142,14 +149,14 @@ planeY	reg 99
 	shrq	#32-10,tmp2
 	load	(sinptr+tmp0),dirX
 	load	(sinptr+tmp2),dirY
-	moveq	#5,tmp1
+	moveq	#20,tmp1
 	move	dirX,planeY
 	move	dirY,planeX
 	neg	dirX
 	imult	tmp1,planeX
 	imult	tmp1,planeY
-	sharq	#3,planeX
-	sharq	#3,planeY
+	sharq	#5,planeX
+	sharq	#5,planeY
 	moveta	planeX,planeX.a
 	moveta	planeY,planeY.a
 
@@ -183,31 +190,33 @@ mapY		reg 99
 	moveta	world,world0.a
 
 	unreg	mapX,mapY
+
+	moveq	#0,tmp0
+	bset	#2*FP_BITS,tmp0
+	moveta	tmp0,cameraX0.a
+
+	movei	#2*FP*FP/rez_x,tmp0
+	moveta	tmp0,deltaCameraX.a
+
+	movei	#$20000,dump
 ;;; ----------------------------------------
 ;;; draw loop
 	;; prepare stripe drawing
 .x_loop:
-	//cameraX = 2*x*fp/_width-fp;
-	move	x,cameraX
-	shlq	#FP_BITS+1,cameraX
-	movei	#rez_x,tmp0
-	div	tmp0,cameraX
+	movefa	cameraX0.a,tmp0
+	movefa	deltaCameraX.a,tmp1
 
-//->    int mapX = int(posX) & ~(int(fp)-1);
-//->    int mapY = int(posY) & ~(int(fp)-1);
+	move	tmp0,cameraX
+	sub	tmp1,tmp0
+	shrq	#FP_BITS,cameraX
+	moveta	tmp0,cameraX0.a
 
-	move	fp,deltaDistX
-	mult	fp,deltaDistX
-	move	deltaDistX,deltaDistY
 
 ;;->    rayDirX = (dirX + planeX * cameraX/fp);
 ;;->    rayDirY = (dirY + planeY * cameraX/fp);
 
 	movefa	planeX.a,rayDirX
 	movefa	planeY.a,rayDirY
-
-	sub	fp,cameraX
-
 	imult	cameraX,rayDirX
 	imult	cameraX,rayDirY
 	sharq	#FP_BITS,rayDirX
@@ -226,11 +235,16 @@ mapY		reg 99
 //->        sideDistX = (fp - sideDistX) * deltaDistX/fp;
 //->      }
 //->    }
+	movei	#.zeroRayX,tmp1
+	moveq	#0,deltaDistX
+	bset	#FP_BITS*2,deltaDistX
+	subq	#1,deltaDistX
+	move	deltaDistX,deltaDistY
 
 	move	rayDirX,tmp0
 	abs	tmp0
 	moveq	#0,stepX
-	jr	eq,.zeroRayX
+	jump	eq,(tmp1)
 	moveq	#0,sideDistX
 
 	div	tmp0,deltaDistX
@@ -243,14 +257,22 @@ mapY		reg 99
 	moveq	#1,stepX
 	add	fp,sideDistX
 .negRayX
-	imult	deltaDistX,sideDistX
-	sharq	#FP_BITS,sideDistX
+	move	deltaDistX,tmp0
+	shrq	#16,tmp0
+	jr	eq,.okX
+	mult	deltaDistX,sideDistX
+	mult	sideDistX,tmp0
+	shlq	#16,tmp0
+	add	tmp0,sideDistX
+.okX:
+	shrq	#FP_BITS,sideDistX
 .zeroRayX
 
+	movei	#.zeroRayY,tmp1
 	move	rayDirY,tmp0
 	abs	tmp0
 	moveq	#0,stepY
-	jr	eq,.zeroRayY
+	jump	eq,(tmp1)
 	moveq	#0,sideDistY
 
 	div	tmp0,deltaDistY
@@ -263,9 +285,17 @@ mapY		reg 99
 	moveq	#WORLD_WIDTH,stepY
 	add	fp,sideDistY
 .posRayY:
-	imult	deltaDistY,sideDistY
-	sharq	#FP_BITS,sideDistY
+	move	deltaDistY,tmp0
+	shrq	#16,tmp0
+	jr	eq,.okY
+	mult	deltaDistY,sideDistY
+	mult	sideDistY,tmp0
+	shlq	#16,tmp0
+	add	tmp0,sideDistY
+.okY:
+	shrq	#FP_BITS,sideDistY
 .zeroRayY
+
 
 //->    while (hit == 0 ) {
 //->      //jump to next map square, either in x-direction, or in y-direction
@@ -333,7 +363,7 @@ perpWallDist	reg 99
 //->    int line_height;
 //->    line_height = (_height*fp / perpWallDist);
 
-	movei	#rez_y*FP/2,height
+	movei	#rez_y*FP,height
 	div	perpWallDist,height
 
 //->      int wallX; //where exactly  the wall was hit
@@ -369,6 +399,7 @@ wallX	reg 99
 	sharq	#FP_BITS,tmp0
 	add	tmp0,wallX
 
+	shrq	#1,height
 	unreg	perpWallDist
 	unreg 	rayDirX,rayDirY
 //->    // side == 1 => left
@@ -435,7 +466,7 @@ texture	reg 99
 	add	color,texture
 	load	(texture),texture
 
-	shlq	#32-7,wallX
+	shlq	#32-8,wallX
 	moveq	#0,tmp1
 	shrq	#32-7,wallX
 	movefa	texY.a,tmp0
@@ -481,12 +512,14 @@ texture	reg 99
 	shrq	#16,tmp2	; x stretch => horizontal scan
 	store	tmp1,(blitter+_BLIT_A1_INC)
 	store	tmp2,(blitter+_BLIT_A1_FINC)
-	moveq	#0,tmp1
  ELSE
 	store	tmp2,(blitter+_BLIT_A1_FSTEP)
  ENDIF
 	movefa	screen1.a,tmp0
+ IF HORIZONTAL_SCAN = 0
 	store	tmp1,(blitter+_BLIT_A1_STEP)
+ ENDIF
+
 	store	tmp0,(blitter+_BLIT_A2_BASE)
 	movei	#BLIT_PITCH1|BLIT_PIXEL8|BLIT_WID|BLIT_XADDPIX,tmp1
 	movei	#1<<16|((-1) & 0xffff),tmp0
@@ -528,10 +561,10 @@ texture	reg 99
 	jump	pl,(tmp0)
 	store	tmp2,(blitter+_BLIT_CMD)
 
-	unreg height,x,y,side,left,fp,buffer.a,bcount
+	unreg height,x,y,side,left,fp,bcount
 	unreg stepX,stepY,sideDistX,sideDistY,deltaDistX,deltaDistY
 	unreg cameraX,color
-	unreg sideDistX.a,sideDistY.a,world0.a
+	unreg sideDistX.a,sideDistY.a,world0.a,cameraX0.a,deltaCameraX.a
 
 ;;; ------------------------------
 ;;; move
@@ -560,12 +593,12 @@ posY	reg 99
 	shrq	#32-10,tmp0
 	moveta	tmp0,angle.a
 .neither
-	moveq	#10,tmp2
+	moveq	#15,tmp2
 	btst	#JOY_UP_BIT,r3
 	movefa	posX.a,posX
 	jr	ne,.forward
 	movefa	posY.a,posY
-	subq	#20,tmp2
+	subq	#30,tmp2
 	btst	#JOY_DOWN_BIT,r3
 	movei	#.neither2,tmp0
 	jump	eq,(tmp0)

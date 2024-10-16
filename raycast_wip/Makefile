@@ -7,7 +7,12 @@ RMAC= rmac
 RLN= rln
 
 _68KFLAGS=-4 ~oall -i$(BJL_ROOT)
-TJFLAGS= -w
+
+
+MOD?=0
+LOCK_VBL?=0
+
+TJFLAGS= -w -D MOD=$(MOD) -D LOCK_VBL=$(LOCK_VBL)
 
 %.o	: %.js
 	$(TJASS) $(TJFLAGS) $<
@@ -45,7 +50,7 @@ $(DEMO).o : rc.js rc_main.js $(OBL) irq.inc world.inc  phobyx_128x128.inc\
 	    globalreg.h hively_player.bin mandel.inc w3d_wall1.inc\
 	    w3d_wall2.inc
 
-	$(TJASS) -d $(TJFLAGS) rc.js
+	$(TJASS) -d  $(TJFLAGS) rc.js
 
 hively_player.bin: hively_player_v21.S
 	rmac -4 -fb -u -i$(BJL_ROOT)/68k_inc $<
