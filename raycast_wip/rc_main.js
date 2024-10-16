@@ -10,7 +10,7 @@ HORIZONTAL_SCAN EQU 1
 
 
 ;;; ****************************************
-;;; Fixpoint (max. 7, else rounding errors appear)
+;;; Fixpoint (max. 9, else rounding errors appear)
 
 FP_BITS		EQU 8
 FP		EQU (1<<FP_BITS)
@@ -211,7 +211,6 @@ mapY		reg 99
 	shrq	#FP_BITS,cameraX
 	moveta	tmp0,cameraX0.a
 
-
 ;;->    rayDirX = (dirX + planeX * cameraX/fp);
 ;;->    rayDirY = (dirY + planeY * cameraX/fp);
 
@@ -235,7 +234,6 @@ mapY		reg 99
 //->        sideDistX = (fp - sideDistX) * deltaDistX/fp;
 //->      }
 //->    }
-	movei	#.zeroRayX,tmp1
 	moveq	#0,deltaDistX
 	bset	#FP_BITS*2,deltaDistX
 	subq	#1,deltaDistX
@@ -244,7 +242,7 @@ mapY		reg 99
 	move	rayDirX,tmp0
 	abs	tmp0
 	moveq	#0,stepX
-	jump	eq,(tmp1)
+	jr	eq,.zeroRayX
 	moveq	#0,sideDistX
 
 	div	tmp0,deltaDistX
@@ -257,22 +255,14 @@ mapY		reg 99
 	moveq	#1,stepX
 	add	fp,sideDistX
 .negRayX
-	move	deltaDistX,tmp0
-	shrq	#16,tmp0
-	jr	eq,.okX
 	mult	deltaDistX,sideDistX
-	mult	sideDistX,tmp0
-	shlq	#16,tmp0
-	add	tmp0,sideDistX
-.okX:
 	shrq	#FP_BITS,sideDistX
 .zeroRayX
 
-	movei	#.zeroRayY,tmp1
 	move	rayDirY,tmp0
 	abs	tmp0
 	moveq	#0,stepY
-	jump	eq,(tmp1)
+	jr	eq,.zeroRayY
 	moveq	#0,sideDistY
 
 	div	tmp0,deltaDistY
@@ -285,14 +275,7 @@ mapY		reg 99
 	moveq	#WORLD_WIDTH,stepY
 	add	fp,sideDistY
 .posRayY:
-	move	deltaDistY,tmp0
-	shrq	#16,tmp0
-	jr	eq,.okY
 	mult	deltaDistY,sideDistY
-	mult	sideDistY,tmp0
-	shlq	#16,tmp0
-	add	tmp0,sideDistY
-.okY:
 	shrq	#FP_BITS,sideDistY
 .zeroRayY
 
@@ -466,7 +449,7 @@ texture	reg 99
 	add	color,texture
 	load	(texture),texture
 
-	shlq	#32-8,wallX
+	shlq	#32-FP_BITS,wallX
 	moveq	#0,tmp1
 	shrq	#32-7,wallX
 	movefa	texY.a,tmp0
