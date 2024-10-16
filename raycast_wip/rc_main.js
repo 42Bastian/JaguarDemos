@@ -593,12 +593,12 @@ posY	reg 99
 	shrq	#32-10,tmp0
 	moveta	tmp0,angle.a
 .neither
-	moveq	#15,tmp2
+	moveq	#26,tmp2
 	btst	#JOY_UP_BIT,r3
 	movefa	posX.a,posX
 	jr	ne,.forward
 	movefa	posY.a,posY
-	subq	#30,tmp2
+	neg	tmp2
 	btst	#JOY_DOWN_BIT,r3
 	movei	#.neither2,tmp0
 	jump	eq,(tmp0)
