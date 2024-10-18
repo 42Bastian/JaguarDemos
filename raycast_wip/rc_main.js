@@ -300,6 +300,7 @@ side		reg 99
 left		reg 99
 color		reg 99
 height		reg 99
+perpWallDist	reg 99
 
 	moveq	#0,color
 	movefa	world0.a,world
@@ -310,6 +311,7 @@ height		reg 99
 	jr	mi,.yStep
 	nop
 	moveq	#0,side
+	move	sideDistX,perpWallDist
 	add	stepX,world
 	add	deltaDistX,sideDistX
 	jr	.wall_loop
@@ -317,6 +319,7 @@ height		reg 99
 
 .yStep:
 	moveq	#1,side
+	move	sideDistY,perpWallDist
 	add	stepY,world
 	add	deltaDistY,sideDistY
 	jr	.wall_loop
@@ -324,23 +327,6 @@ height		reg 99
 .doneWall
 
 	unreg	world
-
-
-//->    int perpWallDist;
-//->    if (side == 0) perpWallDist = (sideDistX - deltaDistX);
-//->    else           perpWallDist = (sideDistY - deltaDistY);
-
-perpWallDist	reg 99
-
-	cmpq	#0,side
-	move	deltaDistX,tmp0
-	jr	eq,.front
-	move	sideDistX,perpWallDist
-
-	move	deltaDistY,tmp0
-	move	sideDistY,perpWallDist
-.front
-	sub	tmp0,perpWallDist
 
 //->    //Calculate _height of line to draw on screen
 //->    int line_height;
