@@ -572,32 +572,52 @@ posY	reg 99
 	movei	#.neither2,tmp0
 	jump	eq,(tmp0)
 .forward
+
 	imult	tmp2,dirX
 	imult	tmp2,dirY
-	sharq	#FP_BITS,dirX
-	sharq	#FP_BITS,dirY
-	add	dirX,posX
-	sub	dirY,posY
- IF 0
-	move	posX,tmp0
-	move	posY,tmp1
-	shrq	#FP_BITS,tmp0
-	shrq	#FP_BITS,tmp1
+	sharq	#FP_BITS-1,dirX
+	sharq	#FP_BITS-1,dirY
+	move	dirX,tmp0
+	move	dirY,tmp1
+	sharq	#1,dirX
+	sharq	#1,dirY
+	add	posX,dirX	; new posX
+	add	posX,tmp0	; check pos
+	neg	dirY
+	neg	tmp1
+	add	posY,dirY
+	add	posY,tmp1
+
+	sharq	#FP_BITS,tmp0	; nx
+	sharq	#FP_BITS,tmp1	; ny
+
+	move	posX,tmp3
 	moveq	#WORLD_WIDTH,tmp2
+	sharq	#FP_BITS,tmp3
 	mult	tmp2,tmp1
 	movefa	world.a,tmp2
-	add	tmp0,tmp2
 	add	tmp1,tmp2
-	loadb	(tmp2),tmp0
+	add	tmp3,tmp2
+	loadb	(tmp2),tmp2
+	move	posY,tmp3
+	cmpq	#0,tmp2
+	moveq	#WORLD_WIDTH,tmp2
+	jr	ne,.no_xMove
+	sharq	#FP_BITS,tmp3
+	moveta	dirY,posY.a
+.no_xMove:
+	movefa	world.a,tmp1
+	mult	tmp2,tmp3
+	add	tmp0,tmp1
+	add	tmp3,tmp1
+	loadb	(tmp1),tmp0
 	cmpq	#0,tmp0
 	jr	ne,.neither2
 	nop
- ENDIF
-	moveta	posX,posX.a
-	moveta	posY,posY.a
+	moveta	dirX,posX.a
 .neither2
 
-	unreg dirX,dirY,posX,posY
+	unreg dirX,dirY,posX,posY,tmp3
 ;;; ------------------------------
 ;;; time
 
