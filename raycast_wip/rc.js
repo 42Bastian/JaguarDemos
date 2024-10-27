@@ -40,8 +40,6 @@ BLIT_WID	EQU BLIT_WID192
 BLIT_WID	EQU BLIT_WID160
  ENDIF
 
-	echo "%HBLIT_WID"
-
 
 LastJoy		equ $f03ff8
 stacktop	equ LastJoy-8
@@ -143,6 +141,7 @@ clut2	reg	99
 	jr	ne,.iclut2
 	addqt	#2,clut
 
+;;; wall1
 	movei	#$f00400+112*2,clut
 	movei	#w3d_wall1_palette,r2
 	loadw	(r2),tmp1
@@ -154,7 +153,7 @@ clut2	reg	99
 	storew	r3,(clut)
 	jr	ne,.iclut3
 	addqt	#2,clut
-
+;;; wall2
 	movei	#$f00400+80*2,clut
 	movei	#w3d_wall2_palette,r2
 	loadw	(r2),tmp1
@@ -165,6 +164,18 @@ clut2	reg	99
 	subq	#1,tmp1
 	storew	r3,(clut)
 	jr	ne,.iclut4
+	addqt	#2,clut
+;;; door
+	movei	#$f00400+134*2,clut
+	movei	#door1_palette,r2
+	loadw	(r2),tmp1
+	nop
+.iclut5:
+	addqt	#2,r2
+	loadw	(r2),r3
+	subq	#1,tmp1
+	storew	r3,(clut)
+	jr	ne,.iclut5
 	addqt	#2,clut
 
 	UNREG	clut,clut2
@@ -220,6 +231,7 @@ cpy_sin:
 	addq	#4,r0
 	move	r3,r15
 
+	nop
 	INITMODULE mandel
 	MBL	mandel
 
@@ -271,7 +283,6 @@ cpy_sin:
 	store	tmp0,(blitter+_BLIT_CMD)
 	WAITBLITTER	; done later down the road
 
-	nop
 	INITMODULE main
 
 	movei	#254,r0
@@ -452,8 +463,9 @@ logo:
 
 ;;; ----------------------------------------
 
+	align 16
 	include "world.inc"
-
+	echo "World: %hworldMap"
 ;;; ----------------------------------------
 ;;; color
 	long
@@ -463,14 +475,11 @@ wall_colors:
 
 ;;; ----------------------------------------
 ;;; Texture(s)
-	LONG
-textureTable:
-	.dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture,w3d_wall1
-	dc.l	w3d_wall2
 
 	include "phobyx_128x128.inc"
 	include "w3d_wall1.inc"
 	include "w3d_wall2.inc"
+	include "door1.inc"
 
 ;;; ----------------------------------------
 	phrase

@@ -48,16 +48,16 @@ obl: $(OBL)
 
 $(DEMO).o : rc.js rc_main.js $(OBL) irq.inc world.inc  phobyx_128x128.inc\
 	    globalreg.h hively_player.bin mandel.inc w3d_wall1.inc\
-	    w3d_wall2.inc
+	    w3d_wall2.inc door1.inc
 
-	$(TJASS) -d  $(TJFLAGS) rc.js
+	@$(TJASS) -d  $(TJFLAGS) rc.js
 
 hively_player.bin: hively_player_v21.S
-	rmac -4 -fb -u -i$(BJL_ROOT)/68k_inc $<
+	@rmac -4 -fb -u -i$(BJL_ROOT)/68k_inc $<
 	rln -z -n -a f1b000 x x -o $@ hively_player_v21.o
 
 rc_68k.o : rc_68k.S $(DEMO).o
-	$(RMAC) $(_68KFLAGS) $(DEMO)_68k.S
+	@$(RMAC) $(_68KFLAGS) $(DEMO)_68k.S
 
 rc.cof: rc_68k.o
 	@$(RLN) -z -e -a 4000 x x -o $@ $<
@@ -73,6 +73,9 @@ w3d_wall1.inc: w3d_wall1.tga
 
 w3d_wall2.inc: w3d_wall2.tga
 	@tga2cry -f cry8 -o $@ -nodata -maxcolors 32 -basecolor 80 $<
+
+door1.inc: door1.tga
+	@tga2cry -f cry8 -o $@ -nodata -maxcolors 42 -basecolor 134 $<
 
 .ONESHELL:
 rc.j64: rc.rom
