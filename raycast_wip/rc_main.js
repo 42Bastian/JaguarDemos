@@ -1,6 +1,6 @@
 ;-*-Asm-*-
 
-START_X		equ $140
+START_X		equ $240
 START_Y		equ $140
 START_ANGLE	equ 192
 
@@ -26,7 +26,7 @@ world0.a	REG 99
 world.a		reg 99
 
 angle.a		reg 99
-doorAddress.a		reg 99
+doorAddress.a	reg 99
 planeX.a	reg 99
 planeY.a	reg 99
 posX.a		reg 99
@@ -351,20 +351,36 @@ wallSide	reg 99
 	cmpq	#4,tmp0		; open door
 	jump	eq,(tmp1)
 	cmpq	#6,tmp0		; closed door
-	jr	eq,.done_wall
-
+	jr	eq,.mi0
+//->	nop
 .check_tex:
+	move	wallX,tmp3
+//->	not	tmp3
+//->	shlq	#32-7,tmp3
+//->	shrq	#32-7,tmp3
+
+	not	wallX
+	shlq	#32-7,wallX
+	shrq	#32-7,wallX
 	movefa	doorPos.a,tmp0
 	cmp	tmp0,wallX
 	jump	pl,(tmp1)
 	sub	tmp0,wallX
+	jr	.noMi
+	nop
+//->	shlq	#32-7,wallX
 
+
+.done_wall0:
+	not	wallX
 .done_wall:
 	btst	#0,wallSide
 	jr	ne,.noMi
-	shlq	#32-7,wallX
+	nop
+.mi0
 	not	wallX
 .noMi
+	shlq	#32-7,wallX
 	shrq	#32-7,wallX
 
 	unreg 	rayDirX,rayDirY,world
