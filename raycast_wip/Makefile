@@ -82,7 +82,7 @@ rc.j64: rc.rom
 	@cat $(BJL_ROOT)/bin/fastbt2_nb.bin $< >$@
 	cat $< >> $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >> $@
-	truncate -s 128K $@
+	truncate -s 256K $@
 
 .ONESHELL:
 vj.j64: rc.rom
