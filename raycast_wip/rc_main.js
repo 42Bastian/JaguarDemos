@@ -1,8 +1,8 @@
 ;-*-Asm-*-
 
-START_X		equ $240
-START_Y		equ $140
-START_ANGLE	equ 192
+START_X		equ $340
+START_Y		equ $200
+START_ANGLE	equ 167
 
 WORLD_WIDTH	equ 32
 
@@ -21,7 +21,6 @@ FP		EQU (1<<FP_BITS)
 
 sinptr		reg 15
 
-LOOP.a		REG 99
 world0.a	REG 99
 world.a		reg 99
 
@@ -51,10 +50,7 @@ doorInc.a	reg 99
  IF LOCK_VBL = 1
 	xor	VBLFlag,VBLFlag
  ENDIF
-	move	PC,r0
-	addq	#6,r0
-	moveta	r0,LOOP.a
-loop:
+mainLoop:
 	movei	#$f00058,r0
 	xor	tmp1,tmp1
 	storew	tmp1,(tmp0)
@@ -109,8 +105,6 @@ waitStart:
 ;;; ------------------------------
 ;;; Playfield
 ;;; ------------------------------
-x		reg 99
-y		reg 99
 dirX		reg 99
 dirY		reg 99
 cameraX		reg 99
@@ -122,7 +116,7 @@ sideDistX	reg 99
 sideDistY	reg 99
 deltaDistX	reg 99
 deltaDistY	reg 99
-fp		reg 99
+//->fp		reg 99
 world		reg 99
 stripeCount	reg 99
 
@@ -164,11 +158,11 @@ planeY	reg 99
 
 	unreg	planeX,planeY
 
-	moveq	#0,fp
-	movei	#rez_x-1,x
-	bset	#FP_BITS,fp
+x		reg 99
 
-	move	fp,tmp2
+	moveq	#0,tmp2
+	movei	#rez_x-1,x
+	bset	#FP_BITS,tmp2
 	subq	#1,tmp2
 	movefa	posX.a,tmp0
 	movefa	posY.a,tmp1
@@ -235,8 +229,10 @@ mapY		reg 99
 //->        sideDistX = (fp - sideDistX) * deltaDistX/fp;
 //->      }
 //->    }
+	moveq	#0,tmp2
 	moveq	#0,deltaDistX
-	bset	#FP_BITS*2,deltaDistX
+	bset	#FP_BITS,tmp2
+	bset	#FP_BITS*2-1,deltaDistX
 	subq	#1,deltaDistX
 	move	deltaDistX,deltaDistY
 
@@ -254,7 +250,7 @@ mapY		reg 99
 
 	neg	sideDistX
 	moveq	#2,stepX
-	add	fp,sideDistX
+	add	tmp2,sideDistX
 .negRayX
 	mult	deltaDistX,sideDistX
 	shrq	#FP_BITS,sideDistX
@@ -274,7 +270,7 @@ mapY		reg 99
 
 	neg	sideDistY
 	neg	stepY
-	add	fp,sideDistY
+	add	tmp2,sideDistY
 .posRayY:
 	mult	deltaDistY,sideDistY
 	shrq	#FP_BITS,sideDistY
@@ -300,21 +296,46 @@ mapY		reg 99
 color		reg 99
 wallX		reg 99
 wallSide	reg 99
+perpWallDist2	reg 3!
+dwx		reg 99
+dwy		reg 99
+dwxy		reg 99
+
+
+	move	deltaDistY,dwy
+	move	deltaDistX,dwx
+	imult	rayDirX,dwy
+	imult	rayDirY,dwx
+	sharq	#FP_BITS,dwy
+	sharq	#FP_BITS,dwx
+	neg	dwy
+
+	regmap
+
+
+Y_STEP	reg 99
+DONE_WALL reg 99
+
+	movei	#.yStep,Y_STEP
+	movei	#.done_wall,DONE_WALL
 
 	move	pc,tmp1
 	movefa	world0.a,world
 	addq	#6,tmp1
 .wall_loop
 	cmp	sideDistX,sideDistY
-	jr	mi,.yStep
+	jump	mi,(Y_STEP)
 	nop
-	jr	eq,.yStep
+	jump	eq,(Y_STEP)
 	moveq	#1,wallSide
 
+	move	deltaDistX,perpWallDist2
 	move	stepX,tmp0
+	sharq	#1,perpWallDist2
 	shrq	#31,tmp0
+	add	sideDistX,perpWallDist2
 	add	tmp0,wallSide
-
+	move	dwx,dwxy
 	move	sideDistX,tmp2
 	move	rayDirY,tmp0
 	movefa	posY.a,wallX
@@ -324,74 +345,80 @@ wallSide	reg 99
 	add	deltaDistX,sideDistX
 .yStep:
 	moveq	#4,wallSide
+	move	deltaDistY,perpWallDist2
 	move	stepY,tmp0
+	sharq	#1,perpWallDist2
 	shrq	#31,tmp0
+	add	sideDistY,perpWallDist2
 	sub	tmp0,wallSide
-
+	move	dwy,dwxy
 	move	sideDistY,tmp2
 	movefa	posX.a,wallX
 	move	rayDirX,tmp0
-
 	add	stepY,world
 	add	deltaDistY,sideDistY
 .wall_cont
 	imult	tmp2,tmp0
 	loadw	(world),color
-	sharq	#FP_BITS,tmp0
+	sharq	#FP_BITS-1,tmp0
 	cmpq	#0,color
 	jump	eq,(tmp1)
 	add	tmp0,wallX
 
-	shlq	#32-FP_BITS,wallX
 	move	color,tmp0
-	shrq	#32-7,wallX
 
 	shrq	#7,tmp0
-	jr	eq,.done_wall	; normal wall
+	jump	eq,(DONE_WALL)	; normal wall
 	cmpq	#4,tmp0		; open door
 	jump	eq,(tmp1)
-	cmpq	#6,tmp0		; closed door
-	jr	eq,.mi0
-//->	nop
-.check_tex:
-	move	wallX,tmp3
-//->	not	tmp3
-//->	shlq	#32-7,tmp3
-//->	shrq	#32-7,tmp3
+	nop
+	sub	dwxy,wallX
+	jump	mi,(tmp1)
 
+	shlq	#32-9,wallX
+	shrq	#32-8,wallX
+
+	cmpq	#6,tmp0		; closed door
+	moveq	#0,tmp0
+	jr	ne,.check_tex
+	move	perpWallDist2,tmp2
+	bset	#7,tmp0
+
+	sub	wallX,tmp0
+	jump	pl,(tmp1)
+	nop
+	jr	.noMi
+.check_tex:
 	not	wallX
-	shlq	#32-7,wallX
-	shrq	#32-7,wallX
+	shlq	#32-8,wallX
+	shrq	#32-8,wallX
 	movefa	doorPos.a,tmp0
 	cmp	tmp0,wallX
 	jump	pl,(tmp1)
 	sub	tmp0,wallX
 	jr	.noMi
 	nop
-//->	shlq	#32-7,wallX
-
-
-.done_wall0:
-	not	wallX
 .done_wall:
+	shrq	#1,wallX
 	btst	#0,wallSide
 	jr	ne,.noMi
 	nop
-.mi0
 	not	wallX
 .noMi
 	shlq	#32-7,wallX
 	shrq	#32-7,wallX
 
-	unreg 	rayDirX,rayDirY,world
+	unreg 	rayDirX,rayDirY,world,Y_STEP
 
 height		reg 99
 bcount		reg 99
+y		reg 99
 
 height.a	reg 99
 texY.a		reg 99
 
-	movei	#rez_y*FP/2,height
+
+	movei	#rez_y*FP/4,height
 	div	tmp2,height
 
 	moveq	#0,tmp0
@@ -524,7 +551,7 @@ texture	reg 99
 	jump	pl,(tmp0)
 	store	tmp2,(blitter+_BLIT_CMD)
 
-	unreg height,x,y,fp,bcount
+	unreg height,x,y,bcount
 	unreg stepX,stepY,sideDistX,sideDistY,deltaDistX,deltaDistY
 	unreg cameraX,color,wallSide
 	unreg sideDistX.a,sideDistY.a,world0.a,cameraX0.a,deltaCameraX.a
@@ -576,7 +603,11 @@ posY	reg 99
 
 	movefa	angle.a,tmp0
 	btst	#JOY_RIGHT_BIT,r3
+ IF LOCK_VBL = 1
+	moveq	#1<<3,tmp1
+ ELSE
 	moveq	#1<<2,tmp1
+ ENDIF
 	jr	ne,.left
 	btst	#JOY_LEFT_BIT,r3
 	jr	eq,.neither
@@ -754,7 +785,7 @@ no_door_open reg 99
 //->	movei	#$00010012,r1
 //->	BL	(r4)
 
-	movefa	LOOP.a,r0
+	movei	#mainLoop,r0
 	jump	(r0)
 	nop
 
