@@ -19,8 +19,6 @@ FP		EQU (1<<FP_BITS)
 ;;; -----------------------------------------------------------------------
 	MODULE main, MODend_irq
 
-sinptr		reg 15
-
 world0.a	REG 99
 world.a		reg 99
 
@@ -136,8 +134,10 @@ sideDistY.a	reg 99
 
 planeX	reg 99
 planeY	reg 99
+sinptr	reg 15
 
 	movei	#64*4,tmp0
+	movei	#sintab,r15
 	add	tmp2,tmp0
 	shlq	#32-10,tmp0
 	shlq	#32-10,tmp2
@@ -156,7 +156,7 @@ planeY	reg 99
 	moveta	planeX,planeX.a
 	moveta	planeY,planeY.a
 
-	unreg	planeX,planeY
+	unreg	planeX,planeY,sinptr
 
 x		reg 99
 
@@ -292,15 +292,16 @@ mapY		reg 99
 //->      hit = worldMap[int(mapX/fp)][int(mapY/fp)];
 //->    }
 
-
 color		reg 99
 wallX		reg 99
 wallSide	reg 99
-perpWallDist2	reg 3!
+dperp		reg 3!
 dwx		reg 99
 dwy		reg 99
 dwxy		reg 99
-
+sideDist	reg 99
+Y_STEP		reg 99
+DONE_WALL 	reg 99
 
 	move	deltaDistY,dwy
 	move	deltaDistX,dwx
@@ -311,10 +312,6 @@ dwxy		reg 99
 	neg	dwy
 
 	regmap
-
-
-Y_STEP	reg 99
-DONE_WALL reg 99
 
 	movei	#.yStep,Y_STEP
 	movei	#.done_wall,DONE_WALL
@@ -328,12 +325,11 @@ DONE_WALL reg 99
 	nop
 	jump	eq,(Y_STEP)
 	moveq	#1,wallSide
-
-	move	deltaDistX,perpWallDist2
+	move	sideDistY,sideDist
+	move	deltaDistX,dperp
 	move	stepX,tmp0
-	sharq	#1,perpWallDist2
+	sharq	#1,dperp
 	shrq	#31,tmp0
-	add	sideDistX,perpWallDist2
 	add	tmp0,wallSide
 	move	dwx,dwxy
 	move	sideDistX,tmp2
@@ -345,14 +341,14 @@ DONE_WALL reg 99
 	add	deltaDistX,sideDistX
 .yStep:
 	moveq	#4,wallSide
-	move	deltaDistY,perpWallDist2
+	move	deltaDistY,dperp
 	move	stepY,tmp0
-	sharq	#1,perpWallDist2
+	sharq	#1,dperp
 	shrq	#31,tmp0
-	add	sideDistY,perpWallDist2
 	sub	tmp0,wallSide
 	move	dwy,dwxy
 	move	sideDistY,tmp2
+	move	sideDistX,sideDist
 	movefa	posX.a,wallX
 	move	rayDirX,tmp0
 	add	stepY,world
@@ -371,44 +367,36 @@ DONE_WALL reg 99
 	jump	eq,(DONE_WALL)	; normal wall
 	cmpq	#4,tmp0		; open door
 	jump	eq,(tmp1)
-	nop
 	sub	dwxy,wallX
-	jump	mi,(tmp1)
+	add	dperp,tmp2
 
-	shlq	#32-9,wallX
-	shrq	#32-8,wallX
-
-	cmpq	#6,tmp0		; closed door
-	moveq	#0,tmp0
-	jr	ne,.check_tex
-	move	perpWallDist2,tmp2
-	bset	#7,tmp0
-
-	sub	wallX,tmp0
+	cmp	sideDist,tmp2
+	movei	#127,tmp3
 	jump	pl,(tmp1)
-	nop
-	jr	.noMi
-.check_tex:
-	not	wallX
+	cmpq	#6,tmp0
+	jr	eq,.closed_door
 	shlq	#32-8,wallX
+	movefa	doorPos.a,tmp3
+.closed_door
+	shlq	#1,tmp3
 	shrq	#32-8,wallX
-	movefa	doorPos.a,tmp0
-	cmp	tmp0,wallX
+	sub	tmp3,wallX
 	jump	pl,(tmp1)
-	sub	tmp0,wallX
-	jr	.noMi
 	nop
+	jr	.noMi
 .done_wall:
 	shrq	#1,wallX
 	btst	#0,wallSide
 	jr	ne,.noMi
+.mi
 	nop
+
 	not	wallX
 .noMi
 	shlq	#32-7,wallX
 	shrq	#32-7,wallX
 
-	unreg 	rayDirX,rayDirY,world,Y_STEP
+	unreg 	rayDirX,rayDirY,world,Y_STEP,dwx,dwy,dwxy,DONE_WALL
 
 height		reg 99
 bcount		reg 99
