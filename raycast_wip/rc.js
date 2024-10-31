@@ -286,7 +286,7 @@ cpy_sin:
 	INITMODULE main
 
 	movei	#254,r0
-	movei	#$1003f2F0,r1
+	movei	#$1003f8F0,r1
 	movei	#txt_screen,r2
 	movei	#ASCII,r3
 	movei	#InitTxtScreen,r4

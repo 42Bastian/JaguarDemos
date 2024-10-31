@@ -5,7 +5,7 @@ rez_y_screen	equ 240
 rez_x_txt	equ 320
 rez_y_txt	equ 3*8
 
-rez_x		equ 256
+rez_x		equ 320
 rez_y		equ 200
 
 MandelTexture	equ $00160000

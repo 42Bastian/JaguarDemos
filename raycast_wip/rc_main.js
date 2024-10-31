@@ -1,8 +1,8 @@
 ;-*-Asm-*-
 
-START_X		equ $340
-START_Y		equ $200
-START_ANGLE	equ 167
+START_X		equ $320
+START_Y		equ $380
+START_ANGLE	equ 128
 
 WORLD_WIDTH	equ 32
 
@@ -158,6 +158,7 @@ sinptr	reg 15
 
 	unreg	planeX,planeY,sinptr
 
+texture		reg 15
 x		reg 99
 
 	moveq	#0,tmp2
@@ -321,10 +322,8 @@ DONE_WALL 	reg 99
 	addq	#6,tmp1
 .wall_loop
 	cmp	sideDistX,sideDistY
-	jump	mi,(Y_STEP)
-	nop
-	jump	eq,(Y_STEP)
 	moveq	#1,wallSide
+	jump	mi,(Y_STEP)
 	move	sideDistY,sideDist
 	move	deltaDistX,dperp
 	move	stepX,tmp0
@@ -363,7 +362,7 @@ DONE_WALL 	reg 99
 
 	move	color,tmp0
 
-	shrq	#7,tmp0
+	shrq	#13,tmp0
 	jump	eq,(DONE_WALL)	; normal wall
 	cmpq	#4,tmp0		; open door
 	jump	eq,(tmp1)
@@ -388,15 +387,13 @@ DONE_WALL 	reg 99
 	shrq	#1,wallX
 	btst	#0,wallSide
 	jr	ne,.noMi
-.mi
 	nop
-
 	not	wallX
 .noMi
 	shlq	#32-7,wallX
 	shrq	#32-7,wallX
 
-	unreg 	rayDirX,rayDirY,world,Y_STEP,dwx,dwy,dwxy,DONE_WALL
+	unreg 	rayDirX,rayDirY,world,Y_STEP,dwx,dwy,dwxy,DONE_WALL,sideDist,dperp
 
 height		reg 99
 bcount		reg 99
@@ -428,25 +425,33 @@ texY.a		reg 99
 	bset	#0,bcount
 	or	x,y
 
-texture	reg 99
-
+	shlq	#32-13,color
+	shrq	#32-13,color	; remove door bits
 	movei	#.no_texture,tmp0
 	btst	#6,color
-	movei	#textureTable,texture
 	jump	eq,(tmp0)
-	shlq	#32-6,color
+	bclr	#6,color
 	moveq	#0,tmp2
-	shrq	#32-6,color
 	bset	#16+7,tmp2
 	movefa	height.a,height
+	movei	#$80,tmp0	; special wall left/right of a door
 	div	height,tmp2	; stretch value
+	cmp	tmp0,color
+	subqt	#1,wallSide
+	jr	mi,.no_door	; < $80 => no
+	neg	wallSide
+	moveq	#1,tmp0
+	sh	wallSide,tmp0
+	and	tmp0,color
+	jr	eq,.no_door
+	moveq	#20,color
+	nop
+	moveq	#0,color
+.no_door:
+	movei	#textureTable,texture
+	load	(texture+color),texture
 
-	add	color,texture
-	load	(texture),texture
-
-	shlq	#32-7,wallX
 	moveq	#0,tmp1
-	shrq	#32-7,wallX
 	movefa	texY.a,tmp0
  IF HORIZONTAL_SCAN = 1
 	shlq	#16,wallX
@@ -514,7 +519,6 @@ texture	reg 99
 	store	y,(blitter+_BLIT_A2_PIXEL)
 
 .no_texture
-	shrq	#32-6,color
 	moveq	#0,tmp2
 	add	wallSide,color
 	bset	#16,tmp2	;B_PATDSEL
@@ -561,14 +565,14 @@ doorAddress	reg 99
 	cmp	tmp2,tmp1
 .doorOpened:
 	jr	.doorOpenCloseDone
-	bclr	#8,tmp3
+	bclr	#14,tmp3
 .notOpen:
 	jr	ne,.doorDone
 	nop
-	bset	#8,tmp3
+	bset	#14,tmp3
 .doorOpenCloseDone:
 	moveq	#0,tmp0
-	bclr	#7,tmp3
+	bclr	#13,tmp3
 .doorDone:
 	storew	tmp3,(doorAddress)
 	moveta	tmp0,doorInc.a
@@ -591,11 +595,11 @@ posY	reg 99
 
 	movefa	angle.a,tmp0
 	btst	#JOY_RIGHT_BIT,r3
- IF LOCK_VBL = 1
+//-> IF LOCK_VBL = 1
 	moveq	#1<<3,tmp1
- ELSE
-	moveq	#1<<2,tmp1
- ENDIF
+//-> ELSE
+//->	moveq	#1<<2,tmp1
+//-> ENDIF
 	jr	ne,.left
 	btst	#JOY_LEFT_BIT,r3
 	jr	eq,.neither
@@ -654,7 +658,7 @@ dirY1	reg 99
 	cmpq	#0,tmp2
 	jr	eq,.okX
 	sharq	#FP_BITS,tmp3
-	shrq	#7,tmp2
+	shrq	#13,tmp2
 	cmpq	#4,tmp2
 	jr	ne,.no_xMove
 	nop
@@ -668,7 +672,7 @@ dirY1	reg 99
 	loadw	(tmp1),tmp0
 	cmpq	#0,tmp0
 	jr	eq,.okY
-	shrq	#7,tmp0
+	shrq	#13,tmp0
 	cmpq	#4,tmp0
 	jr	ne,.neither2
 	nop
@@ -708,19 +712,19 @@ no_door_open reg 99
 	add	tmp0,tmp4
 
 	loadw	(tmp4),tmp0
-	btst	#9,tmp0
+	btst	#15,tmp0
 	jump	eq,(no_door_open)	; no door
-	btst	#7,tmp0
+	btst	#13,tmp0
 	jump	ne,(no_door_open)	; moving door
 
 	btst	#JOY_B_BIT,r3
 	movefa	doorPos.a,tmp2
 	jump	eq,(no_door_open)
 	nop
-	bset	#7,tmp0
+	bset	#13,tmp0
 	storew	tmp0,(tmp4)
 	moveta	tmp4,doorAddress.a
-	btst	#8,tmp0
+	btst	#14,tmp0
 	moveq	#0,tmp4
 	jr	eq,.closing
 	moveq	#2,tmp1
@@ -786,7 +790,7 @@ max_y_txt	equ rez_y_txt
 
 	align 4
 textureTable:
-	dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture,w3d_wall1
+	dc.l	XorTexture,phobyx_128x128,MandelTexture,Xor2Texture,w3d_wall1
 	dc.l	w3d_wall2,door1
 
 end:
