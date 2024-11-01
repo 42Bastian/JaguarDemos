@@ -103,6 +103,8 @@ waitStart:
 ;;; ------------------------------
 ;;; Playfield
 ;;; ------------------------------
+
+
 dirX		reg 99
 dirY		reg 99
 cameraX		reg 99
@@ -114,9 +116,8 @@ sideDistX	reg 99
 sideDistY	reg 99
 deltaDistX	reg 99
 deltaDistY	reg 99
-//->fp		reg 99
 world		reg 99
-stripeCount	reg 99
+texture		reg 15
 
 cameraX0.a	reg 99
 deltaCameraX.a	reg 99
@@ -134,7 +135,6 @@ sideDistY.a	reg 99
 
 planeX	reg 99
 planeY	reg 99
-sinptr	reg 15
 
 	movei	#64*4,tmp0
 	movei	#sintab,r15
@@ -143,8 +143,8 @@ sinptr	reg 15
 	shlq	#32-10,tmp2
 	shrq	#32-10,tmp0
 	shrq	#32-10,tmp2
-	load	(sinptr+tmp0),dirX
-	load	(sinptr+tmp2),dirY
+	load	(r15+tmp0),dirX
+	load	(r15+tmp2),dirY
 	moveq	#24,tmp1
 	move	dirX,planeY
 	move	dirY,planeX
@@ -156,9 +156,8 @@ sinptr	reg 15
 	moveta	planeX,planeX.a
 	moveta	planeY,planeY.a
 
-	unreg	planeX,planeY,sinptr
+	unreg	planeX,planeY
 
-texture		reg 15
 x		reg 99
 
 	moveq	#0,tmp2
@@ -304,15 +303,13 @@ sideDist	reg 99
 Y_STEP		reg 99
 DONE_WALL 	reg 99
 
-	move	deltaDistY,dwy
+	move	deltaDistY,dwy	; prepare wallX adjustment for doors
 	move	deltaDistX,dwx
 	imult	rayDirX,dwy
 	imult	rayDirY,dwx
 	sharq	#FP_BITS,dwy
 	sharq	#FP_BITS,dwx
 	neg	dwy
-
-	regmap
 
 	movei	#.yStep,Y_STEP
 	movei	#.done_wall,DONE_WALL
@@ -324,14 +321,14 @@ DONE_WALL 	reg 99
 	cmp	sideDistX,sideDistY
 	moveq	#1,wallSide
 	jump	mi,(Y_STEP)
-	move	sideDistY,sideDist
+	move	sideDistY,sideDist ; save original Y length
 	move	deltaDistX,dperp
 	move	stepX,tmp0
-	sharq	#1,dperp
-	shrq	#31,tmp0
-	add	tmp0,wallSide
-	move	dwx,dwxy
-	move	sideDistX,tmp2
+	sharq	#1,dperp	; and half step
+	shrq	#31,tmp0	; bit 31 => bit 0
+	add	tmp0,wallSide	; wallsSide 1 or 2
+	move	dwx,dwxy	; save wallX adjustment
+	move	sideDistX,tmp2	; perpWallDist
 	move	rayDirY,tmp0
 	movefa	posY.a,wallX
 	neg	tmp0
@@ -344,7 +341,7 @@ DONE_WALL 	reg 99
 	move	stepY,tmp0
 	sharq	#1,dperp
 	shrq	#31,tmp0
-	sub	tmp0,wallSide
+	sub	tmp0,wallSide	; wallsSide 3 or 4
 	move	dwy,dwxy
 	move	sideDistY,tmp2
 	move	sideDistX,sideDist
@@ -362,38 +359,36 @@ DONE_WALL 	reg 99
 
 	move	color,tmp0
 
-	shrq	#13,tmp0
+	shrq	#13,tmp0	; move door-bits down
 	jump	eq,(DONE_WALL)	; normal wall
 	cmpq	#4,tmp0		; open door
 	jump	eq,(tmp1)
-	sub	dwxy,wallX
-	add	dperp,tmp2
+	sub	dwxy,wallX	; adjust wallX
+	add	dperp,tmp2	; and perpWallDist
 
-	cmp	sideDist,tmp2
-	movei	#127,tmp3
-	jump	pl,(tmp1)
+	cmp	sideDist,tmp2	; wall or door visibel
+	movei	#127,tmp3	; 1 less then size, jitter effect
+	jump	pl,(tmp1)	; => wall
 	cmpq	#6,tmp0
 	jr	eq,.closed_door
-	shlq	#32-8,wallX
+	shlq	#32-8,wallX	; mask and shift right 1
 	movefa	doorPos.a,tmp3
 .closed_door
-	shlq	#1,tmp3
-	shrq	#32-8,wallX
-	sub	tmp3,wallX
-	jump	pl,(tmp1)
-	nop
-	jr	.noMi
-.done_wall:
-	shrq	#1,wallX
-	btst	#0,wallSide
-	jr	ne,.noMi
-	nop
-	not	wallX
-.noMi
+	shrq	#32-7,wallX
+	sub	tmp3,wallX	; ray hit door?
+	jr	mi,.noMirror	; < 0 => yes
 	shlq	#32-7,wallX
+	jump	(tmp1)
+.done_wall:
+	btst	#0,wallSide
+	jr	ne,.noMirror
+	shlq	#32-8,wallX
+	not	wallX
+.noMirror
 	shrq	#32-7,wallX
 
-	unreg 	rayDirX,rayDirY,world,Y_STEP,dwx,dwy,dwxy,DONE_WALL,sideDist,dperp
+	unreg 	rayDirX,rayDirY,world,Y_STEP,dwx,dwy,dwxy,DONE_WALL
+	unreg	sideDist,dperp
 
 height		reg 99
 bcount		reg 99
@@ -431,6 +426,7 @@ texY.a		reg 99
 	btst	#6,color
 	jump	eq,(tmp0)
 	bclr	#6,color
+
 	moveq	#0,tmp2
 	bset	#16+7,tmp2
 	movefa	height.a,height
@@ -446,7 +442,7 @@ texY.a		reg 99
 	jr	eq,.no_door
 	moveq	#20,color
 	nop
-	moveq	#0,color
+	moveq	#8,color
 .no_door:
 	movei	#textureTable,texture
 	load	(texture+color),texture
@@ -545,7 +541,7 @@ texY.a		reg 99
 
 	unreg height,x,y,bcount
 	unreg stepX,stepY,sideDistX,sideDistY,deltaDistX,deltaDistY
-	unreg cameraX,color,wallSide
+	unreg cameraX,color,wallSide,wallX
 	unreg sideDistX.a,sideDistY.a,world0.a,cameraX0.a,deltaCameraX.a
 ;;; ----------------------------------------
 ;;; handle door
@@ -684,13 +680,17 @@ dirY1	reg 99
 
 ;;; ----------------------------------------
 ;;; Check: Open door
-tmp4	reg 99
-no_door_open reg 99
+
+no_door_open	reg 99
+
+	movei	#LastJoy+4,r3	; get debounced buttons
+	load	(r3),r3
+
 	movei	#.no_door_open,no_door_open
 	btst	#JOY_B_BIT,r3
 	jump	eq,(no_door_open)
 
-	moveq	#3,tmp2
+	moveq	#3,tmp2		; check if standing in front of a door
 	move	dirX,tmp0
 	move	dirY,tmp1
 	imult	tmp2,tmp0
@@ -699,48 +699,42 @@ no_door_open reg 99
 	sharq	#2,tmp1
 	movefa	posX.a,tmp2
 	neg	tmp1
-	movefa	posY.a,tmp4
+	movefa	posY.a,tmp3
 	add	tmp2,tmp0
-	add	tmp4,tmp1
+	add	tmp3,tmp1
 
-	movefa	world.a,tmp4
+	movefa	world.a,tmp3
 	sharq	#FP_BITS,tmp1
 	sharq	#FP_BITS-1,tmp0
 	shlq	#5+1,tmp1
 	bclr	#0,tmp0
-	add	tmp1,tmp4
-	add	tmp0,tmp4
+	add	tmp1,tmp3
+	add	tmp0,tmp3
 
-	loadw	(tmp4),tmp0
+	loadw	(tmp3),tmp0
 	btst	#15,tmp0
 	jump	eq,(no_door_open)	; no door
-	btst	#13,tmp0
-	jump	ne,(no_door_open)	; moving door
-
-	btst	#JOY_B_BIT,r3
 	movefa	doorPos.a,tmp2
-	jump	eq,(no_door_open)
-	nop
+	movefa	doorInc.a,tmp1
+	neg	tmp1
+	jr	ne,.moving
 	bset	#13,tmp0
-	storew	tmp0,(tmp4)
-	moveta	tmp4,doorAddress.a
+	storew	tmp0,(tmp3)		; save door state
+	moveta	tmp3,doorAddress.a	; and address
 	btst	#14,tmp0
-	moveq	#0,tmp4
+	moveq	#0,tmp3
 	jr	eq,.closing
 	moveq	#2,tmp1
 
-	bset	#7,tmp4
+	bset	#7,tmp3		; fix is texture size changes!!
 	neg	tmp1
 .closing:
+	moveta	tmp3,doorPos.a
+.moving
 	moveta	tmp1,doorInc.a
-	moveta	tmp4,doorPos.a
-
 .no_door_open:
-//->	movei	#PrintHEX_YX,r4
-//->	moveq	#0,r1
-//->	BL	(r4)
 
-	unreg dirX,dirY,posX,posY,tmp4,no_door_open
+	unreg dirX,dirY,posX,posY,no_door_open
 ;;; ------------------------------
 ;;; time
 	movefa	VID_PIT.a,tmp0
@@ -790,7 +784,7 @@ max_y_txt	equ rez_y_txt
 
 	align 4
 textureTable:
-	dc.l	XorTexture,phobyx_128x128,MandelTexture,Xor2Texture,w3d_wall1
+	dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture,w3d_wall1
 	dc.l	w3d_wall2,door1
 
 end:
