@@ -480,7 +480,6 @@ wall_colors:
 	include "w3d_wall1.inc"
 	include "w3d_wall2.inc"
 	include "door1.inc"
-
 ;;; ----------------------------------------
 	phrase
 	IF MOD = 1

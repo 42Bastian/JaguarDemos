@@ -312,7 +312,7 @@ DONE_WALL 	reg 99
 	neg	dwy
 
 	movei	#.yStep,Y_STEP
-	movei	#.done_wall,DONE_WALL
+xn	movei	#.done_wall,DONE_WALL
 
 	move	pc,tmp1
 	movefa	world0.a,world
@@ -444,7 +444,7 @@ texY.a		reg 99
 	jr	eq,.no_door
 	moveq	#20,color
 	nop
-	moveq	#8,color
+	moveq	#28,color
 .no_door:
 	movei	#textureTable,texture
 	load	(texture+color),texture
@@ -786,8 +786,8 @@ max_y_txt	equ rez_y_txt
 
 	align 4
 textureTable:
-	dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture,w3d_wall1
-	dc.l	w3d_wall2,door1
+	dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture
+	dc.l	w3d_wall1,w3d_wall2,door1,door1+128*128
 
 end:
 	echo "end: %hend"
