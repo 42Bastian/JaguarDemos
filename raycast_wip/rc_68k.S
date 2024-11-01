@@ -40,6 +40,7 @@ endless:
 memcpy:
 	move.l	d0,d2
 mcp0:
+	move.l	d2,d0
 	cmp.l	#$20000,d2
 	bls.s	mcp1
 	move.l	#$20000,d0
@@ -47,7 +48,9 @@ mcp1:
 	sub.l	d0,d2
 	lea	A1_BASE,a2
 	move.l	a1,(a2)
+	add.l	d0,a1
 	move.l	a0,_BLIT_A2_BASE(a2)
+	add.l	d0,a0
 	move.l	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,d1
 	move.l	d1,_BLIT_A1_FLAGS(a2)
 	move.l	d1,_BLIT_A2_FLAGS(a2)
