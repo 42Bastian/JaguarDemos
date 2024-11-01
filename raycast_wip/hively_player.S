@@ -2,9 +2,10 @@
   .dsp
 
 ;;; Compiletime configuration
-READ_PAD        equ 0
-UPDATE_SONG_POS equ 0
+READ_PAD        equ 1
+UPDATE_SONG_POS equ 1
 DISPLAY_TIME    equ 0
+
 ;;; ----------------------------------------
 ;;; parameters
 DSP_song                        equ $f1d000-4
@@ -12,20 +13,22 @@ DSP_master_volume               equ $f1d000-8
 DSP_filterPreCalcTable          equ $f1d000-12
 DSP_panning_table               equ $f1d000-16
 ;;; 0 = running
-;;; 1 = i2S en cours d'arret
-;;; 2 = timer1 en cours d'arret
-;;; 3 = main en cours d'arret
-;;; 4 = totalement arreté
+;;; 1 = i2S stopping
+;;; 2 = timer1 stopping / I2S stopped
+;;; 3 = main stopping
+;;; 4 = DSP stopped
 ;;; 5 = pause playing
-DSP_flag_replay_ON_OFF          .equ $f1d000-20
- .if READ_PAD = 1
+;;; 6 = (re)start new song
+DSP_flag_replay_ON_OFF          equ $f1d000-20
 ; xxxxxxCx xxBx2580 147*oxAP 369#RLDU
-DSP_pad2                        .equ $f1d000-24 ; read by 68k/GPU
-DSP_pad1                        .equ $f1d000-28 ; read by 68k/GPU
- .endif
-DSP_frequence_de_replay_reelle_I2S .equ $f1d000-32 ; read by 68k/GPU
-DSP_stream_pos                  .equ $f1d000-36 ; read by 68k/GPU
-
+DSP_pad2                        equ $f1d000-24 ; read by 68k/GPU
+DSP_pad1                        equ $f1d000-28 ; read by 68k/GPU
+DSP_real_sample_rate 		equ $f1d000-32 ; read by 68k/GPU
+DSP_stream_pos                  equ $f1d000-36 ; read by 68k/GPU
+DSP_sample_ptr			equ $f1d000-40
+DSP_sample_size			equ $f1d000-44
+DSP_sample_fade			equ $f1d000-48 ; 0 => left, $100 => right (TBD)
+DSP_sample_volume		equ $f1d000-52 ; 0 => silent, $100 full   (TBD)
 ;;; ----------------------------------------
 ;;; Configuration (constant)
 max_NB_channels         equ 10
@@ -135,13 +138,12 @@ DSP_ISP:
  movei  #DSP_flag_replay_ON_OFF,I2S_tmp_1
  load   (r30),r29                 ; read flags
  load   (I2S_tmp_1),I2S_tmp_2
- moveq  #1,I2S_tmp_1
+ moveq  #3,I2S_tmp_3
  cmpq   #2,I2S_tmp_2            ; stop timer 1?
- moveta I2S_tmp_1,r21           ; set flag for main loop
+ moveta I2S_tmp_3,r21           ; set flag for main loop
  jr     ne,DSP_LSP_routine_interruption_Timer1__pas_de_sortie
  bclr   #3,R29                  ; clear IMASK
 
- moveq  #3,I2S_tmp_3
  bclr   #6,R29                  ; clear Timer 1 Interrupt Enable Bit
  store  I2S_tmp_3,(I2S_tmp_1)
 
@@ -286,11 +288,43 @@ I2S_N_voies__pas_de_RM__voie_D:
  jump   ne,(I2S_adresse_code_boucle)
  add    I2S_increment_taille_AHX_enregistrements_N_voies,I2S_pointeur_datas_voie_en_cours_D
 
+continue_I2S:
+ movei	#DSP_sample_ptr,I2S_tmp_1
+ sat16s I2S_sample_gauche
+ load	(I2S_tmp_1),I2S_tmp_2
+ sat16s I2S_sample_droite
+ subqt	#4,I2S_tmp_1
+ cmpq	#0,I2S_tmp_2
+ movei	#no_sample,I2S_tmp_4
+ move	I2S_tmp_2,I2S_tmp_3
+ jump	eq,(I2S_tmp_4)
+ shrq	#1,I2S_tmp_3
+ movei	#DSP_sample_volume,I2S_tmp_4
+ load	(I2S_tmp_4),I2S_tmp_4
+ addqt	#1,I2S_tmp_2
+ loadb	(I2S_tmp_3),I2S_tmp_3
+ shlq	#24,I2S_tmp_3
+ sharq	#24,I2S_tmp_3
+ imult	I2S_tmp_4,I2S_tmp_3
+ sat16s	I2S_tmp_3
+//-> sharq	#8,I2S_tmp_3
+ add	I2S_tmp_3,I2S_sample_gauche
+ load	(I2S_tmp_1),I2S_tmp_4
+ add	I2S_tmp_3,I2S_sample_droite
+ subq	#1,I2S_tmp_4
+ store	I2S_tmp_4,(I2S_tmp_1)
+ jr	ne,no_sample0
+ addqt	#4,I2S_tmp_1
+ moveq	#0,I2S_tmp_2
+no_sample0:
+ store	I2S_tmp_2,(I2S_tmp_1)
+
+no_sample:
+ sat16s  I2S_sample_gauche
+ sat16s  I2S_sample_droite
+
  movei  #DSP_master_volume,I2S_tmp_1
  load   (I2S_tmp_1),I2S_tmp_1
-
- sat16s I2S_sample_gauche
- sat16s I2S_sample_droite
 
  imult  I2S_tmp_1,I2S_sample_gauche
  imult  I2S_tmp_1,I2S_sample_droite
@@ -312,6 +346,15 @@ I2S_N_voies__pas_de_RM__voie_D:
  addq   #4,r31                       ; pop from stack
  jump   (I2S_tmp_1)            ; return
  store  I2S_save_flags,(R30)  ; restore flags
+
+;;; ----------------------------------------
+;;; -- I2S only for SFX, no song
+;;; ----------------------------------------
+empty_i2s:
+ movei	#continue_I2S,I2S_tmp_1
+ moveq	#0,I2S_sample_gauche
+ jump	(I2S_tmp_1)
+ moveq	#0,I2S_sample_droite
 
 ;------------------------------------------
 ;------------------------------------------
@@ -344,9 +387,52 @@ DSP_routine_init:
  nop
  nop
 
+;;; ----------------------------------------
+;;; Setup timer1 and I2C
+ movei  #A2J_RATIO_PAL,r12
+ movei  #SCLK_PAL,r11
+ movei  #DSP_frequence_de_replay_PAL,r10
+ movei  #JOYBUTS,r0
+ loadw  (r0),r3
+ btst   #4,r3
+ jr     eq,initPAL
+ nop
+ movei  #A2J_RATIO_NTSC,r12
+ movei  #SCLK_NTSC,r11
+ movei  #DSP_frequence_de_replay_NTSC,r10
+
+initPAL:
+ movei  #DSP_real_sample_rate,R2
+ store  R10,(R2)
+ movei  #DSP_ratio_Amiga_Jaguar__a_virgule_9_bits,R2
+ store  R12,(R2)
+
+        ; moveta, constantes I2S
+ movei  #L_I2S,R0
+ moveta R0,I2S_pointeur_DAC_voie_D
+ addq   #4,r0
+ moveta R0,I2S_pointeur_DAC_voie_G
+//-> movei  #I2S_N_voies,R0
+ movei	#empty_i2s,r0
+ moveta R0,I2S_routine_actuelle
+
+; init I2S
+ movei  #SCLK,r0
+ moveq  #%001101,r13     ; SMODE bascule sur RISING
+ store  r11,(r0)         ; SCLK
+ addq   #4,r0
+ store  r13,(r0)         ; SMODE
+
 ; assume run from bank 1
  movei  #DSP_ISP,r31    ; init isp
  moveta r31,r31         ; ISP (bank 0)
+restart_with_new_song:
+
+ .if UPDATE_SONG_POS = 1
+ moveq	#0,r0
+ movei  #DSP_stream_pos,r1
+ store  r0,(r1)
+ .endif
 
  movei  #DSP_song,song_data_ptr
  movei  #DSP_localData,local_data
@@ -473,40 +559,6 @@ rm_set:
  jr	ne,rm_init
  add	nextVoice,voiceTable
 
-;;; ----------------------------------------
-;;; Setup timer1 and I2C
- movei  #A2J_RATIO_PAL,r12
- movei  #SCLK_PAL,r11
- movei  #DSP_frequence_de_replay_PAL,r10
- movei  #JOYBUTS,r0
- loadw  (r0),r3
- btst   #4,r3
- jr     eq,initPAL
- nop
- movei  #A2J_RATIO_NTSC,r12
- movei  #SCLK_NTSC,r11
- movei  #DSP_frequence_de_replay_NTSC,r10
-
-initPAL:
- movei  #DSP_frequence_de_replay_reelle_I2S,R2
- store  R10,(R2)
- movei  #DSP_ratio_Amiga_Jaguar__a_virgule_9_bits,R2
- store  R12,(R2)
-
-        ; moveta, constantes I2S
- movei  #L_I2S,R0
- moveta R0,I2S_pointeur_DAC_voie_D
- addq   #4,r0
- moveta R0,I2S_pointeur_DAC_voie_G
- movei  #I2S_N_voies,R0
- moveta R0,I2S_routine_actuelle
-
-; init I2S
- movei  #SCLK,r0
- moveq  #%001101,r13     ; SMODE bascule sur RISING
- store  r11,(r0)         ; SCLK
- addq   #4,r0
- store  r13,(r0)         ; SMODE
 
 ; init Timer 1 = 50 HZ
  movei  #3643*2,R13             ; valeur pour 50 Hz (original 3643)
@@ -572,7 +624,7 @@ DSP_decode_bits__adresse_retour                      .equr    R28
 DSP_boucle_centrale:
 
 DSP_boucle_centrale__wait_for_timer1_and_68000tick:
- cmpq   #1,R21    ; attente du timer 1
+ cmpq   #3,R21    ; attente du timer 1
  jr     ne,DSP_boucle_centrale__wait_for_timer1_and_68000tick
  nop
 
@@ -583,26 +635,31 @@ DSP_boucle_centrale__wait_for_timer1_and_68000tick:
  store r14,(r14+$58/4)
  .endif
 
- movei  #D_FLAGS,r24
- load   (r24),r29
- bset   #4+1,r29                        ; enable I2S
-
  movei  #DSP_flag_replay_ON_OFF,R0
  load   (R0),R1
  movei  #DSP_sortie_finale,R2
- cmpq   #5,r1
- jr     ne,no_pause
- cmpq   #0,R1
-
- movei  #pause_music,r1
- bclr   #4+1,r29                        ; clear I2S
- jump   (r1)
- store  r29,(r24)
+ cmpq   #1,r1			; gracefull stop?
+ jump	eq,(r2)
+ cmpq	#5,r1			; pause?
+ movei	#empty_i2s,r3
+ jr	ne,no_pause
+ cmpq	#6,r1
+;;; pause song
+ movei  #pause_music,r2
+ jump	(r2)
+ moveta	r3,I2S_routine_actuelle
 
 no_pause:
- jump   ne,(R2)         ; end
- nop
- store  r29,(r24)                        ; demarre les timers
+ jr	ne,no_new_song
+ moveq	#5,r1
+ movei	#restart_with_new_song,r2
+ moveta	r3,I2S_routine_actuelle
+ jump	(r2)
+ store	r1,(r0)			; new song starts paused
+
+no_new_song:
+ movei	#I2S_N_voies,r0
+ moveta	r0,I2S_routine_actuelle
 
  .if UPDATE_SONG_POS = 1
  movei  #DSP_localData,r14
@@ -978,7 +1035,6 @@ pause_music:
  storew R1,(R0)    ; lecture row 0
  nop
  load   (R0),R1
- ;movei  #$F000000C,R3  ; mask port 2
 
 ; row0 = Pause A Up Down Left Right
 ; 0000 1111 0000 0000 0000 0000 0000 0011
@@ -1103,7 +1159,7 @@ pause_music:
 
  movei  #DSP_boucle_centrale,R0
  jump   (R0)
- moveq  #3,R21
+ moveq  #1,R21
 
 ; sortie finale, extinction du DSP
 DSP_sortie_finale:
@@ -1678,7 +1734,7 @@ enough_bits:
 	or	DSP_decode_bits__tmp1,DSP_decode_bits__bits_resultat
 ; ---------------------------------------- DSP Datas
          .long
-
+LastJoy:	dc.l 0
 AHX_DSP_Seed_Noise:         dc.l   "AYS!"
 
 AHX_table_routines_a_executer:
@@ -1752,7 +1808,7 @@ i               set  i+1
 code_DSP_end:
 ;---------------------
 
-SOUND_DRIVER_SIZE   .equ   code_DSP_end-D_RAM+52
+SOUND_DRIVER_SIZE   .equ   code_DSP_end-D_RAM+56
  .print "; -----------------------------------------------"
  .print "; --- Sound driver free mem (DSP): ", /u 8192-SOUND_DRIVER_SIZE, " bytes  ---"
  .print "; -----------------------------------------------"

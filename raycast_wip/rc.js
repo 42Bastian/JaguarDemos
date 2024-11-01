@@ -196,15 +196,21 @@ cpy_dsp:
 	movei	#DSP_flag_replay_ON_OFF,r14
 	movei	#song,r0
 	store	r0,(r14+16)
-	movei	#$100,r0
+	movei	#$40,r0
 	store	r0,(r14+12)
+
 	movei	#binPrecalcTable,r0
 	store	r0,(r14+8)
 	movei	#panning_table,r0
 	store	r0,(r14+4)
 	moveq	#0,r0
+	moveq	#5,r0
 	store	r0,(r14)
-	nop
+	movei	#DSP_sample_volume,r14
+	movei	#$1c0,r0
+	store	r0,(r14)
+	movei	#$80,r0
+	store	r0,(r14+4)
  ENDIF
 
 ;;; ----------------------------------------
@@ -495,4 +501,14 @@ binPrecalcTable:
 	long
 panning_table:
 	ibytes "AHX_panning.bin"
+	long
+bell:
+	.incbin "bell.raw"
+bell_e:
+
+achtung:
+	.incbin "achtung.raw"
+achtung_e:
+
+
 	ENDIF

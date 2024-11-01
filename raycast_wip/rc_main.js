@@ -734,7 +734,34 @@ no_door_open	reg 99
 	moveta	tmp3,doorPos.a
 .moving
 	moveta	tmp1,doorInc.a
+	IF MOD = 1
+	movei	#bell*2,r0
+	movei	#DSP_sample_size,r1
+	movei	#(bell_e-bell)*2,r2
+	store	r2,(r1)
+	addq	#4,r1
+	store	r0,(r1)
+	ENDIF
 .no_door_open:
+
+	movei	#LastJoy+4,r3	; get debounced buttons
+	load	(r3),r3
+
+	movei	#.no_door_open,no_door_open
+	btst	#JOY_C_BIT,r3
+	jr	eq,.no_8tung
+	nop
+	IF MOD = 1
+	movei	#achtung*2,r0
+	movei	#DSP_sample_size,r1
+	movei	#(achtung_e-achtung)*2,r2
+	store	r2,(r1)
+	addq	#4,r1
+	store	r0,(r1)
+	ENDIF
+
+.no_8tung:
+
 
 	unreg dirX,dirY,posX,posY,no_door_open
 ;;; ------------------------------
@@ -768,6 +795,13 @@ no_door_open	reg 99
 	movei	#$00020012,r1
 //->	movei	#$00020012+9,r1
 	BL	(r4)
+
+
+//->	movei	#PrintHEX_YX,r4
+//->	movei	#DSP_sample_ptr,r0
+//->	load	(r0),r0
+//->	moveq	 #0,r1
+//->	BL	(r4)
 
 //->	movefa	doorInc.a,r0
 //->	movei	#$00010012,r1

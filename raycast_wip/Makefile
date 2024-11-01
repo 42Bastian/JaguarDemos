@@ -52,9 +52,9 @@ $(DEMO).o : rc.js rc_main.js $(OBL) irq.inc world.inc  phobyx_128x128.inc\
 
 	@$(TJASS) -d  $(TJFLAGS) rc.js
 
-hively_player.bin: hively_player_v21.S
+hively_player.bin: hively_player.S
 	@rmac -4 -fb -u -i$(BJL_ROOT)/68k_inc $<
-	rln -z -n -a f1b000 x x -o $@ hively_player_v21.o
+	rln -z -n -a f1b000 x x -o $@ hively_player.o
 
 rc_68k.o : rc_68k.S $(DEMO).o
 	@$(RMAC) $(_68KFLAGS) $(DEMO)_68k.S
