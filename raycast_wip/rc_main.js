@@ -1,6 +1,6 @@
 ;-*-Asm-*-
 
-START_X		equ $320
+START_X		equ $340
 START_Y		equ $380
 START_ANGLE	equ 128
 
@@ -366,15 +366,17 @@ DONE_WALL 	reg 99
 	sub	dwxy,wallX	; adjust wallX
 	add	dperp,tmp2	; and perpWallDist
 
+	moveq	#0,tmp3
 	cmp	sideDist,tmp2	; wall or door visibel
-	movei	#127,tmp3	; 1 less then size, jitter effect
 	jump	pl,(tmp1)	; => wall
+	bset	#7,tmp3
 	cmpq	#6,tmp0
 	jr	eq,.closed_door
 	shlq	#32-8,wallX	; mask and shift right 1
 	movefa	doorPos.a,tmp3
 .closed_door
 	shrq	#32-7,wallX
+	jump	eq,(tmp1)
 	sub	tmp3,wallX	; ray hit door?
 	jr	mi,.noMirror	; < 0 => yes
 	shlq	#32-7,wallX
