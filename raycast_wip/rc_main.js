@@ -1,7 +1,7 @@
 ;-*-Asm-*-
 
-START_X		equ $340
-START_Y		equ $380
+START_X		equ $180
+START_Y		equ $680
 START_ANGLE	equ 128
 
 WORLD_WIDTH	equ 32
@@ -442,9 +442,9 @@ texY.a		reg 99
 	sh	wallSide,tmp0
 	and	tmp0,color
 	jr	eq,.no_door
-	moveq	#20,color
+	moveq	#$10,color
 	nop
-	moveq	#28,color
+	moveq	#$1c,color
 .no_door:
 	movei	#textureTable,texture
 	load	(texture+color),texture
@@ -820,8 +820,20 @@ max_y_txt	equ rez_y_txt
 
 	align 4
 textureTable:
-	dc.l	phobyx_128x128,MandelTexture,XorTexture,Xor2Texture
-	dc.l	w3d_wall1,w3d_wall2,door1,door1+128*128
+	dc.l	phobyx_128x128	;0
+	dc.l	MandelTexture	;4
+	;; red xor
+	dc.l	XorTexture	;8
+	;; color full xor
+	dc.l	Xor2Texture	;c
+	;; blue wall
+	dc.l	w3d_wall1	;10
+	;; grey wall
+	dc.l 	w3d_wall2	;14
+	;; door
+	dc.l	door1		;18
+	;; frame
+	dc.l	door1+128*128	;1c
 
 end:
 	echo "end: %hend"
