@@ -84,7 +84,7 @@ waitStart:
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
 	store	tmp1,(blitter)	;_BLIT_A1_BASE
 	moveq	#0,tmp1
-	movei	#(1<<16)|(rez_y*rez_x/8),tmp2
+	movei	#(1<<16)|(rez_y*rez_x/8+rez_y),tmp2
 	store	tmp1,(blitter+_BLIT_A1_PIXEL)
 	movei	#B_PATDSEL,tmp1
 	store	tmp2,(blitter+_BLIT_COUNT)
@@ -276,21 +276,60 @@ mapY		reg 99
 	shrq	#FP_BITS,sideDistY
 .zeroRayY
 
-
-//->    while (hit == 0 ) {
-//->      //jump to next map square, either in x-direction, or in y-direction
-//->      if (sideDistX < sideDistY) {
-//->        sideDistX += deltaDistX;
-//->        mapX += stepX;
-//->        side = 0;
-//->      } else {
-//->        sideDistY += deltaDistY;
-//->        mapY += stepY;
-//->        side = 1;
-//->      }
-//->      //Check if ray has hit a wall
-//->      hit = worldMap[int(mapX/fp)][int(mapY/fp)];
-//->    }
+;;      do {
+;;        //jump to next map square, either in x-direction, or in y-direction
+;;        if (sideDistX < sideDistY) {
+;;          perpWallDist = sideDistX;
+;;          sideDistX += deltaDistX;
+;;          mapX += stepX;
+;;          wallside = ( stepX < 0 ) ? 1 : 2;
+;;          wallX = (posY/2 - perpWallDist * rayDirY/fp);
+;;
+;;          dwxy = dwx;
+;;          dperp = deltaDistX/2;
+;;          sideDist = sideDistY;
+;;        } else {
+;;          perpWallDist = sideDistY;
+;;          sideDistY += deltaDistY;
+;;          mapY += stepY;
+;;          wallside = (stepY > 0 ) ? 3 : 4;
+;;          wallX = (posX/2 + perpWallDist * rayDirX/fp);
+;;
+;;          dwxy = dwy;
+;;          dperp = deltaDistY/2;
+;;          sideDist = sideDistX;
+;;        }
+;;        hit = map(mapX, mapY);
+;;
+;;        if ( (hit & (1024|256|128)) == 1024) {
+;;          /* open door */
+;;          hit = 0;
+;;        } else if ( ((hit & 1024) == 0)  ) {
+;;          /* no door */
+;;        } else {
+;;          /* close or not fully open door */
+;;          perpWallDist += dperp;
+;;          wallX -= dwxy;
+;;          wallX &= texWidth-1;
+;;          int tex_pos = openPos;
+;;
+;;          if ( (hit & 128) == 0 ) {
+;;            /* door closed */
+;;            tex_pos = texWidth-1;
+;;          }
+;;          if ( perpWallDist >= sideDist ) {
+;;            /* door not hit */
+;;            hit = 0;
+;;          } else {
+;;              wallX -= tex_pos;
+;;            if ( wallX > 0 ) {
+;;              /* moving door not hit */
+;;              hit = 0;
+;;            }
+;;            wallX = ~wallX;
+;;          }
+;;        }
+;;      } while ( hit == 0 );
 
 color		reg 99
 wallX		reg 99
@@ -399,7 +438,6 @@ y		reg 99
 height.a	reg 99
 texY.a		reg 99
 
-
 	movei	#rez_y*FP/4,height
 	div	tmp2,height
 
@@ -443,7 +481,6 @@ texY.a		reg 99
 	and	tmp0,color
 	jr	eq,.no_door
 	moveq	#$10,color
-	nop
 	moveq	#$1c,color
 .no_door:
 	movei	#textureTable,texture
@@ -594,7 +631,7 @@ posY	reg 99
 	movefa	angle.a,tmp0
 	btst	#JOY_RIGHT_BIT,r3
 //-> IF LOCK_VBL = 1
-	moveq	#1<<3,tmp1
+	moveq	#1<<2,tmp1
 //-> ELSE
 //->	moveq	#1<<2,tmp1
 //-> ENDIF
@@ -609,7 +646,7 @@ posY	reg 99
 	shrq	#32-10,tmp0
 	moveta	tmp0,angle.a
 .neither
-	movei	#64,tmp2
+	movei	#32,tmp2
 	btst	#JOY_UP_BIT,r3
 	movefa	posX.a,posX
 	jr	ne,.forward
@@ -726,7 +763,7 @@ no_door_open	reg 99
 	btst	#14,tmp0
 	moveq	#0,tmp3
 	jr	eq,.closing
-	moveq	#2,tmp1
+	moveq	#4,tmp1
 
 	bset	#7,tmp3		; fix is texture size changes!!
 	neg	tmp1
@@ -734,14 +771,14 @@ no_door_open	reg 99
 	moveta	tmp3,doorPos.a
 .moving
 	moveta	tmp1,doorInc.a
-	IF MOD = 1
+ IF MOD = 1
 	movei	#bell*2,r0
 	movei	#DSP_sample_size,r1
 	movei	#(bell_e-bell)*2,r2
 	store	r2,(r1)
 	addq	#4,r1
 	store	r0,(r1)
-	ENDIF
+ ENDIF
 .no_door_open:
 
 	movei	#LastJoy+4,r3	; get debounced buttons
