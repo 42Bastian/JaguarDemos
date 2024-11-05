@@ -75,9 +75,9 @@ endif
 #
 
 bpe: $(DEMO).cof
-	$(BPE) $< -devmode &
+	$(BPE) $< -singleinst -devmode &
 	true
 
 bpe_rom: $(DEMO).j64
-	$(BPE) $< -devmode &
+	$(BPE) $< -singleinst -devmode &
 	true
