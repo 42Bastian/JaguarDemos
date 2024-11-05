@@ -1,11 +1,9 @@
 ;-*-asm-*-
 
-rez_y_screen	equ 240
-
 rez_x_txt	equ 320
 rez_y_txt	equ 3*8
 
-rez_x		equ 320
+rez_x		equ 192
 rez_y		equ 200
 
 MandelTexture	equ $00160000
@@ -25,9 +23,16 @@ gr_phrase	equ rez_x/8
 
 
  IF ^^defined _PAL
-vde		equ (PAL_VMID+PAL_HEIGHT)/2+1
-y_start		equ 31
+rez_y_screen	equ 240
+y_start		equ 17
+vde		equ rez_y_screen+y_start*2+1
+_vde		equ (PAL_VMID+PAL_HEIGHT)/2+1
+
  ELSE
-vde		equ (NTSC_VMID+NTSC_HEIGHT)/2+1
+rez_y_screen	equ 200
 y_start		equ 13
+vde		equ rez_y_screen+y_start*2+1
+_vde		equ (NTSC_VMID+NTSC_HEIGHT)/2+1
  ENDIF
+
+logo_y equ	(rez_y*(rez_y_screen*32/rez_y)+16)/32+y_start*2+1
