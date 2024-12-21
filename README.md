@@ -14,6 +14,12 @@ If run with BigPEmu, be sure to select _Boot ROM Image_.
 
 These intros do _not_ work with SKUNK as SKUNK's firmware is in the boot header.
 
+## [hirez_slideshow](hirez_slideshow)
+
+A slide show of 400x400 pixel images using pure GPUOBJ, no bitmap object no interlace.
+
+Runs on Jaguar and on VirtualJaguar but _not_ on BPE (yet).
+
 ## [raycast_wip](raycast_wip)
 
 Raycasting engine. Based on the one von BJL, but in development.
