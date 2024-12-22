@@ -63,4 +63,4 @@ clean:
 	rm -f *.o
 	rm -f *.equ
 	rm -f *~
-	rm -f *.cof *.rom *.abs *.bin
+	rm -f *.rom *.abs *.bin
