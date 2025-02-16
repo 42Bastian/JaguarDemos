@@ -1,5 +1,11 @@
 # 256 Byte Intros
 
+## [noisewaves](noisewaves)
+
+Waving pixels with bytebeat sound.
+
+Made for LoveByte 2025
+
 ## [Outline2022](Outline2022)
 
 BootIntros done for Outline 2022 in Ommen

@@ -1,5 +1,10 @@
 # 512 Byte Intros
 
+## [solidWaves](solidWaves)
+
+3D waving plane.
+Bootintro for LoveByte 2025.
+
 ## [JagRoto512](JagRoto512)
 
 BootIntro done for Sillyventure SE 2022
