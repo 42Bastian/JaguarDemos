@@ -85,3 +85,7 @@ Demos Z buffering and interleaved screen buffers.
 # [Nostalgia](nostalgia)
 
 Nostalgic-O-demo remix. 100% GPU/DSP no 68k.
+
+# [waves](waves)
+
+Updated version of the solidWaves intro with Gouraud shaded polys
