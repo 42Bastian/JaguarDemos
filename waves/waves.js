@@ -431,11 +431,13 @@ Edge::
 	div	dy,dx
 	jr	cc,.pos
 	shlq	#2,y0
+	or	dx,dx
 	neg	dx
 .pos
 	abs	dcol
 	jr	cc,.col_pos
 	div	dy,dcol
+	or	dcol,dcol
 	neg	dcol
 .col_pos
 	movefa	color_table.a,col_ptr
@@ -531,21 +533,20 @@ drawLines:
 	move	color_max,tmp3
 	sub	color_min,tmp3
 	shrq	#16,color_min
-	store	color_min,(blitter+_BLIT_PATD)
 
 	abs	tmp3
 	jr	cc,.pl
 	div	x1,tmp3
+	or	tmp3,tmp3
 	neg	tmp3
 .pl
-	store	tmp3,(blitter+_BLIT_IINC)
 	or	min_y,x0
+	shlq	#8,tmp3
 	rorq	#16+2,x0
+	shrq	#8,tmp3
 	bset	#16,x1
-
-	movei	#Gouraud,tmp3
-	load	(tmp3),tmp3
-
+	movei	#Gouraud,tmp2
+	load	(tmp2),tmp2
 wait_blit
 	load	(blitter+_BLIT_CMD),color_max
 	btst	#0,color_max
@@ -553,10 +554,12 @@ wait_blit
 	nop
 
 
+	store	color_min,(blitter+_BLIT_PATD)
+	store	tmp3,(blitter+_BLIT_IINC)
 	store	x0,(blitter+_BLIT_A1_PIXEL)
 	store	x1,(blitter+_BLIT_COUNT)
 	jump	(DL_LOOP)
-	store	tmp3,(blitter+_BLIT_CMD)
+	store	tmp2,(blitter+_BLIT_CMD)
 
 	UNREG  DL_LOOP,min_max,x0,x1,min_y
 	UNREG line_cnt,face_cnt
