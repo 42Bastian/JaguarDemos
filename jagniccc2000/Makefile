@@ -44,7 +44,7 @@ $(DEMO).pck: $(DEMO).bin
 	tp +j $< -o $@
 
 $(DEMO).bin: $(DEMO).o
-	@$(RLN) -rw -z -n -a 4000 4000 x -m -o $@ $<
+	@$(RLN) -rw -z -n -a 4000 x x -m -o $@ $<
 
 $(DEMO).rom: depack.o
 	@$(RLN) -rw -z -n -a 8002000 x x -m -o $@ $<
