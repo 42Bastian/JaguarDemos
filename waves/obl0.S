@@ -1,6 +1,7 @@
 	.include "68k_inc/jaguar.inc"
 	.include "video.h"
 
+	.org	OBL_START
 	.objproc
 	.org	OBL_START
 obl0:
