@@ -121,7 +121,6 @@ start:
 	bsr	cls
 	bsr	swap
 
-
 	move.l	points(a6),d0
 	clr.l	Cursor(a6)
 	bsr	PrintDEC
@@ -279,11 +278,12 @@ InitOP:
 	swap	d0
 	move.l	d0,$20(a0)
 	clr.w	$26(a0)	; OPF
-	move.w	#$1F01,$E0(a0)
+	lea	my_irq(pc),a1
+	move.l	a1,$0100.w
+	move.l	#$1F01<<16,$E0(a0)
 	move.w	#ScreenMode,$28(a0)
-	clr.w	$E2(a0)
-	lea	my_irq(pc),a0
-	move.l	a0,$0100.w
+        move.w  a_vde(a6),$4e(a0)          ; VI
+
 	move.w	#$2000,sr
 	rts
 
@@ -296,7 +296,7 @@ my_irq:
 	move.w	scr_flag(a6),$F00026
 	clr.w	flag(a6)
 
-	move.w	#$0101,$F000E0
+	move.l	#$0101<<16,$F000E0
 no_vi:
 	clr.w	$F000E2
 	movem.l	(sp)+,d0-d1/a0-a1
@@ -323,14 +323,14 @@ Objekte:
  BRA_OBJ start_obj,30,"<",-7	; y<30 => STOP
  BRA_OBJ end_obj,500,">",-7	; y>500 => STOP
 * Info
- BITMAP_OBJ TextScreen,24,60,TextHeight,0,0,TextWidth,TextWidth,0,4,0,NEXT_OBJ
+ BITMAP_OBJ TextScreen,0,40,TextHeight,0,0,TextWidth,TextWidth,0,4,0,NEXT_OBJ
 
  BRA_OBJ ofl_obj,$7ff,OBJ_BRANCH_OPFLAG,-6
 
- BITMAP_OBJ screen,20,36,max_y,4,3,(320*2*3)>>3,(320*2)>>3,0,4,0,NEXT_OBJ
+ BITMAP_OBJ screen,0,40,max_y,4,3,(320*2*3)>>3,(320*2)>>3,0,4,0,NEXT_OBJ
  STOP_OBJ 0,0
 
- BITMAP_OBJ screen1,20,36,max_y,4,3,(320*2*3)>>3,(320*2)>>3,0,4,0,NEXT_OBJ
+ BITMAP_OBJ screen1,0,40,max_y,4,3,(320*2*3)>>3,(320*2)>>3,0,4,0,NEXT_OBJ
 * EOL
  EOL_OBJ
 
@@ -343,7 +343,6 @@ InitGPU:
 	moveq	#0,d0
 	move.l	d0,4(a4)	; GPU halt
 	movea.l (a0)+,a1	; destination
-	lea	$10(a1),a3	; skip 68k irq vector
 	move.l	a3,(a4)	; set GPU PC
 	move.l	(a0)+,d0	; Length in Bytes
 	adda.l	#$8000,a1	; 32bit writes
@@ -351,12 +350,11 @@ InitGPU:
 
 	.phrase
 	dc.l	0	; dummy to align code after BJL header
-
 GPUcode:
  IF MMULT = 1
-	.incbin 'ROT5Z_MM.O'
+	.incbin "rot5z_mm.o"
  ELSE
-	.incbin 'ROTATEZ5.O'
+	.incbin "rotatez5.o"
  ENDIF
 
 ; IN : d0	alpha
@@ -402,7 +400,7 @@ ok_dg:
 	move.l	_normal(a6),(a0)+ ; vertices
 	lea	$F02110,a0
 	move.l	GPUcode+4(pc),(a0)+
-	move.w	#$01|(1<<11),d0
+	move.w	#$01,d0
 	move.l	d0,(a0)
 wait_gpu1:
 	move.l  (a0),d0
