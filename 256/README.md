@@ -2,7 +2,7 @@
 
 ## [tj_starpath](tj_starpath)
 
-Variation of HellMoods "starpath" for Tom and Jerry.
+Variation of HellMoods "starpath" for Tom and Jerry made for Sommarhack 2025.
 
 https://www.pouet.net/prod.php?which=103622
 
