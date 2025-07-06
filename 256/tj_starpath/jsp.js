@@ -23,10 +23,11 @@ BLOCKS		SET (WANTED_SIZE/64)		; max. is 10
 
 OBL		EQU $37000
 
-	regtop 31
+	regtop 30
 
 sound		reg 15
 ptr		reg 14
+timer		reg 30
 
 restart		reg 99
 screen_ptr	reg 99
@@ -41,7 +42,6 @@ x		reg 99
 y		reg 99
 XLOOP		reg 99
 YLOOP		reg 99
-timer		reg 99
 color		reg 99
 offset		reg 99
 temp0		reg 99
@@ -64,21 +64,19 @@ start:
 	movei	#OBL+$120,r14
 	store	r4,(r14)	; disable logo object (r4 < 0)
 
+ IFND MODEL_M
+	moveq	#3,r1
+	shlq	#16,r1
+.cls	subq	#1,r1
+	store	r3,(r14+r0)
+	jr	pl,.cls
+	addq	#4,r0
+ ENDIF
+
 	movei	#DSP_FLAGS,r14
 	movei	#($1f<<9)|(0<<14)|(1<<17),r4
 	store	r3,(r14+DSP_CTRL-DSP_FLAGS)	; stop DSP
 	store	r4,(r14)	; clear interrupts
-
- IFND MODEL_M
-	moveq	#0,r0
-	bset	#20,r0
-	moveq	#3,r1
-	shlq	#16,r1
-.cls	subq	#1,r1
-	store	r3,(r0)
-	jr	pl,.cls
-	addq	#4,r0
- ENDIF
 
 	move	r14,r0
 	bset	#12,r0		; => f1b100
@@ -96,7 +94,7 @@ __x	move	pc,r1
 	addq	#4,r0
 
 	store	r0,(r0)		; needed, else DSP does not run?!
-
+//->xx	jr	xx
 	moveq	#1,r0
 	store	r0,(r14+DSP_CTRL-DSP_FLAGS)
 	jr	.skip
@@ -104,28 +102,31 @@ __x	move	pc,r1
 
 	align 4
 dsp_code:
+IFD MODEL_M
 	moveq	#0,offset
 	movei	#L_I2S,r15
 	movei	#ROM_NOISE,noisetable
+ ELSE
+	move	r9,r15
+	move	pc,noisetable
+ ENDIF
 
 .skip
 ;;; setup
 	moveq	#0,screen_ptr
 	moveq	#0,_ror
-	bset	#20,screen_ptr
+	bset	#18,screen_ptr
 	movei	#OBL,obl
 	movei	#$3720c,current_scr
 
 	moveq	#320>>4,lineoff
 	shlq	#5,lineoff
-
+ IFD MODEL_M
 	moveq	#0,timer
-
+ ENDIF
 	move	pc,restart
 superloop:
-//->	cmpq	#0,offset
 	moveq	#0,r0
-//->	jr	eq,wvbl
 	bset	#19,r0
 	store	screen_ptr,(current_scr)
 
@@ -145,7 +146,9 @@ yloop:
 	moveq	#0,x0
 	move	lineoff,x
 	move	pc,XLOOP
+ IFND MODEL_M
 	addq	#4,XLOOP
+ ENDIF
 xloop:
 	move	y0,d0
 	move	x0,x1

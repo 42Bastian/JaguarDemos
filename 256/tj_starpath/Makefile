@@ -97,4 +97,4 @@ include ../Rules.launch
 
 .PHONY: clean
 clean:
-	$Qrm -f *.equ *.XXX *~ *.img *.bak *.cof *.o vj.j64
+	$Qrm -f *.equ *.XXX *~ *.img *.bak *.cof *.o vj.j64 *.bin
