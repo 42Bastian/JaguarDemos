@@ -69,6 +69,17 @@ start:
 	store	r3,(r14+DSP_CTRL-DSP_FLAGS)	; stop DSP
 	store	r4,(r14)	; clear interrupts
 
+ IFND MODEL_M
+	moveq	#0,r0
+	bset	#20,r0
+	moveq	#3,r1
+	shlq	#16,r1
+.cls	subq	#1,r1
+	store	r3,(r0)
+	jr	pl,.cls
+	addq	#4,r0
+ ENDIF
+
 	move	r14,r0
 	bset	#12,r0		; => f1b100
 	store	r0,(r14+DSP_PC-DSP_FLAGS)
@@ -99,9 +110,9 @@ dsp_code:
 
 .skip
 ;;; setup
-	moveq	#16,screen_ptr
+	moveq	#0,screen_ptr
 	moveq	#0,_ror
-	shlq	#16,screen_ptr
+	bset	#20,screen_ptr
 	movei	#OBL,obl
 	movei	#$3720c,current_scr
 
@@ -112,7 +123,9 @@ dsp_code:
 
 	move	pc,restart
 superloop:
+//->	cmpq	#0,offset
 	moveq	#0,r0
+//->	jr	eq,wvbl
 	bset	#19,r0
 	store	screen_ptr,(current_scr)
 
@@ -182,7 +195,7 @@ scanloop:
 	move	y1,temp0
 	add	x,y1
 	shlq	#9,temp0
-	shlq	#24,y1		; "random" stars
+	shlq	#25,y1		; "random" stars
 	jr	ne,.stairs
 	or	y,temp0
 	move	temp0,color
