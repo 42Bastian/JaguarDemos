@@ -14,6 +14,10 @@ If run with BigPEmu, be sure to select _Boot ROM Image_.
 
 These intros do _not_ work with SKUNK as SKUNK's firmware is in the boot header.
 
+## [poly_engine](poly_engine)
+
+WIP of a new polygon engine.
+
 ## [hirez_slideshow](hirez_slideshow)
 
 A slide show of 400x400 pixel images using pure GPUOBJ, no bitmap object no interlace.
