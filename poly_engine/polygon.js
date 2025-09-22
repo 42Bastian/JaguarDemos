@@ -42,6 +42,9 @@ ENDM
 	dc.w 0, \0 & $ffff,\1 & $ffff,\2 & $ffff
 	endm
 
+	macro VNT
+	dc.w 0, -(\0) & $ffff,-(\1) & $ffff,-(\2) & $ffff
+	endm
 
 
 //->object_array	equ $20000
@@ -272,12 +275,12 @@ pal:
 
 	ADD_OBJ kugel
 	ADD_OBJ torus2
-	ADD_OBJ plane
-	ADD_OBJ torus
-	ADD_OBJ diamant
-	ADD_OBJ cube
-	ADD_OBJ cube2
-//->	ADD_OBJ prisma
+//->	ADD_OBJ plane
+//->	ADD_OBJ torus
+//->	ADD_OBJ diamant
+//->	ADD_OBJ cube
+//->	ADD_OBJ cube2
+	ADD_OBJ prisma
 
 	movei	#CAMERA_X,r15
 	movei	#0,r0
