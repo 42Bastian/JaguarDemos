@@ -18,9 +18,11 @@
 	RSL	obj_points		; address of original points
 	RSL	obj_faces		; address of faces
 	RSL	obj_normals		; original face normals
-	RSL	obj_rotated		; address rotated points
-	RSL	obj_moved		; address rotated and moved points
+	RSL	obj_vnormals		; original vertex normals
+	RSL	obj_rotated		; address rotated vertexes
+	RSL	obj_moved		; address rotated and moved vertexes
 	RSL	obj_normals_rotated	; rotated face normals
+	RSL	obj_vnormals_rotated	; rotated vertex normals
 	RSL	obj_projected		; final projectd points (incl. moving)
 	RSL	obj_facesVisible	; list of visible faces and luminance
 _3dobject_size equ RSCOUNT

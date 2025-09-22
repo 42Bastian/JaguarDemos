@@ -46,87 +46,33 @@ ENDM
 
 //->object_array	equ $20000
 
-torus_data	equ $20000
+object_data	equ $20000
 
-torus_rotated	equ torus_data
-torus_moved	equ torus_rotated+144*_3d_size
-torus_projected	equ torus_moved+144*_3d_size
-torus_normals_rotated	equ torus_projected+144*proj_size
-torus_visible	equ torus_normals_rotated+288*_3d_size
-torus_end	equ torus_visible+288*4
-torus_size	equ torus_end-torus_rotated
+	macro	defobj 		; name,base,npoints,nfaces
+.\npoints	equ \2
+.\nfaces	equ \3
 
-cube_data	equ torus_end
+\0_data			equ \1
+\0_rotated		equ \0_data
+\0_moved		equ \0_rotated          +.\npoints*_3d_size
+\0_projected		equ \0_moved            +.\npoints*_3d_size
+\0_normals_rotated	equ \0_projected        +.\npoints*proj_size
+\0_vnormals_rotated	equ \0_normals_rotated  +.\nfaces*_3d_size
+\0_visible		equ \0_vnormals_rotated +.\npoints*_3d_size
+\0_end			equ \0_visible          +.\nfaces*4
+\0_size			equ \0_end-\0_data
+	endm
 
-cube_rotated	equ cube_data
-cube_moved	equ cube_rotated+8*_3d_size
-cube_projected	equ cube_moved+8*_3d_size
-cube_normals_rotated	equ cube_projected+8*proj_size
-cube_visible	equ cube_normals_rotated+12*_3d_size
-cube_end	equ cube_visible+12*4
-cube_size	equ cube_end-cube_rotated
+	defobj	torus,object_data,144,288
+	defobj	cube,torus_end,8,12
+	defobj	kugel,cube_end,134,(24+120*2)
+	defobj	torus2,kugel_end,144,288
+	defobj	cube2,torus2_end,8,12
+	defobj	prisma,cube2_end,5,6
+	defobj	diamant,prisma_end,20,36
+	defobj	plane,diamant_end, 121,162
 
-kugel_data	equ cube_end
-kugel_rotated	equ kugel_data
-kugel_moved	equ kugel_rotated+134*_3d_size
-kugel_normals_rotated	equ kugel_moved+134*_3d_size
-kugel_projected	equ kugel_normals_rotated+(24+122*2)*_3d_size
-kugel_visible	equ kugel_projected+134*proj_size
-kugel_end	equ kugel_visible+(24+122*2)*4
-kugel_size	equ kugel_end-kugel_rotated
-
-
-torus2_data	equ kugel_end
-torus2_rotated	equ torus2_data
-torus2_moved	equ torus2_rotated+144*_3d_size
-torus2_projected equ torus2_moved+144*_3d_size
-torus2_normals_rotated	equ torus2_projected+49*proj_size
-torus2_visible	equ torus2_normals_rotated+288*_3d_size
-torus2_end	equ torus2_visible+288*4
-torus2_size	equ torus2_end-torus2_rotated
-
-cube2_data	equ torus2_end
-
-cube2_rotated	equ cube2_data
-cube2_moved	equ cube2_rotated+8*_3d_size
-cube2_projected	equ cube2_moved+8*_3d_size
-cube2_normals_rotated	equ cube2_projected+8*proj_size
-cube2_visible	equ cube2_normals_rotated+12*_3d_size
-cube2_end	equ cube2_visible+12*4
-cube2_size	equ cube2_end-cube2_rotated
-
-prisma_data	equ cube2_end
-
-prisma_rotated	equ prisma_data
-prisma_moved	equ prisma_rotated+5*_3d_size
-prisma_projected equ prisma_moved+5*_3d_size
-prisma_normals_rotated	equ prisma_projected+5*proj_size
-prisma_visible	equ prisma_normals_rotated+6*_3d_size
-prisma_end	equ prisma_visible+6*4
-prisma_size	equ prisma_end-prisma_rotated
-
-diamant_data	equ prisma_end
-
-diamant_rotated	equ diamant_data
-diamant_moved	equ diamant_rotated+20*_3d_size
-diamant_projected equ diamant_moved+20*_3d_size
-diamant_normals_rotated	equ diamant_projected+20*proj_size
-diamant_visible	equ diamant_normals_rotated+36*_3d_size
-diamant_end	equ diamant_visible+36*4
-diamant_size	equ diamant_end-diamant_rotated
-
-PLANE_PTS	equ 121
-PLANE_FCS	equ 162
-plane_data	equ diamant_end
-
-plane_rotated	equ plane_data
-plane_moved	equ plane_rotated+PLANE_PTS*_3d_size
-plane_projected equ plane_moved+PLANE_PTS*_3d_size
-plane_normals_rotated	equ plane_projected+PLANE_PTS*proj_size
-plane_visible	equ plane_normals_rotated+PLANE_FCS*_3d_size
-plane_end	equ plane_visible+PLANE_FCS*4
-plane_size	equ plane_end-plane_rotated
-
+	echo "End of object: %hplane_end"
 
 IRQ_STACK	equ $f03020-4
 
@@ -324,14 +270,14 @@ pal:
 	addq	#4,r0
 	endm
 
+	ADD_OBJ kugel
 	ADD_OBJ torus2
 	ADD_OBJ plane
-	ADD_OBJ kugel
 	ADD_OBJ torus
 	ADD_OBJ diamant
 	ADD_OBJ cube
 	ADD_OBJ cube2
-;;->	ADD_OBJ prisma
+//->	ADD_OBJ prisma
 
 	movei	#CAMERA_X,r15
 	movei	#0,r0
@@ -339,9 +285,9 @@ pal:
 	movei	#3300,r0
 	store	r0,(r15+FAR_Z-CAMERA_X)
 
-	movei	#0,r0
-	movei	#-242,r1
-	movei	#80,r2
+	movei	#-181,r0
+	movei	#-181,r1
+	movei	#0,r2
 	store	r0,(r15+LIGHT_X-CAMERA_X)
 	store	r1,(r15+LIGHT_Y-CAMERA_X)
 	store	r2,(r15+LIGHT_Z-CAMERA_X)
@@ -407,7 +353,7 @@ main_loop:
 	jump	(r0)
 	nop
 
-	include "txtscr.inc"
+	include <js/inc/txtscr.inc>
 
 ****************
 	align 4

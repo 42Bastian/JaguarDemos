@@ -118,6 +118,9 @@ object_loop:
 	movei	#project_object,r0
 	BL	(r0)
 
+	movei	#gouraud,r0
+	BL	(r0)
+
 	moveq	#0,tmp0
 	storeb	tmp0,(curr_object)
 
@@ -158,16 +161,16 @@ CLS::
 
  ENDIF
 //->	movei	#Dump,r0
-//->	movefa	screen0.a,r11
+	movefa	screen0.a,r11
 //->	BL	(r0)
 
 //->	movei	#tri_ptrs_ram,r9
 //->	load	(r9),r0
 //->	shrq	#2,r0
-//->	movefa	dump.a,r0
-
-//->	move	r11,r7
-//->	BL	(r8)
+	movei	#drawHex,r8
+	movefa	dump.a,r0
+	move	r11,r7
+	BL	(r8)
 
 	moveq	#0,r0
 	moveta	r0,dump.a
@@ -188,13 +191,12 @@ CLS::
 Dump::
 	PUSHLR
 	movei	#drawHex,r8
-	movei	#tri_ptrs_ram,r9
-//->	movei	#OBJECT_PTR,r9
-//->	load	(r9),r9
-//->	load	(r9),r9
-//->	movei	#obj_normals_rotated,r10
-//->	add	r10,r9
-//->	load	(r9),r9
+	movei	#OBJECT_PTR,r9
+	load	(r9),r9
+	load	(r9),r9
+	movei	#obj_vnormals_rotated,r10
+	add	r10,r9
+	load	(r9),r9
 	moveq	#20,r10
 .dump
 	move	r11,r7
@@ -366,10 +368,17 @@ LR2		reg 99
 	move	pc,LR2
 	jr	rotate_points
 	addq	#6,LR2
+
 	load	(curr_object+obj_normals),xyz_ptr
 	load	(curr_object+obj_normals_rotated),rotated
+	jr	rotate_points
+	addq	#8,LR2
 
+	load	(curr_object+obj_vnormals),xyz_ptr
+	load	(curr_object+obj_vnormals_rotated),rotated
+	cmpq	#0,xyz_ptr
 	move	LR,LR2
+	jump	eq,(LR)
 ***************
 rotate_points:
 	load	(xyz_ptr),counter
@@ -617,6 +626,7 @@ m_ptr		reg 14
 n_ptr		reg 99
 f_ptr		reg 99
 v_ptr		reg 99
+NO_GOURAUD		reg 99
 f_counter	reg 99
 x0		reg 99
 y0		reg 99
@@ -639,12 +649,14 @@ check_faces_visible::
 	load	(curr_object+obj_faces),f_ptr
 	load	(curr_object+obj_moved),m_ptr
 	load	(curr_object+obj_normals_rotated),n_ptr
+	load	(curr_object+obj_vnormals_rotated),NO_GOURAUD
 	load	(curr_object+obj_facesVisible),v_ptr
 	load	(f_ptr),f_counter
 	addq	#4,f_ptr
 	addq	#4,m_ptr	; skip counter
 	addq	#4,n_ptr	; skip counter
 	movei	#no_lum,NO_LUM
+
 	move	PC,LOOP
 	addq	#4,LOOP
 .loop
@@ -679,7 +691,12 @@ check_faces_visible::
 	jump	mi,(NO_LUM)
 	addqt	#1,v_ptr	; skip vis-flag
 
+	cmpq	#0,NO_GOURAUD
+	jr	eq,.no_gouraud
 	loadb	(f_ptr),r0		; get base luminance
+	jr	.gouraud
+	move	r0,r1
+.no_gouraud
 
 	imultn	l_x,n_x
 	imacn	l_y,n_y
@@ -690,16 +707,14 @@ check_faces_visible::
 	sat8	tmp1
 	add	r0,tmp1
 	sat8	tmp1
+
+.gouraud
 	storeb	tmp1,(v_ptr)
 
 	addq	#1,v_ptr
-	subq	#32,tmp1
-	sat8	tmp1
 	storeb	tmp1,(v_ptr)
 
 	addq	#1,v_ptr
-	subq	#16,tmp1
-	sat8	tmp1
 	storeb	tmp1,(v_ptr)
 
 	subqt	#2,v_ptr
@@ -712,9 +727,67 @@ no_lum
 	jump	(LR)
 	nop
 
-	unreg m_ptr,n_ptr,f_ptr,v_ptr
+	unreg m_ptr,n_ptr,f_ptr,v_ptr,NO_GOURAUD
 	unreg f_counter,LOOP,NO_LUM
 	unreg x0,y0,z0,n_x,n_y,n_z,l_x,l_y,l_z
+
+****************
+* gouraud lightning
+*
+vn_ptr		reg 14
+
+g_ptr		reg 99
+p_cnt		reg 99
+v_ptr		reg 99
+l_x		reg 99
+l_y		reg 99
+l_z		reg 99
+LOOP		reg 99
+vn_x		reg 99
+vn_y		reg 99
+vn_z		reg 99
+
+gouraud::
+	movei	#LIGHT_X,r14
+	load	(r14),l_x
+	load	(r14+4),l_y
+	load	(r14+8),l_z
+
+	load	(curr_object+obj_vnormals_rotated),vn_ptr
+	cmpq	#0,vn_ptr
+	load	(vn_ptr),p_cnt
+	jump	eq,(LR)
+	addq	#4,vn_ptr
+	move	vn_ptr,g_ptr
+
+	move	pc,LOOP
+	addq	#4,LOOP
+.loop
+	load	(vn_ptr),vn_x
+	load	(vn_ptr+4),vn_y
+	load	(vn_ptr+8),vn_z
+	addq	#16,vn_ptr
+
+	imultn	l_x,vn_x
+	imacn	l_y,vn_y
+	imacn	l_z,vn_z
+	resmac	tmp1
+
+	sharq	#8,tmp1
+	sat8	tmp1
+	subq	#1,p_cnt
+	store	tmp1,(g_ptr)
+	jr	ne,.loop
+	addq	#8,g_ptr
+
+	jump	(LR)
+	nop
+
+	unreg	vn_ptr,v_ptr,p_cnt,g_ptr
+	unreg	l_x,vn_x
+	unreg	l_y,vn_y
+	unreg	l_z,vn_z
+	unreg	LOOP
 ****************
 * 3D->2D
 *          (x'+x_pos)*dist
@@ -810,9 +883,14 @@ z1		reg 99
 y2		reg 99
 z2		reg 99
 lum012		reg 99
+lum0		reg 99
+lum1		reg 99
+lum2		reg 99
+
 tri_ptrs	reg 99
 scale		reg 99
-
+vn_ptr		reg 99
+NO_GOURAUD	reg 99
 proj_ptr	reg 15!
 
 AddObjects::
@@ -820,6 +898,7 @@ AddObjects::
 	movei	#tri_ptrs_ram,tri_ptrs
 	movei	#OBJECT_LIST,object_list
 	load	(object_list),curr_object
+	movei	#no_gouraud,NO_GOURAUD
 	movefa	far_z.a,scale
 	movefa	cam_z.a,tmp0
 	sub	tmp0,scale
@@ -833,7 +912,10 @@ AddObjects::
 	shlq	#24,tmp0
 	load	(curr_object+obj_facesVisible),v_ptr
 	jump	eq,(LR2)
+	load	(curr_object+obj_vnormals_rotated),vn_ptr
 	load	(curr_object+obj_projected),proj_ptr
+
+	addq	#4,vn_ptr
 	load	(f_ptr),f_cnt
 	jump	(tmp1)
 	addq	#4,f_ptr
@@ -867,6 +949,30 @@ addSingleObject::
 	loadb	(f_ptr),tmp0	; get color
 	addq	#2,f_ptr
 
+	cmpq	#4,vn_ptr
+	move	y0,lum0
+	jump	eq,(NO_GOURAUD)
+	move	y1,lum1
+	move	y2,lum2
+	shlq	#24,lum012
+	add	vn_ptr,lum0
+	shrq	#24,lum012
+	add	vn_ptr,lum1
+	add	vn_ptr,lum2
+	load	(lum0),lum0
+	load	(lum1),lum1
+	load	(lum2),lum2
+	add	lum012,lum0
+	add	lum012,lum1
+	add	lum2,lum012
+	sat8	lum0
+	sat8	lum1
+	sat8	lum012
+	shlq	#16,lum0
+	shlq	#8,lum1
+	or	lum0,lum012
+	or	lum1,lum012
+no_gouraud:
 	load	(proj_ptr+y0),z0
 	load	(proj_ptr+y1),z1
 	load	(proj_ptr+y2),z2
@@ -874,6 +980,7 @@ addSingleObject::
 	load	(proj_ptr+y0),y0
 	load	(proj_ptr+y1),y1
 	load	(proj_ptr+y2),y2
+
 //->	cmp	y0,y1
 //->	subqt	#4,proj_ptr
 //->	jr	ne,.neq
@@ -914,21 +1021,23 @@ addSingleObject::
 	jump	(LR2)
 	nop
 
-	unreg	f_ptr,v_ptr,f_cnt,tri_array, LR2,  tri_ptrs
-
+	unreg	f_ptr,v_ptr,f_cnt,tri_array, LR2, tri_ptrs,vn_ptr
 	unreg	y0,z0,y1,z1,y2,z2,proj_ptr,lum012,scale
+	unreg	lum0,lum1,lum2,NO_GOURAUD
 
+;; ----------------------------------------
 	include "draw.inc"
 
 	align 8
 rot_mat
 	ds.l	9
-
 	align 8
-	ENDMODULE poly_mmu
 
 	unreg	object_list,tri_ptrs,color_table
 	unreg	cam_x.a,cam_y.a,cam_z.a,far_z.a
 	unreg	reci_table.a, color_table.a, min_max.a, save_curr_object.a
+
+	ENDMODULE poly_mmu
+
 
 	echo "ENDE (poly_mmu): %HMODend_poly_mmu"
