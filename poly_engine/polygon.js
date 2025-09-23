@@ -46,10 +46,17 @@ ENDM
 	dc.w 0, -(\0) & $ffff,-(\1) & $ffff,-(\2) & $ffff
 	endm
 
+stacktop	equ $f03ffc
 
-//->object_array	equ $20000
+IRQ_STACK	equ $f03020-4
+
+x_save		equ stacktop-16*4-(max_y+1)*8
 
 object_data	equ $20000
+tri_array_ram	equ $40000
+tri_ptrs_ram	equ $50000
+
+//->reci_tab	equ stacktop-16*4-max_x*4
 
 	macro	defobj 		; name,base,npoints,nfaces
 .\npoints	equ \2
@@ -77,16 +84,12 @@ object_data	equ $20000
 
 	echo "End of object: %hplane_end"
 
-IRQ_STACK	equ $f03020-4
-
-
-reci_tab	equ $f03ffc-max_x*4
-stacktop	equ reci_tab-4
 
 	echo "stacktop %H stacktop"
+	echo "x_save %H x_save"
 
-	RSSET $2000
-	RSL	OBJECT_LIST,16
+	RSSET $1000
+	RSL	OBJECT_LIST,32
 	RSL	CAMERA_X
 	RSL	CAMERA_Y
 	RSL	CAMERA_Z
@@ -104,6 +107,8 @@ stacktop	equ reci_tab-4
 	RSL	LastJoy,2
 
 	include <js/var/txtscr.var>
+
+	RSL	reci_tab,max_x
 
 	MACRO WAITBLITTER
 .\waitblit	load (blitter+$38),tmp0
@@ -134,8 +139,7 @@ skip_modules
 
 	INITMODULE irq
 
-	movei	#x_save,tmp0
-	moveta	tmp0,x_save.a
+
 
 	movei	#IRQ_STACK,IRQ_SP
 	moveta	IRQ_SP,IRQ_SP.a
@@ -190,21 +194,13 @@ skip_modules
 	BL	(r4)
 
 	movei	#x_save,tmp0		; save left/right X in internal RAM
-	moveta	tmp0,x_save.a
-
 	movei	#max_y,r1
 	movei	#(max_x)<<(16+fp_rez),r2	; minX:maxX
-	movei	#col_tab,r3
-	moveq	#0,r4
 .loop0
 	subq	#1,r1
-	store	r4,(r3)
-	addqt	#4,r3
-	store	r4,(r3)
-	addqt	#4,r3
 	store	r2,(tmp0)
 	jr	nn,.loop0
-	addqt	#4,tmp0
+	addqt	#8,tmp0
 
 	movei	#PrintString_YX,r5
 	movei	#Hallo,r0
@@ -240,7 +236,7 @@ pal:
 	addq	#32,r11
 	moveta	r11,obl1.a
 
-	moveq	#$10,r1
+	moveq	#op_list>>8,r1
 	shlq	#8,r1
 	moveq	#31,r2
 	shlq	#2,r2
@@ -254,7 +250,7 @@ pal:
 	addqt	#4,r1
 
 	movei	#$f00020,r0
-	moveq	#$10,r1
+	moveq	#op_list>>8,r1
 	shlq	#16+8,r1
 	store	r1,(r0)
 
@@ -275,11 +271,11 @@ pal:
 
 	ADD_OBJ kugel
 	ADD_OBJ torus2
-//->	ADD_OBJ plane
-//->	ADD_OBJ torus
-//->	ADD_OBJ diamant
-//->	ADD_OBJ cube
-//->	ADD_OBJ cube2
+	ADD_OBJ plane
+	ADD_OBJ torus
+	ADD_OBJ diamant
+	ADD_OBJ cube
+	ADD_OBJ cube2
 	ADD_OBJ prisma
 
 	movei	#CAMERA_X,r15

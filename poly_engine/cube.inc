@@ -23,12 +23,12 @@ cube_faces:
 
 cube2_faces:
 	dc.l 12
-	face 0,1,5,4, $882f		; front
-	face 2,3,7,6, $882f		; back
-	face 1,2,6,5, $882f		; right
-	face 0,4,7,3, $882f		; left
-	face 3,2,1,0, $882f		; bottom
-	face 7,4,5,6, $882f		; top
+	face 0,1,5,4, $881f		; front
+	face 2,3,7,6, $881f		; back
+	face 1,2,6,5, $881f		; right
+	face 0,4,7,3, $801f		; left
+	face 3,2,1,0, $881f		; bottom
+	face 7,4,5,6, $881f		; top
 
 	align	4
 cube_normals:
@@ -50,11 +50,11 @@ cube2_normals:
 cube_vnormals:
 cube2_vnormals:
  dc.l  8
- NT  -147 , -147 , -147
- NT  147 , -147 , -147
- NT  147 , -147 , 147
- NT  -147 , -147 , 147
- NT  -147 , 147 , -147
- NT  147 , 147 , -147
- NT  147 , 147 , 147
- NT  -147 , 147 , 147
+ VNT  -147 , -147 , -147
+ VNT  147 , -147 , -147
+ VNT  147 , -147 , 147
+ VNT  -147 , -147 , 147
+ VNT  -147 , 147 , -147
+ VNT  147 , 147 , -147
+ VNT  147 , 147 , 147
+ VNT  -147 , 147 , 147

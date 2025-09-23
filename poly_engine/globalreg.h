@@ -10,8 +10,7 @@ obl1.a		reg 27
 obl0.a		reg 26
 screen1.a	reg 25
 screen0.a	reg 24
-x_save.a	reg 23
-vbl_counter.a	reg 22
+vbl_counter.a	reg 23
 
 
 

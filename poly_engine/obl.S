@@ -21,7 +21,7 @@ bpp		= 4
 gr_phrase	= max_x/4
 
 	.objproc
-	.org	$1000
+	.org	op_list
  branch VC < y_start,_stop0
  branch	VC < vde, _bm
  branch	VC > vde, _stop0

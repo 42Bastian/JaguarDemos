@@ -1,13 +1,9 @@
 ; -*-asm-*-
-* POLYGON-Routinen
-*
-ATARI_VIDEO	EQU 0
-GPU		set 1
+
 GOURAUD		set 1
-HIDDEN		set 1
 
 fp_reci		equ 12		; div-table precicion
-fp_rez		equ 6		; sub-pixel precision
+fp_rez		equ 7		; sub-pixel precision
 
 SWITCH max_x
 CASE 640
@@ -27,23 +23,15 @@ BLIT_WIDTH	equ BLIT_WID160
 proj_dist	equ 100
 ENDS
 
-
 cam_z.a		reg 99
 cam_y.a		reg 99
 cam_x.a		reg 99
 far_z.a		reg 99
 reci_table.a	reg 99
-color_table.a	reg 99
 min_max.a	reg 99
 save_curr_object.a reg 99
 
 	echo "Reci: %H reci_tab"
-
-col_tab		equ $30000
-tri_array_ram	equ $40000
-tri_ptrs_ram	equ $50000
-
-x_save		equ $200
 
 dump.a		reg 99
 dump0.a		reg 99
@@ -56,8 +44,6 @@ poly_mmu::
 
 	movei	#(max_x)<<(16+fp_rez),r0	; minX:maxX
 	moveta	r0,min_max.a
-	movei	#col_tab,r0
-	moveta	r0,color_table.a
 	movei	#reci_tab,r0
 	moveta	r0,reci_table.a
 
@@ -150,9 +136,9 @@ CLS::
 	store	tmp0,(blitter+4)
 	moveq	#0,tmp0
 	store	tmp0,(blitter+_BLIT_A1_PIXEL)	; pel ptr
-	movei	#1<<16|(max_x*max_y>>1),tmp0
-	store	tmp0,(blitter+_BLIT_COUNT)
-	movei	#BLIT_LFU_ZERO,tmp0
+	movei	#1<<16|(max_x*max_y>>1),tmp1
+	store	tmp1,(blitter+_BLIT_COUNT)
+//->	moveq	#BLIT_LFU_ZERO,tmp0
 	store	tmp0,(blitter+_BLIT_CMD)
 
 //->	WAITBLITTER
@@ -167,10 +153,10 @@ CLS::
 //->	movei	#tri_ptrs_ram,r9
 //->	load	(r9),r0
 //->	shrq	#2,r0
-	movei	#drawHex,r8
-	movefa	dump.a,r0
-	move	r11,r7
-	BL	(r8)
+//->	movei	#drawHex,r8
+//->	movefa	dump.a,r0
+//->	move	r11,r7
+//->	BL	(r8)
 
 	moveq	#0,r0
 	moveta	r0,dump.a
@@ -649,7 +635,11 @@ check_faces_visible::
 	load	(curr_object+obj_faces),f_ptr
 	load	(curr_object+obj_moved),m_ptr
 	load	(curr_object+obj_normals_rotated),n_ptr
+ IF GOURAUD = 1
 	load	(curr_object+obj_vnormals_rotated),NO_GOURAUD
+ ELSE
+	moveq	#0,NO_GOURAUD
+ ENDIF
 	load	(curr_object+obj_facesVisible),v_ptr
 	load	(f_ptr),f_counter
 	addq	#4,f_ptr
@@ -912,7 +902,11 @@ AddObjects::
 	shlq	#24,tmp0
 	load	(curr_object+obj_facesVisible),v_ptr
 	jump	eq,(LR2)
+ if GOURAUD = 1
 	load	(curr_object+obj_vnormals_rotated),vn_ptr
+ else
+	moveq	#0,vn_ptr
+ endif
 	load	(curr_object+obj_projected),proj_ptr
 
 	addq	#4,vn_ptr
@@ -1033,9 +1027,9 @@ rot_mat
 	ds.l	9
 	align 8
 
-	unreg	object_list,tri_ptrs,color_table
+	unreg	object_list
 	unreg	cam_x.a,cam_y.a,cam_z.a,far_z.a
-	unreg	reci_table.a, color_table.a, min_max.a, save_curr_object.a
+	unreg	reci_table.a, min_max.a, save_curr_object.a
 
 	ENDMODULE poly_mmu
 

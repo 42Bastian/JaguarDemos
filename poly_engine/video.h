@@ -16,6 +16,7 @@ ENDIF
 max_x_txt	equ 320
 max_y_txt	equ 3*8
 
+op_list		equ $400
 
 //->background	equ $000e0000
 screen0		equ $00100000

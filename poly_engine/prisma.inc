@@ -27,8 +27,8 @@ prisma_normals:
  NT  245 , 0 , -73
 prisma_vnormals:
  dc.l  5
- NT  0 , 0 , -256
- NT  256 , 0 , 0
- NT  -133 , 218 , 0
- NT  -89 , -239 , 0
- NT  0 , 0 , 256
+ VNT  0 , 0 , -256
+ VNT  256 , 0 , 0
+ VNT  -133 , 218 , 0
+ VNT  -89 , -239 , 0
+ VNT  0 , 0 , 256

@@ -3,10 +3,9 @@
 * draw polys
 
 tri_array	reg 15!
-col_ptr		reg 14
+x_ptr		reg 14
 tri_ptrs	reg 99
 LR3		reg 99
-EDGE		reg 99
 x0		reg 99
 y0		reg 99
 x1		reg 99
@@ -14,13 +13,13 @@ y1		reg 99
 x2		reg 99
 y2		reg 99
 color		reg 99
-v_ptr		reg 99
 lum0		reg 99
 lum1		reg 99
 lum2		reg 99
 f_cnt		reg 99
 min_y		reg 99
 
+x_save.a	reg 99
 save_x.a	reg 99
 save_y.a	reg 99
 save_x0.a	reg 99
@@ -36,8 +35,9 @@ Drawfaces::
 	sat8	f_cnt		; => 255
 
 	movei	#max_y,tmp0
-	movei	#Edge,EDGE
+	movei	#x_save,tmp1
 	moveta	tmp0,max_y.a
+	moveta	tmp1,x_save.a
 
 	load	(tri_ptrs),tri_array
 
@@ -111,7 +111,6 @@ triangle:
 //->	cmp	x2,tmp0
 //->	jump	n,(LR)
 //->.x_ok2
-	shlq	#2,min_y	; start with max_y to find min_y
 
 	movei	#$00ff0000,tmp0
 	move	color,lum0
@@ -124,35 +123,6 @@ triangle:
 	shrq	#24,color
 	and	tmp0,lum2
 	shlq	#24,color
-
-
-//->	move	x0,tmp2
-//->	cmp	y0,y2
-//->	move	y0,tmp0
-//->	jr	mi,.y01
-//->	move	lum0,tmp1
-//->	nop
-//->	move	x2,x0
-//->	move	y2,y0
-//->	move	lum2,lum0
-//->	move	tmp0,y2
-//->	move	tmp1,lum2
-//->	move	tmp2,x2
-//->
-//->.y01
-//->	move	x0,tmp2
-//->	cmp	y0,y1
-//->	move	y0,tmp0
-//->	jr	mi,.y02
-//->	move	lum0,tmp1
-//->	nop
-//->	move	x1,x0
-//->	move	y1,y0
-//->	move	lum1,lum0
-//->	move	tmp2,x1
-//->	move	tmp0,y1
-//->	move	tmp1,lum1
-//->.y02
 
 ;;->	movei	#$f000<<16,color
 ;;->	movei	#$07f<<16,lum0
@@ -184,8 +154,9 @@ triangle:
 	moveta	y0,save_y0.a
 	moveta	x1,save_x.a
 	moveta	y1,save_y.a
+	movei	#Edge,tmp0
 	move	pc,LR3
-	jump	(EDGE)		; x0,y0 -> x1,y1
+	jump	(tmp0)		; x0,y0 -> x1,y1
 	addq	#6,LR3
 
 //->	movefa	LR.a,LR
@@ -197,7 +168,7 @@ triangle:
 	movefa	save_y.a,y0
 	move	x2,x1
 	move	y2,y1
-	jump	(EDGE)		; x1,y1 -> x2,y2
+	jr	Edge		; x1,y1 -> x2,y2
 	addq	#16,LR3
 
 	move	lum2,lum0
@@ -209,7 +180,6 @@ triangle:
 	movei	#drawLines,LR3
 //->	addq	#16,LR3
 	move	x2,x0
-	jump	(EDGE)		; x2,y2 -> x0,y0
 	move	y2,y0
 
 ****************
@@ -219,7 +189,7 @@ triangle:
 dcol		reg 99
 dy		reg 99
 x_min		reg 99
-x_max		reg 2!
+x_max		reg 99
 dx		reg 1!
 
 Edge::
@@ -239,7 +209,6 @@ Edge::
 	move	y1,dy
 	sub	lum0,dcol
 	sub	y0,dy
-	movefa	reci_table.a,col_ptr
 	move	x1,dx
 	jr	nn,.noswap
 	sub	x0,dx
@@ -257,14 +226,19 @@ Edge::
 	neg	dx
 .noswap
 	shlq	#2,dy
+	movei	#1<<(fp_reci+2),x_ptr
 	jump	eq,(LR3)
-	sharq	#fp_reci,dcol
+	div	dy,x_ptr
 
-	load	(col_ptr+dy),col_ptr
+//->	movefa	reci_table.a,x_ptr
+//->	jump	eq,(LR3)
+//->	load	(x_ptr+dy),x_ptr ; 1/dy
+
+	sharq	#fp_reci,dcol
 	shlq	#fp_rez,x0
 
-	imult	col_ptr,dx	; dx/dy
-	imult	col_ptr,dcol	; dcol/dy
+	imult	x_ptr,dx	; dx/dy
+	imult	x_ptr,dcol	; dcol/dy
 
 	sub	y1,tmp0
 	move	dcol,tmp3
@@ -273,7 +247,6 @@ Edge::
 	add	tmp0,dy
 	jump	eq,(LR3)
 .y_btm_ok
-	shlq	#2,y0
 	movei	#.y_top_ok,tmp0
 	jump	pl,(tmp0)
 	sharq	#fp_reci-fp_rez,dx
@@ -292,61 +265,69 @@ Edge::
 	sharq	#16,tmp0
 	imult	y0,tmp0
 	shlq	#16,tmp0
-//->	add	tmp0,tmp3
-	sharq	#2,tmp3
+	add	tmp0,tmp3		;????
 	add	tmp3,lum0
 
 	imult	dx,y0
-	sharq	#2,y0
 	add	y0,x0
 	moveq	#0,y0
 .y_top_ok
-	move	y0,col_ptr
 	cmp	y0,min_y
-	movefa	x_save.a,x1
+	movefa	x_save.a,x_ptr
 	jr	n,.nn
-	moveq	#2,y1
+	shlq	#8,lum0		; do the calculation in the upper 16bit
 	move	y0,min_y
 .nn
-	shlq	#1,col_ptr
-	add	x1,y0
-	movefa	color_table.a,x1
-	add	y0,y1
-	add	x1,col_ptr
+	shlq	#3,y0
+	shlq	#8,dcol
+	add	y0,x_ptr
 
 	move	pc,tmp0
-	addq	#4,tmp0
+	movei	#(max_x)<<fp_rez,tmp2
+	addq	#4+6,tmp0
 .loop
-	movei	#(max_x)<<fp_rez,tmp3
-	cmp	x0,tmp3
-	loadw	(y0),x_min
+	load	(x_ptr),x_min
+	shrq	#16,lum0
+	move	x_min,x_max
+	shrq	#16,x_min
+	cmp	x0,tmp2		; > max_x?
+	load	(x_ptr+4),y1
 	jr	mi,.okx
+	shlq	#16,x_max
+
 	cmpq	#0,x0
 	move	x0,tmp3
 	jr	pl,.okx
-	nop
-	moveq	#0,tmp3
-.okx
 	cmp	tmp3,x_min
-	loadw	(y1),x_max
+	xor	tmp3,tmp3
+.okx
 	jr	n,.larger2
-	cmp	tmp3,x_max
+	shrq	#16,x_max
 
-	storew	tmp3,(y0)
-	store	lum0,(col_ptr)
+	shlq	#16,y1
+	move	tmp3,x_min
+	or	lum0,y1
+
+	rorq	#16,y1
 .larger2
+	cmp	tmp3,x_max
 	jr	pl,.smaller2
-	addqt	#4,y0
+	shlq	#16,x_min
 
-	store	lum0,(col_ptr+4)
-	storew	tmp3,(y1)
+	shrq	#16,y1
+	move	tmp3,x_max
+	shlq	#16,y1
+	or	lum0,y1
 .smaller2
+	store	y1,(x_ptr+4)
+	shlq	#16,lum0
+	or	x_max,x_min
 	add	dcol,lum0
 	add	dx,x0
 	subq	#4,dy
-	addqt	#8,col_ptr
+	store	x_min,(x_ptr)
 	jump	ne,(tmp0)
-	addqt	#4,y1
+	addqt	#8,x_ptr
 
 	jump	(LR3)
 	nop
@@ -357,7 +338,7 @@ Edge::
 	unreg LR3
 
 	unreg save_x.a,save_y.a, save_x0.a,save_y0.a, save_lum0.a,x2,y2
-	unreg col_ptr
+	unreg x_ptr,max_y.a
 
 ****************
 * draw H-Lines
@@ -380,19 +361,21 @@ drawLines:
 	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPIX,tmp0
 	movefa	min_max.a,min_max
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
-	movefa	color_table.a,color_table
+	shlq	#3,min_y
 	movefa	x_save.a,ptr
-	add	min_y,color_table
-	movefa	reci_table.a,reci_table
-	add	min_y,color_table
+	moveq	#4,color_table
 	add	min_y,ptr
+	shrq	#3,min_y
+	add	ptr,color_table
+	movefa	reci_table.a,reci_table
 
 	move	pc,DL_LOOP
 	jr	.dl_loop
 	addq	#10,DL_LOOP
 .empty
-	addqt	#4,min_y
 	addqt	#8,color_table
+.empty1
+	addqt	#1,min_y
 .dl_loop
 	load	(ptr),x1
 	cmp	x1,min_max
@@ -401,50 +384,71 @@ drawLines:
 	shlq	#16,x1
 	store	min_max,(ptr)
 	jr	eq,.empty
-	addq	#4,ptr
+	addq	#8,ptr
 	shrq	#16+fp_rez,x0
 	shrq	#16+fp_rez,x1
-	sub	x0,x1
-	jr	eq,.empty
 	load	(color_table),color_min
-	addq	#4,color_table
+	sub	x0,x1
+	addqt	#8,color_table
+	jr	eq,.empty1
+ IF GOURAUD = 1
+	move	color_min,color_max
+ ENDIF
 	move	x1,tmp2
-//->	addq	#1,x1
-	load	(color_table),color_max
-	addq	#4,color_table
-	shlq	#16+2,x0	; y is *4!
+ IF GOURAUD = 1
+	shlq	#16,color_max
 	shlq	#2,tmp2
+	shrq	#8,color_min	; 00LL.LL00
+	add	reci_table,tmp2
+	shrq	#8,color_max	; 00LL.LL00
+	load	(tmp2),tmp2
+ ELSE
+	shrq	#8,color_min	; 00LL.LL00
+ ENDIF
+//->	addq	#1,x1
+	shlq	#16,x0	; y is *4!
+ IF GOURAUD = 1
 	sub	color_min,color_max
 	or	color,color_min
-	add	reci_table,tmp2
 	sharq	#fp_reci,color_max
-	load	(tmp2),tmp2
+ ELSE
+	or	color,color_min
+ ENDIF
 	rorq	#16,color_min	; color lower 16bit, fraction upper
+
 	or	min_y,x0
-	addqt	#4,min_y
-	rorq	#16+2,x0
-	imult	tmp2,color_max
+	addqt	#1,min_y
+	rorq	#16,x0
+ IF GOURAUD = 1
 	bset	#16,x1
+	movei	#B_PATDSEL|B_GOURD,tmp3
+	imult	tmp2,color_max
 	shlq	#8,color_max
-	movei	#B_PATDSEL|B_GOURD,tmp2
-	shrq	#8,color_max
+ ELSE
+	bset	#16,x1
+	movei	#B_PATDSEL,tmp3
+ ENDIF
 wait_blit
-	load	(blitter+_BLIT_CMD),tmp3
-	btst	#0,tmp3
+	load	(blitter+_BLIT_CMD),tmp2
+	btst	#0,tmp2
 	jr	eq,wait_blit
 	nop
 
-	store	color_max,(blitter+_BLIT_IINC)
 	store	color_min,(blitter+_BLIT_PATD)
-	shrq	#16,color_min
+ IF GOURAUD = 1
+	shrq	#8,color_max
+	moveq	#0,color_min
+	store	color_max,(blitter+_BLIT_IINC)
 	store	color_min,(blitter+_BLIT_SRCD)
-
+ ENDIF
 	store	x0,(blitter+_BLIT_A1_PIXEL)
 	store	x1,(blitter+_BLIT_COUNT)
 	jump	(DL_LOOP)
-	store	tmp2,(blitter+_BLIT_CMD)
+	store	tmp3,(blitter+_BLIT_CMD)
 
 	unreg	tri_array, f_cnt, min_y,x0,x1
-	unreg	EDGE,DL_LOOP, color_min
+	unreg	DL_LOOP, color_min,x_save.a
 	unreg	min_max, color_max, blitter, ptr
-	unreg	reci_table
+	unreg	reci_table,color,color_table,tri_ptrs
+
+//->	unreg tri_array; crash

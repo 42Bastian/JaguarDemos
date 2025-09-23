@@ -26,12 +26,12 @@ Control::
 
 	loadb	(r1),r2
 	addq	#1,r2
-	storeb	r2,(r1)
+//->	storeb	r2,(r1)
 	addq	#1,r1
 
 	loadb	(r1),r2
 	addq	#1,r2
-	storeb	r2,(r1)
+//->	storeb	r2,(r1)
 	addq	#1,r1
 
 	loadb	(r1),r2
