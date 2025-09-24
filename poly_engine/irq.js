@@ -22,7 +22,7 @@ op::
 	moveq	#1,IRQScratch1.a
 	jr	pl,.no_swap
 	nop
-	moveq	#3,vbl_counter.a
+//->	moveq	#3,vbl_counter.a
 	moveta	IRQScratch1.a,VBLFlag
 	move	obl1.a,obl0.a
 	move	IRQScratch0.a,obl1.a

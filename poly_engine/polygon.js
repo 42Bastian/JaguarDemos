@@ -56,8 +56,6 @@ object_data	equ $20000
 tri_array_ram	equ $40000
 tri_ptrs_ram	equ $50000
 
-//->reci_tab	equ stacktop-16*4-max_x*4
-
 	macro	defobj 		; name,base,npoints,nfaces
 .\npoints	equ \2
 .\nfaces	equ \3
@@ -107,8 +105,6 @@ tri_ptrs_ram	equ $50000
 	RSL	LastJoy,2
 
 	include <js/var/txtscr.var>
-
-	RSL	reci_tab,max_x
 
 	MACRO WAITBLITTER
 .\waitblit	load (blitter+$38),tmp0
@@ -167,24 +163,6 @@ skip_modules
 	movei	#$f00400,r1
 	store	r0,(r1)
 ;;; ------------------------------
-
-	;;
-	;; setup 1/x table
-	;;
-	movei	#reci_tab,r0
-	movei	#max_x,r1
-	move	r1,r2
-	shlq	#2,r2
-	add	r2,r0
-.loop1
-	moveq	#0,r3
-	bset	#fp_reci,r3
-	div	r1,r3
-	subq	#1,r1
-	store	r3,(r0)
-	jr	ne,.loop1
-	subq	#4,r0
-	store	r1,(r0)		; div by 0
 
 	movei	#254,r0
 	movei	#$0FF0F0FF,r1
@@ -284,7 +262,7 @@ pal:
 	movei	#3300,r0
 	store	r0,(r15+FAR_Z-CAMERA_X)
 
-	movei	#-181,r0
+	movei	#181,r0
 	movei	#-181,r1
 	movei	#0,r2
 	store	r0,(r15+LIGHT_X-CAMERA_X)
@@ -308,8 +286,6 @@ main_loop:
 //->	movefa	vbl_counter.a,r0
 //->	BL	(r8)
 
-//->	movei	#$00F00058,r0
-//->	storew	r0,(r0)
 	xor	VBLFlag,VBLFlag
 	nop
 //->	movei	#$00F00058,r0
@@ -318,7 +294,6 @@ main_loop:
 	or	VBLFlag,VBLFlag
 	jr	eq,.wvbl
 	nop
-
 
 	moveq	#0,r1
 	subq	#1,r1
@@ -364,7 +339,8 @@ minihex_screen_width	equ max_x
 ;-----------------------------------------
 ;- Copy overlay routine
 ;-----------------------------------------
-blitter	reg 14
+blitter		reg 14
+
 overlay::
 	movei	#BLIT_A1_BASE,blitter
 .wbl

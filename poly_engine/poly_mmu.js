@@ -2,8 +2,12 @@
 
 GOURAUD		set 1
 
-fp_reci		equ 12		; div-table precicion
+fp_reci		equ 14		; div-table precicion
+ IF max_x = 640
+fp_rez		equ 5		; sub-pixel precision
+ ELSE
 fp_rez		equ 7		; sub-pixel precision
+ ENDIF
 
 SWITCH max_x
 CASE 640
@@ -14,7 +18,7 @@ BLIT_WIDTH	equ BLIT_WID384
 proj_dist	equ 200
 CASE 320
 BLIT_WIDTH	equ BLIT_WID320
-proj_dist	equ 200
+proj_dist	equ 180
 CASE 256
 BLIT_WIDTH	equ BLIT_WID256
 proj_dist	equ 150
@@ -27,11 +31,8 @@ cam_z.a		reg 99
 cam_y.a		reg 99
 cam_x.a		reg 99
 far_z.a		reg 99
-reci_table.a	reg 99
 min_max.a	reg 99
 save_curr_object.a reg 99
-
-	echo "Reci: %H reci_tab"
 
 dump.a		reg 99
 dump0.a		reg 99
@@ -44,8 +45,6 @@ poly_mmu::
 
 	movei	#(max_x)<<(16+fp_rez),r0	; minX:maxX
 	moveta	r0,min_max.a
-	movei	#reci_tab,r0
-	moveta	r0,reci_table.a
 
 	movei	#CAMERA_X,r15
 	load	(r15),tmp0
@@ -95,8 +94,13 @@ object_loop:
 //->	movei	#in_sight,tmp0
 //->	BL	(tmp0)
 //->	cmpq	#0,r0
-//->	jr	eq,.skip_object
+//->	jr	ne,.ok_object
 //->	nop
+//->	movei	#.skip_object,r0
+//->	jump	(r0)
+//->	nop
+//->
+//->.ok_object:
 
 	movei	#check_faces_visible,r0
 	BL	(r0)
@@ -138,7 +142,7 @@ CLS::
 	store	tmp0,(blitter+_BLIT_A1_PIXEL)	; pel ptr
 	movei	#1<<16|(max_x*max_y>>1),tmp1
 	store	tmp1,(blitter+_BLIT_COUNT)
-//->	moveq	#BLIT_LFU_ZERO,tmp0
+//->	moveq	#BLIT_LFU_ZERO,tmp0 		; == 0!
 	store	tmp0,(blitter+_BLIT_CMD)
 
 //->	WAITBLITTER
@@ -147,7 +151,7 @@ CLS::
 
  ENDIF
 //->	movei	#Dump,r0
-	movefa	screen0.a,r11
+//->	movefa	screen0.a,r11
 //->	BL	(r0)
 
 //->	movei	#tri_ptrs_ram,r9
@@ -281,7 +285,7 @@ rotate_object::
 	load	(r14+e),e	; sin gamma
 	load	(r14+f),f	; cos gamma
 *
-** compute rotational matrix
+** compute rotation matrix
 *
 	move	a,af
 	move	a,ae
@@ -416,7 +420,6 @@ rotate_points:
 	jump	ne,(LOOP)
 	addqt	#16,rotated
 
-
 	jump	(LR2)
 	nop
 
@@ -544,6 +547,7 @@ move_object::
 	unreg x_pos,y_pos,z_pos
 	unreg counter,x0,y0,z0
 
+ IF 0
 ****************************************
 ** Check if object as is completely in sight
 **
@@ -602,6 +606,7 @@ in_sight::
 	storeb	tmp0,(tmp1)
 
 	unreg cam_z, far_z, m_ptr, p_cnt, min_z, max_z, offset
+ ENDIF
 ****************************************
 ** record visibility for each face
 **
@@ -800,6 +805,7 @@ xcenter		REG 99
 ycenter		REG 99
 proj_ptr	reg 99
 LOOP		reg 99
+mask		reg 99
 
 PROJ_REZ	equ 12
 
@@ -808,41 +814,39 @@ project_object::
 	movei	#proj_dist<<PROJ_REZ,dist
 	load	(m_ptr),m_cnt
 	addq	#4,m_ptr
-	movei	#max_x>>1,xcenter
-	movei	#max_y>>1,ycenter
+	movei	#(max_x>>1),xcenter
+	movei	#(max_y>>1),ycenter
 	load	(curr_object+obj_projected),proj_ptr
-
+	movei	#$0000ffff,mask
 	move	pc,LOOP
 	addq	#4,LOOP
 .loop
-	load	(m_ptr+8),z1
 	load	(m_ptr),x1
 	load	(m_ptr+4),y1
-	store	z1,(proj_ptr)
+	load	(m_ptr+8),z1
 	movefa	cam_x.a,tmp0
 	movefa	cam_y.a,tmp1
 	sub	tmp0,x1
 	movefa	cam_z.a,tmp0
 	sub	tmp1,y1
+	store	z1,(proj_ptr)
 	sub	tmp0,z1
 	move	dist,tmp1
-	abs	z1
-	addqt	#16,m_ptr
+	jr	mi,.p1
 	div	z1,tmp1
-	jr	cc,.p1
-	or	tmp1,tmp1
-	moveq	#1,tmp1
-.p1
+	addqt	#16,m_ptr
+
 	imult	tmp1,y1
 	imult	tmp1,x1
+
 	sharq	#PROJ_REZ,y1
 	sharq	#PROJ_REZ,x1
+.p1
 	neg	y1
 	add	xcenter,x1
 	add	ycenter,y1
 	shlq	#16,x1
-	shlq	#16,y1
-	shrq	#16,y1
+	and	mask,y1
 	addq	#4,proj_ptr
 	or	x1,y1
 	subq	#1,m_cnt
@@ -856,7 +860,7 @@ project_object::
 	UNREG m_cnt,m_ptr,LOOP
 	UNREG dist,xcenter,ycenter
 	UNREG x1,y1,z1
-	UNREG proj_ptr
+	UNREG proj_ptr,mask
 
 ****************************************
 ** Add an object to the draw array
@@ -921,7 +925,7 @@ AddObjects::
 	nop
 
 	jump	(LR)
-//->	nop
+	nop
 
 skip_tri:
 	subq	#1,f_cnt
@@ -1023,13 +1027,10 @@ no_gouraud:
 	include "draw.inc"
 
 	align 8
-rot_mat
-	ds.l	9
-	align 8
 
 	unreg	object_list
 	unreg	cam_x.a,cam_y.a,cam_z.a,far_z.a
-	unreg	reci_table.a, min_max.a, save_curr_object.a
+	unreg	min_max.a, save_curr_object.a
 
 	ENDMODULE poly_mmu
 
