@@ -41,9 +41,9 @@ obl1_60.bin: obl.S video.h
 OBL=obl0_50.bin obl1_50.bin obl0_60.bin obl1_60.bin video.h
 
 OBJ_INC=torus.inc structs.inc cube.inc bigball.inc  diamant.inc pobjects.inc
-OBJ_INC+= plane.inc prisma.inc
+OBJ_INC+= plane.inc prisma.inc draw2_nog.inc
 
-$(DEMO).o : draw.inc control.js irq.js globalreg.h
+$(DEMO).o : draw2.inc draw.inc control.js irq.js globalreg.h
 
 $(DEMO).o : $(DEMO).js poly_mmu.js $(OBL) $(OBJ_INC)
 	$(TJASS)  $(TJFLAGS) $<

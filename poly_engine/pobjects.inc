@@ -54,7 +54,7 @@ obj_kugel:
 	dc.b	1,1		; visible
 	dc.w	0,0,200		; position: x,y,z
 	dc.b	0		; spare
-	dc.b  64,128,00		; angle: a,b,c
+	dc.b  0,128,00		; angle: a,b,c
 	dc.l	-1		; old angle
 	dc.l	kugel_points
 	dc.l	kugel_faces
@@ -74,8 +74,9 @@ obj_kugel:
 obj_cube:
 	dc.b	1,1		; visible
 	dc.w	-100,-64,240	; position: x,y,z
+//->	dc.w 0,0,100
 	dc.b	0		; spare
-	dc.b	0,0,0		; angle: a,b,c
+	dc.b	0,0,00		; angle: a,b,c
 	dc.l	-1		; old angle
 	dc.l	cube_points
 	dc.l	cube_faces

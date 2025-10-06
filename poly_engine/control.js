@@ -26,17 +26,19 @@ Control::
 
 	loadb	(r1),r2
 	addq	#1,r2
-//->	storeb	r2,(r1)
-	addq	#1,r1
-
-	loadb	(r1),r2
-	addq	#1,r2
-//->	storeb	r2,(r1)
-	addq	#1,r1
-
-	loadb	(r1),r2
-	addq	#1,r2
+//->	movei	#3,r2
 	storeb	r2,(r1)
+	addq	#1,r1
+
+	loadb	(r1),r2
+	subq	#1,r2
+	storeb	r2,(r1)
+	addq	#1,r1
+
+	loadb	(r1),r2
+	addq	#1,r2
+//->	moveta	r2,dump.a
+//->	storeb	r2,(r1)
 
 	movei	#joy,r0
 	BL	(r0)

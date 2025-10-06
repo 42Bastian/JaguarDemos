@@ -3,6 +3,10 @@
 LYXASS	EQU 1
 	gpu
 
+DRAW2		equ 1
+GOURAUD		set 1
+
+
 	include <js/symbols/jagregeq.js>
 	include <js/symbols/blit_eq.js>
 	include <js/macro/help.mac>
@@ -27,7 +31,7 @@ ENDM
 
 	macro face ; p1,p2,p3,p4,col
 	dc.w \0*8,\1*8,\2*8,\4
-	dc.w \0*8,\2*8,\3*8,\4
+	dc.w \2*8,\3*8,\0*8,\4
 	endm
 
 	macro tri			; p1,p2,p3,col
@@ -50,11 +54,20 @@ stacktop	equ $f03ffc
 
 IRQ_STACK	equ $f03020-4
 
+ IFND DRAW2
 x_save		equ stacktop-16*4-(max_y+1)*8
+ ENDIF
 
 object_data	equ $20000
 tri_array_ram	equ $40000
+ IFND DRAW2
 tri_ptrs_ram	equ $50000
+ ELSE
+ IF GOURAUD = 1
+tri_ptrs_ram	equ $50000
+ ENDIF
+ ENDIF
+
 
 	macro	defobj 		; name,base,npoints,nfaces
 .\npoints	equ \2
@@ -84,7 +97,9 @@ tri_ptrs_ram	equ $50000
 
 
 	echo "stacktop %H stacktop"
+ IFD x_save
 	echo "x_save %H x_save"
+ ENDIF
 
 	RSSET $1000
 	RSL	OBJECT_LIST,32
@@ -135,8 +150,6 @@ skip_modules
 
 	INITMODULE irq
 
-
-
 	movei	#IRQ_STACK,IRQ_SP
 	moveta	IRQ_SP,IRQ_SP.a
 	movei	#stacktop,SP
@@ -171,15 +184,16 @@ skip_modules
 	movei	#InitTxtScreen,r4
 	BL	(r4)
 
+ IFND DRAW2
 	movei	#x_save,tmp0		; save left/right X in internal RAM
 	movei	#max_y,r1
-	movei	#(max_x)<<(16+fp_rez),r2	; minX:maxX
+	movei	#(max_x)<<(16),r2	; minX:maxX
 .loop0
 	subq	#1,r1
 	store	r2,(tmp0)
 	jr	nn,.loop0
 	addqt	#8,tmp0
-
+ ENDIF
 	movei	#PrintString_YX,r5
 	movei	#Hallo,r0
 	moveq	#0,r1
@@ -288,8 +302,8 @@ main_loop:
 
 	xor	VBLFlag,VBLFlag
 	nop
-//->	movei	#$00F00058,r0
-//->	storew	VBLFlag,(r0)
+	movei	#$00F00058,r0
+	storew	r0,(r0)
 .wvbl:
 	or	VBLFlag,VBLFlag
 	jr	eq,.wvbl

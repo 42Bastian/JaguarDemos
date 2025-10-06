@@ -1,13 +1,7 @@
 ; -*-asm-*-
 
-GOURAUD		set 1
-
-fp_reci		equ 14		; div-table precicion
- IF max_x = 640
-fp_rez		equ 5		; sub-pixel precision
- ELSE
-fp_rez		equ 7		; sub-pixel precision
- ENDIF
+fp_reci		equ 15
+fp_rez		equ 8		; sub-pixel precision for edges
 
 SWITCH max_x
 CASE 640
@@ -31,21 +25,27 @@ cam_z.a		reg 99
 cam_y.a		reg 99
 cam_x.a		reg 99
 far_z.a		reg 99
+ IFND DRAW2
 min_max.a	reg 99
+ ENDIF
 save_curr_object.a reg 99
 
 dump.a		reg 99
 dump0.a		reg 99
 
+;;->	if (max_x << fp_rez) > $ffff
+;;->	fail "fp_rez to large"
+;;->	endif
 ****************
 
 	MODULE poly_mmu,MODend_irq
 poly_mmu::
 	PUSHLR
 
-	movei	#(max_x)<<(16+fp_rez),r0	; minX:maxX
+ IFND DRAW2
+	movei	#(max_x)<<(16),r0	; minX:maxX
 	moveta	r0,min_max.a
-
+ ENDIF
 	movei	#CAMERA_X,r15
 	load	(r15),tmp0
 	load	(r15+CAMERA_Y-CAMERA_X),tmp1
@@ -107,10 +107,10 @@ object_loop:
 
 	movei	#project_object,r0
 	BL	(r0)
-
+ IF GOURAUD = 1
 	movei	#gouraud,r0
 	BL	(r0)
-
+ ENDIF
 	moveq	#0,tmp0
 	storeb	tmp0,(curr_object)
 
@@ -162,32 +162,35 @@ CLS::
 //->	move	r11,r7
 //->	BL	(r8)
 
+	movei	#$190000,r0
+	moveta	r0,dump0.a
+
 	moveq	#0,r0
 	moveta	r0,dump.a
+
 	movei	#Drawfaces,r0
 	BL	(r0)
 
-//->	movei	#drawHex,r8
-//->	movefa	screen0.a,r11
-//->	movefa	dump.a,r0
-//->	movei	#tri_ptrs_ram,r0
-//->	load	(r0),r0
-//->	shrq	#2,r0
-//->	move	r11,r7
-//->	BL	(r8)
+	movefa	dump0.a,r0
+	movei	#$12345678,r1
+	store	r1,(r0)
+	movefa	screen0.a,r11
+	movei	#Dump,r0
+//->	BL	(r0)
 
 	POPLR
 
 Dump::
 	PUSHLR
 	movei	#drawHex,r8
-	movei	#OBJECT_PTR,r9
-	load	(r9),r9
-	load	(r9),r9
-	movei	#obj_vnormals_rotated,r10
-	add	r10,r9
-	load	(r9),r9
-	moveq	#20,r10
+	movei	#$190000,r9
+//->	movei	#OBJECT_PTR,r9
+//->	load	(r9),r9
+//->	load	(r9),r9
+//->	movei	#obj_vnormals_rotated,r10
+//->	add	r10,r9
+//->	load	(r9),r9
+	moveq	#28,r10
 .dump
 	move	r11,r7
 	move	pc,LR
@@ -361,6 +364,7 @@ LR2		reg 99
 
 	load	(curr_object+obj_normals),xyz_ptr
 	load	(curr_object+obj_normals_rotated),rotated
+ IF GOURAUD = 1
 	jr	rotate_points
 	addq	#8,LR2
 
@@ -369,6 +373,9 @@ LR2		reg 99
 	cmpq	#0,xyz_ptr
 	move	LR,LR2
 	jump	eq,(LR)
+ ELSE
+	move	LR,LR2
+ ENDIF
 ***************
 rotate_points:
 	load	(xyz_ptr),counter
@@ -617,7 +624,9 @@ m_ptr		reg 14
 n_ptr		reg 99
 f_ptr		reg 99
 v_ptr		reg 99
-NO_GOURAUD		reg 99
+ IF GOURAUD = 1
+NO_GOURAUD	reg 99
+ ENDIF
 f_counter	reg 99
 x0		reg 99
 y0		reg 99
@@ -642,18 +651,16 @@ check_faces_visible::
 	load	(curr_object+obj_normals_rotated),n_ptr
  IF GOURAUD = 1
 	load	(curr_object+obj_vnormals_rotated),NO_GOURAUD
- ELSE
-	moveq	#0,NO_GOURAUD
  ENDIF
 	load	(curr_object+obj_facesVisible),v_ptr
 	load	(f_ptr),f_counter
 	addq	#4,f_ptr
 	addq	#4,m_ptr	; skip counter
 	addq	#4,n_ptr	; skip counter
-	movei	#no_lum,NO_LUM
 
 	move	PC,LOOP
-	addq	#4,LOOP
+	movei	#no_lum,NO_LUM
+	addq	#4+6,LOOP
 .loop
 	loadw	(f_ptr),z0	; p1
 	addq	#7,f_ptr	; point to base luminance
@@ -686,13 +693,16 @@ check_faces_visible::
 	jump	mi,(NO_LUM)
 	addqt	#1,v_ptr	; skip vis-flag
 
+ IF GOURAUD = 1
 	cmpq	#0,NO_GOURAUD
 	jr	eq,.no_gouraud
 	loadb	(f_ptr),r0		; get base luminance
 	jr	.gouraud
 	move	r0,r1
 .no_gouraud
-
+ ELSE
+	loadb	(f_ptr),r0		; get base luminance
+ ENDIF
 	imultn	l_x,n_x
 	imacn	l_y,n_y
 	imacn	l_z,n_z
@@ -702,7 +712,6 @@ check_faces_visible::
 	sat8	tmp1
 	add	r0,tmp1
 	sat8	tmp1
-
 .gouraud
 	storeb	tmp1,(v_ptr)
 
@@ -722,10 +731,15 @@ no_lum
 	jump	(LR)
 	nop
 
-	unreg m_ptr,n_ptr,f_ptr,v_ptr,NO_GOURAUD
+ IF GOURAUD = 1
+	unreg NO_GOURAUD
+ ENDIF
+
+	unreg m_ptr,n_ptr,f_ptr,v_ptr
 	unreg f_counter,LOOP,NO_LUM
 	unreg x0,y0,z0,n_x,n_y,n_z,l_x,l_y,l_z
 
+ IF GOURAUD = 1
 ****************
 * gouraud lightning
 *
@@ -783,6 +797,7 @@ gouraud::
 	unreg	l_y,vn_y
 	unreg	l_z,vn_z
 	unreg	LOOP
+ ENDIF
 ****************
 * 3D->2D
 *          (x'+x_pos)*dist
@@ -817,9 +832,9 @@ project_object::
 	movei	#(max_x>>1),xcenter
 	movei	#(max_y>>1),ycenter
 	load	(curr_object+obj_projected),proj_ptr
-	movei	#$0000ffff,mask
 	move	pc,LOOP
-	addq	#4,LOOP
+	movei	#$0000ffff,mask
+	addq	#4+6,LOOP
 .loop
 	load	(m_ptr),x1
 	load	(m_ptr+4),y1
@@ -877,14 +892,17 @@ z1		reg 99
 y2		reg 99
 z2		reg 99
 lum012		reg 99
+tri_ptrs	reg 99
+scale		reg 99
+
+ IF GOURAUD = 1
 lum0		reg 99
 lum1		reg 99
 lum2		reg 99
-
-tri_ptrs	reg 99
-scale		reg 99
 vn_ptr		reg 99
 NO_GOURAUD	reg 99
+ ENDIF
+
 proj_ptr	reg 15!
 
 AddObjects::
@@ -892,7 +910,9 @@ AddObjects::
 	movei	#tri_ptrs_ram,tri_ptrs
 	movei	#OBJECT_LIST,object_list
 	load	(object_list),curr_object
+ IF GOURAUD = 1
 	movei	#no_gouraud,NO_GOURAUD
+ ENDIF
 	movefa	far_z.a,scale
 	movefa	cam_z.a,tmp0
 	sub	tmp0,scale
@@ -908,12 +928,11 @@ AddObjects::
 	jump	eq,(LR2)
  if GOURAUD = 1
 	load	(curr_object+obj_vnormals_rotated),vn_ptr
- else
-	moveq	#0,vn_ptr
  endif
 	load	(curr_object+obj_projected),proj_ptr
-
+ if GOURAUD = 1
 	addq	#4,vn_ptr
+ endif
 	load	(f_ptr),f_cnt
 	jump	(tmp1)
 	addq	#4,f_ptr
@@ -947,6 +966,7 @@ addSingleObject::
 	loadb	(f_ptr),tmp0	; get color
 	addq	#2,f_ptr
 
+ IF GOURAUD = 1
 	cmpq	#4,vn_ptr
 	move	y0,lum0
 	jump	eq,(NO_GOURAUD)
@@ -971,6 +991,7 @@ addSingleObject::
 	or	lum0,lum012
 	or	lum1,lum012
 no_gouraud:
+ ENDIF
 	load	(proj_ptr+y0),z0
 	load	(proj_ptr+y1),z1
 	load	(proj_ptr+y2),z2
@@ -1019,19 +1040,40 @@ no_gouraud:
 	jump	(LR2)
 	nop
 
-	unreg	f_ptr,v_ptr,f_cnt,tri_array, LR2, tri_ptrs,vn_ptr
+	unreg	f_ptr,v_ptr,f_cnt,tri_array, LR2, tri_ptrs
 	unreg	y0,z0,y1,z1,y2,z2,proj_ptr,lum012,scale
-	unreg	lum0,lum1,lum2,NO_GOURAUD
+
+ IF GOURAUD = 1
+	unreg	lum0,lum1,lum2,NO_GOURAUD,vn_ptr
+ ENDIF
 
 ;; ----------------------------------------
+ IFD DRAW2
+ IF GOURAUD = 1
+	include "draw2.inc"
+ ELSE
+	include "draw2_nog.inc"
+ ENDIF
+ ELSE
 	include "draw.inc"
+ ENDIF
 
-	align 8
+	align 4
+
+ IFD DRAW2
+ IF GOURAUD = 0
+tri_ptrs_ram:	ds.l	256
+ ENDIF
+ ENDIF
 
 	unreg	object_list
 	unreg	cam_x.a,cam_y.a,cam_z.a,far_z.a
-	unreg	min_max.a, save_curr_object.a
+	unreg	save_curr_object.a
+ IFND DRAW2
+	unreg	min_max.a
+ ENDIF
 
+	align 8
 	ENDMODULE poly_mmu
 
 

@@ -13,9 +13,9 @@ y1		reg 99
 x2		reg 99
 y2		reg 99
 color		reg 99
-lum0		reg 99
-lum1		reg 99
-lum2		reg 99
+l0		reg 99
+l1		reg 99
+l2		reg 99
 f_cnt		reg 99
 min_y		reg 99
 EDGE		reg 99
@@ -25,7 +25,7 @@ save_x.a	reg 99
 save_y.a	reg 99
 save_x0.a	reg 99
 save_y0.a	reg 99
-save_lum0.a	reg 99
+save_l0.a	reg 99
 max_y.a		reg 99
 LR.a		reg 99
 
@@ -49,6 +49,9 @@ Drawfaces::
 	load	(tri_array),color
 	jr	eq,.next
 	load	(tri_array+4),y0
+
+//->	movefa	LR.a,LR
+
 	load	(tri_array+8),y1
 	load	(tri_array+12),y2
 	jr	triangle
@@ -109,46 +112,59 @@ triangle:
 	addq	#1,r0
 	moveta	r0,dump.a
 
-	;; extract lightning data and color
-	movei	#$00ff0000,tmp0
-	move	color,lum0
-	move	color,lum1
-	move	color,lum2
-	and	tmp0,lum0
-	shlq	#8,lum1
-	shlq	#16,lum2
-	and	tmp0,lum1
-	shrq	#24,color
-	and	tmp0,lum2
-	shlq	#24,color
+
+//->	movefa	dump0.a,tmp3
+//->	store	l0,(tmp3)
+//->	addq	#4,tmp3
+//->	store	l1,(tmp3)
+//->	addq	#4,tmp3
+//->	store	l1,(tmp3)
+//->	addq	#4,tmp3
+//->	store	color,(tmp3)
+//->	addq	#4,tmp3
+//->	moveta	tmp3,dump0.a
 
 ;;; ----------------------------------------
-;;->	movei	#$f000<<16,color
-;;->	movei	#$07f<<16,lum0
-;;->	movei	#$0ff<<16,lum1
-;;->	movei	#$02f<<16,lum2
-;;->	movei	#90,x0
-;;->	movei	#100,y0
-;;->	movei	#0,x1
-;;->	movei	#120,y1
-;;->	movei	#50,x2
-;;->	movei	#150,y2
+;;->_dx	equ 10
+;;->//->	movei	#$7f3f7fff,color
+;;->	movei	#$7f007f3f,color
+;;->	movei	#220,x0
+;;->	movei	#40-_dx,y0
+;;->	movei	#150,x2
+;;->	movei	#130-_dx,y2
+;;->	movei	#250,x1
+;;->	movei	#90-_dx,y1
+;;->	movei	#-90,tmp1
+;;->	movei	#0,tmp2
 ;;->	movefa	dump.a,r0
 ;;->	cmpq	#1,r0
 ;;->	jr	eq,.first
 ;;->	nop
-;;->	movei	#30,tmp0
-;;->	sub	tmp0,x0
-;;->	sub	tmp0,x1
-;;->	sub	tmp0,x2
-;;->	movei	#30,tmp0
-;;->	sub	tmp0,y0
-;;->	sub	tmp0,y1
-;;->	sub	tmp0,y2
+;;->	bclr	#31,color
+;;->	sub	tmp2,x0
+;;->	sub	tmp2,x1
+;;->	sub	tmp2,x2
+;;->	sub	tmp1,y0
+;;->	sub	tmp1,y1
+;;->	sub	tmp1,y2
+;;->	movefa	LR.a,LR
 ;;->.first
 ;;; ----------------------------------------
+	;; extract lightning data and color
+	movei	#$00ff0000,tmp0
+	move	color,l0
+	move	color,l1
+	move	color,l2
+	and	tmp0,l0
+	shlq	#8,l1
+	shlq	#16,l2
+	and	tmp0,l1
+	shrq	#24,color
+	and	tmp0,l2
+	shlq	#24,color
+
 	;; save first point
-	moveta	lum0,save_lum0.a
+	moveta	l0,save_l0.a
 	moveta	x0,save_x0.a
 	moveta	y0,save_y0.a
 	moveta	x1,save_x.a
@@ -160,8 +176,8 @@ triangle:
 //->	movefa	LR.a,LR
 //->	jump	(LR)
 
-	move	lum1,lum0
-	move	lum2,lum1
+	move	l1,l0
+	move	l2,l1
 	movefa	save_x.a,x0
 	movefa	save_y.a,y0
 	move	x2,x1
@@ -169,8 +185,8 @@ triangle:
 	jump	(EDGE)		; x1,y1 -> x2,y2
 	addq	#16,LR3
 
-	move	lum2,lum0
-	movefa	save_lum0.a,lum1
+	move	l2,l0
+	movefa	save_l0.a,l1
 	movefa	save_x0.a,x1
 	movefa	save_y0.a,y1
 
@@ -191,10 +207,9 @@ x_max		reg 99
 dx		reg 1!
 
 Edge::
-
 	;; skip all Y negative lines
 	move	y0,dy
-	move	lum1,dcol
+	move	l1,dcol
 	and	y1,dy
 	movefa	max_y.a,tmp0
 	jump	mi,(LR3)	; both Y < 0
@@ -204,7 +219,7 @@ Edge::
 	cmp	y1,tmp0
 	jump	n,(LR3)		; both Y > max_y
 .ymax_ok
-	sub	lum0,dcol
+	sub	l0,dcol
 	sub	y0,dy
 	move	x1,dx
 	jr	nn,.noswap
@@ -215,7 +230,7 @@ Edge::
 
 	move	x1,x0
 
-	move	lum1,lum0
+	move	l1,l0
 
 	neg	dcol
 	neg	dy
@@ -226,15 +241,15 @@ Edge::
 	jump	eq,(LR3)
 	div	dy,x_ptr
 
-	sharq	#fp_reci,dcol
+	sharq	#9,dcol		; SSLL.0000 => SSSS.SLL0
 	shlq	#fp_rez,x0
-
-	imult	x_ptr,dx	; dx/dy
 	imult	x_ptr,dcol	; dcol/dy
+	imult	x_ptr,dx	; dx/dy
+	sharq	#fp_reci-1,dcol	; dcol = SSSS.LL00
 
 	sub	y1,tmp0
 	jr	pl,.y_btm_ok
-	nop
+	shrq	#8,l0
 	add	tmp0,dy
 	jump	eq,(LR3)
 .y_btm_ok
@@ -246,44 +261,45 @@ Edge::
 	move	dcol,tmp0
 	jump	eq,(LR3)
 
-	shrq	#fp_rez,tmp0
 	imult	y0,tmp0
 	imult	dx,y0
-	shlq	#fp_rez,tmp0
 	sub	y0,x0
-	sub	tmp0,lum0
+	sub	tmp0,l0
 	moveq	#0,y0
 .y_top_ok:
 	cmp	y0,min_y
 	movefa	x_save.a,x_ptr
 	jr	n,.nn
-	shrq	#8,lum0		; do the calculation in the upper 16bit
+	move	x_ptr,x1
 	move	y0,min_y
 .nn
 	shlq	#3,y0
-	shrq	#8,dcol
-	move	x_ptr,x1
+
 	add	y0,x_ptr
-	sat16	x1		; x1 = $0000ffff
 
 	move	pc,tmp0
-	movei	#(max_x)<<fp_rez,tmp2
+	movei	#max_x,tmp2
 	addq	#4+6,tmp0
 .loop1
 	load	(x_ptr),x_min
-	and	x1,lum0
+	movei	#(1<<fp_rez)-1,tmp3
+	sat16	l0
+	add	x0,tmp3
 	move	x_min,x_max
+	sharq	#fp_rez,tmp3
 	shrq	#16,x_min
 	load	(x_ptr+4),y1
-	cmp	x0,tmp2		; > max_x?
-	move	x0,tmp3
+	cmp	tmp3,tmp2		; > max_x?
+
 	jr	pl,.ok_max_x
 	shlq	#16,x_max
 	move	tmp2,tmp3	; clamp X
+
 .ok_max_x
-	cmpq	#0,x0
+	cmpq	#0,tmp3
 	jr	pl,.ok_x
 	cmp	tmp3,x_min
+
 	xor	tmp3,tmp3	; clear X and set flag
 .ok_x:
 	jr	n,.larger2
@@ -291,7 +307,7 @@ Edge::
 
 	shlq	#16,y1
 	move	tmp3,x_min
-	or	lum0,y1
+	or	l0,y1
 
 	rorq	#16,y1
 .larger2
@@ -302,26 +318,27 @@ Edge::
 	shrq	#16,y1
 	move	tmp3,x_max
 	shlq	#16,y1
-	or	lum0,y1
+	or	l0,y1
 .smaller2
-	add	dx,x0
 	store	y1,(x_ptr+4)
 	or	x_max,x_min
-	add	dcol,lum0
-	subq	#1,dy
+	add	dx,x0
 	store	x_min,(x_ptr)
+	add	dcol,l0
+	subq	#1,dy
+
 	jump	ne,(tmp0)
 	addqt	#8,x_ptr
 
 	jump	(LR3)
 	nop
 
-	unreg lum0,x0,y0, lum1,x1,y1, lum2
+	unreg l0,x0,y0, l1,x1,y1, l2
 	unreg dx,dy,dcol, x_min, x_max
 
 	unreg LR3
 
-	unreg save_x.a,save_y.a, save_x0.a,save_y0.a, save_lum0.a,x2,y2
+	unreg save_x.a,save_y.a, save_x0.a,save_y0.a, save_l0.a,x2,y2
 	unreg x_ptr,max_y.a
 
 ****************
@@ -366,20 +383,27 @@ drawLines:
 	store	min_max,(ptr)
 	jump	eq,(DL_LOOP)
 	addqt	#8,ptr
-	shrq	#16+fp_rez,x0
-	shrq	#16+fp_rez,x1
+	shrq	#16,x0
+	shrq	#16,x1
 	load	(color_table),color_min
 	sub	x0,x1
 	movei	#1<<fp_reci,tmp2
 	jump	eq,(DL_LOOP)
  IF GOURAUD = 1
 	div	x1,tmp2			; 16 cycles!
+
+//->	movefa	dump0.a,tmp3
+//->	store	color_min,(tmp3)
+//->	addq	#4,tmp3
+//->	moveta	tmp3,dump0.a
+
 	move	color_min,color_max
-	shrq	#8,color_min		; 00LL.LL00
+	shrq	#16,color_min
 	shlq	#16,color_max
-	shlq	#16,x0
+	shlq	#8,color_min		; 00LL.LL00
 	shrq	#8,color_max		; 00LL.LL00
-	sub	color_min,color_max
+	shlq	#16,x0
+	sub	color_min,color_max	; delta L
 	or	color,color_min
 	sharq	#fp_reci,color_max
  ELSE
@@ -406,12 +430,24 @@ wait_blit
 
  IF GOURAUD = 1
 	imult	tmp2,color_max
+	movei	#$00ffffff,tmp2
 	store	color_min,(blitter+_BLIT_PATD)
-	shlq	#8,color_max
-	moveq	#0,color_min
-	shrq	#8,color_max
+	and	tmp2,color_max
+//->	shrq	#16,color_min
 	store	color_min,(blitter+_BLIT_SRCD)
 	store	color_max,(blitter+_BLIT_IINC)
+
+//->	movefa	dump0.a,tmp0
+//->	store	x0,(tmp0)
+//->	addq	#4,tmp0
+//->	store	x1,(tmp0)
+//->	addq	#4,tmp0
+//->	store	color_min,(tmp0)
+//->	addq	#4,tmp0
+//->	store	color_max,(tmp0)
+//->	addq	#4,tmp0
+//->	moveta	tmp0,dump0.a
+
  ELSE
 	store	color_min,(blitter+_BLIT_PATD)
  ENDIF
@@ -419,6 +455,7 @@ wait_blit
 	store	x1,(blitter+_BLIT_COUNT)
 	jump	(DL_LOOP)
 	store	tmp3,(blitter+_BLIT_CMD)
+
 
 	unreg	tri_array, f_cnt, min_y,x0,x1
 	unreg	DL_LOOP, color_min,x_save.a

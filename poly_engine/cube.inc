@@ -19,7 +19,7 @@ cube_faces:
 	face 1,2,6,5, $c83f		; right
 	face 0,4,7,3, $c03f		; left
 	face 3,2,1,0, $8f3f		; bottom
-	face 7,4,5,6, $cfff		; top
+	face 7,4,5,6, $cf3f		; top
 
 cube2_faces:
 	dc.l 12
