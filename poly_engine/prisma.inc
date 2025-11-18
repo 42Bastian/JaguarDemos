@@ -18,7 +18,7 @@ prisma_faces:
 	tri 4,3,2, $7830
 
 prisma_normals:
- dc.l  18
+ dc.l  6
  NT  -85 , -225 , 85
  NT  -85 , -225 , -85
  NT  245 , 0 , 73

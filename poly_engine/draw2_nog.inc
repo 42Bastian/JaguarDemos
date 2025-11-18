@@ -66,13 +66,18 @@ Drawfaces::
 .next
 	subq	#1,f_cnt
 	subqt	#4,tri_ptrs
-	jump	ne,(LR3)
+	jump	pl,(LR3)
 	load	(tri_ptrs),tri_array
 
 	jump	(LR)
 	nop
 
 triangle:
+	;; debug
+	movefa	dump.a,r0
+	addqt	#1,r0
+	moveta	r0,dump.a
+
 	;; split x and y and sign-extend
 	move	y0,x0
 	move	y1,x1
@@ -112,10 +117,10 @@ triangle:
 	cmp	x2,tmp0
 	jump	n,(LR3)
 .x_ok
-	;; debug
-	movefa	dump.a,r0
-	addqt	#1,r0
-	moveta	r0,dump.a
+//->	;; debug
+//->	movefa	dump.a,r0
+//->	addqt	#1,r0
+//->	moveta	r0,dump.a
 
 	shrq	#16,color
  IF USE_PHRASE = 1

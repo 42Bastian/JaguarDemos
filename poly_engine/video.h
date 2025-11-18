@@ -19,9 +19,9 @@ max_y_txt	equ 3*8
 op_list		equ $400
 
 //->background	equ $000e0000
-screen0		equ $00100000
-screen1		equ $00140000
-TxtScreen	equ $00180000
+screen0		equ $00170000
+screen1		equ $001b0000
+TxtScreen	equ $001f8000
 
 vde_pal		equ (PAL_VMID+PAL_HEIGHT)/2+1
 y_start_pal	equ 30

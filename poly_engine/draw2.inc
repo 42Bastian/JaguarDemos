@@ -1,4 +1,4 @@
-;-*-asm-*-
+;;; -*-asm-*-
 ****************
 * draw polys
 
@@ -73,7 +73,7 @@ Drawfaces::
 	subq	#1,tmp0
 	load	(tmp1),tri_array
 	moveta	tmp0,f_cnt.a
-	jump	ne,(LR)
+	jump	pl,(LR)
 	moveta	tmp1,tri_ptrs.a
 
 	movefa	LR.a,LR
@@ -174,6 +174,10 @@ triangle:
 	and	tmp0,l2
 	shlq	#8,color
 
+//->	or	tmp0,l0
+//->	or	tmp0,l1
+//->	or	tmp0,l2
+
 	; sort y
 	cmp    	y0,y1
 	move   	x1,tmp0
@@ -211,6 +215,7 @@ triangle:
 	move   	tmp1,y0
 	move   	tmp2,l0
 .no_swap3:
+
 	move	x1,dx01
 	move	x2,dx02
 	move	x2,dx12
@@ -453,4 +458,4 @@ hline:
 	unreg	l0,l1,l2,HLINE,LR2
 	unreg	x1save.a,l1save.a,tmp4
 	unreg	tri_array, f_cnt.a, x0,x1,x2, blitter
-	unreg	tri_ptrs.a,color,y0,y1,y2,max_y.a,LR.a
+	unreg	tri_ptrs.a,color,y0,y1,y2,max_y.a,LR.a,x1.a

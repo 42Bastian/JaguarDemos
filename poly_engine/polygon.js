@@ -15,6 +15,14 @@ GOURAUD		set 1
 	include "globalreg.h"
 	include "video.h"
 	include "structs.inc"
+	include "engine.h"
+
+CAM_X		equ 63
+CAM_Y		equ 80
+CAM_Z		equ 530
+CAM_ANGLE	equ 256
+
+
 
 MACRO MyINITMODULE
 .\dest equ (MODrun_\0)+$8000
@@ -29,27 +37,6 @@ MACRO MyINITMODULE
 	BL (r3)
 ENDM
 
-	macro face ; p1,p2,p3,p4,col
-	dc.w \0*8,\1*8,\2*8,\4
-	dc.w \2*8,\3*8,\0*8,\4
-	endm
-
-	macro tri			; p1,p2,p3,col
-	dc.w \0*8,\1*8,\2*8,\3
-	endm
-
-	macro PT
-	dc.w 0, \0/2 & $ffff,\1/2 & $ffff,\2/2 & $ffff
-	endm
-
-	macro NT
-	dc.w 0, \0 & $ffff,\1 & $ffff,\2 & $ffff
-	endm
-
-	macro VNT
-	dc.w 0, -(\0) & $ffff,-(\1) & $ffff,-(\2) & $ffff
-	endm
-
 stacktop	equ $f03ffc
 
 IRQ_STACK	equ $f03020-4
@@ -58,42 +45,34 @@ IRQ_STACK	equ $f03020-4
 x_save		equ stacktop-16*4-(max_y+1)*8
  ENDIF
 
-object_data	equ $20000
-tri_array_ram	equ $40000
- IFND DRAW2
-tri_ptrs_ram	equ $50000
- ELSE
- IF GOURAUD = 1
-tri_ptrs_ram	equ $50000
- ENDIF
- ENDIF
+object_data	equ $e0000
+tri_ptrs_ram	equ $100000
+tri_array_ram	equ $168000
 
-
-	macro	defobj 		; name,base,npoints,nfaces
-.\npoints	equ \2
-.\nfaces	equ \3
-
-\0_data			equ \1
-\0_rotated		equ \0_data
-\0_moved		equ \0_rotated          +.\npoints*_3d_size
-\0_projected		equ \0_moved            +.\npoints*_3d_size
-\0_normals_rotated	equ \0_projected        +.\npoints*proj_size
-\0_vnormals_rotated	equ \0_normals_rotated  +.\nfaces*_3d_size
-\0_visible		equ \0_vnormals_rotated +.\npoints*_3d_size
-\0_end			equ \0_visible          +.\nfaces*4
-\0_size			equ \0_end-\0_data
+	macro	defobj 	; name,npoints,nfaces
+	RSB	\0_rotated,	 	4+\1*_3d_size
+	RSB	\0_projected,		4+\1*proj_size
+	RSB	\0_normals_rotated,	4+\2*_3d_size
+	RSB	\0_vnormals_rotated,	4+\1*_3d_size
+	RSB	\0_visible,		4+\2*4
+;;->	echo "\0 p %H\0_projected"
+;;->	echo "\0 r %H\0_rotated"
+//->	echo "\0 n %H\0_normals_rotated"
+;;->	echo "\0 v %H\0_vnormals_rotated"
 	endm
 
-	defobj	torus,object_data,144,288
-	defobj	cube,torus_end,8,12
-	defobj	kugel,cube_end,134,(24+120*2)
-	defobj	torus2,kugel_end,144,288
-	defobj	cube2,torus2_end,8,12
-	defobj	prisma,cube2_end,5,6
-	defobj	diamant,prisma_end,20,36
-	defobj	plane,diamant_end, 121,162
-
-	echo "End of object: %hplane_end"
+	RSSET object_data
+	defobj	torus,144,288
+	defobj	cube,8,12
+	defobj	kugel,134,264
+	defobj	torus2,144,288
+	defobj	cube2,8,12
+	defobj	prisma,5,6
+	defobj	diamant,20,36
+//->	defobj	plane, 121,162
+	defobj	plane, dia*dia, 2*(dia-1)*(dia-1)
+	RSB	plane_faces,(dia-1)*(dia-1)*2
+	echo "End of object: %hRSADDR"
 
 
 	echo "stacktop %H stacktop"
@@ -106,10 +85,13 @@ tri_ptrs_ram	equ $50000
 	RSL	CAMERA_X
 	RSL	CAMERA_Y
 	RSL	CAMERA_Z
+	RSL	CAMERA_ANGLE_Y
 	RSL	LIGHT_X
 	RSL	LIGHT_Y
 	RSL	LIGHT_Z
-	RSL	FAR_Z
+	RSL	RLIGHT_X
+	RSL	RLIGHT_Y
+	RSL	RLIGHT_Z
 	RSL	OBJECT_PTR
 	RSL	ANGLE_X
 	RSL	ANGLE_Y
@@ -117,7 +99,18 @@ tri_ptrs_ram	equ $50000
 	RSL	X_POS
 	RSL	Y_POS
 	RSL	Z_POS
+	RSL	USE_GOURAUD
 	RSL	LastJoy,2
+
+_CAMERA_Y	EQU CAMERA_Y-CAMERA_X
+_CAMERA_Z	EQU CAMERA_Z-CAMERA_X
+_CAMERA_ANGLE_Y	EQU CAMERA_ANGLE_Y-CAMERA_X
+_LIGHT_X	EQU LIGHT_X-CAMERA_X
+_LIGHT_Y	EQU LIGHT_Y-CAMERA_X
+_LIGHT_Z	EQU LIGHT_Z-CAMERA_X
+_RLIGHT_X	EQU RLIGHT_X-CAMERA_X
+_RLIGHT_Y	EQU RLIGHT_Y-CAMERA_X
+_RLIGHT_Z	EQU RLIGHT_Z-CAMERA_X
 
 	include <js/var/txtscr.var>
 
@@ -136,7 +129,7 @@ init:
 	jump	(r0)
 	nop
 	include "irq.js"
-	include "poly_mmu.js"
+	include "engine.js"
 	include "control.js"
 
 skip_modules
@@ -162,8 +155,8 @@ skip_modules
 	BL	(r4)
 
 	movei	#memzero,r4
-	movei	#$20000,r0
-	movei	#$200000-$20000,r1
+	movei	#ende,r0
+	movei	#$200000-ende,r1
 	BL	(r4)
 ;;; ------------------------------
 	include <js/inc/videoinit.inc>
@@ -261,23 +254,26 @@ pal:
 	addq	#4,r0
 	endm
 
-	ADD_OBJ kugel
-	ADD_OBJ torus2
-	ADD_OBJ plane
+//->	ADD_OBJ torus2
 	ADD_OBJ torus
-	ADD_OBJ diamant
+//->	ADD_OBJ diamant
 	ADD_OBJ cube
-	ADD_OBJ cube2
-	ADD_OBJ prisma
+//->	ADD_OBJ cube2
+//->	ADD_OBJ prisma
+	ADD_OBJ kugel
 
 	movei	#CAMERA_X,r15
-	movei	#0,r0
+	movei	#CAM_X,r0
+	store	r0,(r15)			; camera x
+	movei	#CAM_Y,r0
+	store	r0,(r15+CAMERA_Y-CAMERA_X)	; camera y
+	movei	#CAM_Z,r0
 	store	r0,(r15+CAMERA_Z-CAMERA_X)	; camera z
-	movei	#3300,r0
-	store	r0,(r15+FAR_Z-CAMERA_X)
+	movei	#CAM_ANGLE*4,r0
+	store	r0,(r15+CAMERA_ANGLE_Y-CAMERA_X); camera angle
 
-	movei	#181,r0
-	movei	#-181,r1
+	movei	#247,r0
+	movei	#-66,r1
 	movei	#0,r2
 	store	r0,(r15+LIGHT_X-CAMERA_X)
 	store	r1,(r15+LIGHT_Y-CAMERA_X)
@@ -287,7 +283,10 @@ pal:
 	movei	#(26591-1)<<16|0,tmp0
 	store	tmp0,(tmp1)
 
-//->	MyINITMODULE poly_mmu
+	movei	#createPlaneFaces,r0
+	BL	(r0)
+
+//->	MyINITMODULE engine
 //->	MyINITMODULE control
 
 	xor	r0,r0
@@ -314,8 +313,8 @@ main_loop:
 	movei	#$00F00052,r0
 	storew	r1,(r0)
 
-	MyINITMODULE poly_mmu
-	MBL	poly_mmu
+	MyINITMODULE engine
+	MBL	engine
 
 	movei	#$00F00052,r0
 	loadw	(r0),r0
@@ -332,14 +331,38 @@ main_loop:
 	bset	#17,r1
 	movei	#PrintDEC2_YX,r2
 	BL	(r2)
-	moveq	#0,r1
+
 	movefa	dump.a,r0
+	moveq	#0,r1
 	movei	#PrintDEC_YX,r2
 	BL	(r2)
 
 	movei	#main_loop,r0
 	jump	(r0)
 	nop
+
+sqrt::
+	normi	r0,r1
+	move	r0,r2
+	addq	#23,r1
+	moveq	#0,r0
+	bclr	#0,r1
+	moveq	#1,r3
+	neg	r1
+	jr	.enter
+	sh	r1,r3
+.loop
+	shrq	#2,r3
+.enter
+	move	r0,r1
+	jump	eq,(LR)
+	add	r3,r1
+	cmp	r1,r2
+	jr	cs,.loop
+	shrq	#1,r0
+	sub	r1,r2
+	jr	.loop
+	add	r3,r0
 
 	include <js/inc/txtscr.inc>
 
@@ -384,9 +407,74 @@ overlay::
 	nop
 
 	unreg	blitter
+
+****************************************
+* Create the triangles for the landscape
+*
+* Done only once
+****************************************
+createPlaneFaces::
+
+face_ptr	reg 99
+p0		reg 99
+p1		reg 99
+p2		reg 99
+p3		reg 99
+LOOPZX		reg 99
+ix		reg 99
+iz		reg 99
+
+	movei	#plane_faces+4,face_ptr
+
+	moveq	#0,p0
+	moveq	#1,p1
+	moveq	#dia,p2
+	moveq	#dia+1,p3
+
+	moveq	#dia-1,iz
+	moveq	#dia-1,ix
+	move	PC,LOOPZX
+	addq	#4,LOOPZX
+.loopxz
+	storew	p0,(face_ptr)
+	addq	#2,face_ptr
+	storew	p1,(face_ptr)
+	addq	#2,face_ptr
+	storew	p2,(face_ptr)
+	addq	#4,face_ptr
+
+	storew	p1,(face_ptr)
+	addq	#2,face_ptr
+	storew	p3,(face_ptr)
+	addq	#2,face_ptr
+	storew	p2,(face_ptr)
+	addqt	#1,p0
+	addqt	#1,p1
+	addqt	#1,p2
+	subq	#1,ix
+	addqt	#1,p3
+	jump	ne,(LOOPZX)
+	addqt	#4,face_ptr
+
+	addqt	#1,p0
+	addqt	#1,p1
+	addqt	#1,p2
+	subq	#1,iz
+	addqt	#1,p3
+	jump	ne,(LOOPZX)
+	moveq	#dia-1,ix
+
+	movei	#plane_faces,tmp0
+	sub	tmp0,face_ptr
+	shrq	#3,face_ptr
+	jump	(LR)
+	store	face_ptr,(tmp0)
+
+	unreg ix,iz,p0,p1,p2,p3,face_ptr,LOOPZX
 ******************
 * text-data
-Hallo:		DC.B "move: A/B/C + U/D // change focus: O",0
+Hallo:		dc.b 0
+	DC.B "move: A/B/C + U/D // change focus: O",0
 FaceTxt:	DC.B " faces/",0
 PointsTxt:	DC.B " points",0
 ms:		DC.B "  ms/f X= 123456 Y= 123456 Z= 123456",0
@@ -411,12 +499,22 @@ ASCII::
 	.align 8
 	include <js/inc/memzero.inc>
 	include <js/inc/memset.inc>
-
 	include "pobjects.inc"
 	include "sintab.inc"
+	include "planex.inc"
 
+nnormals	equ (plane_vnormals - plane_normals)/16
 
+	echo "plane y:  %Hplane_y"
+	echo "plane col:%Hplane_col"
+	echo "plane n:  %Hplane_normals"
+	echo "plane n#: %Dnnormals"
+	echo "plane v:  %Hplane_vnormals"
+	echo "plane pro:%Xplane_projected"
+	echo "plane fcs:%Xplane_faces"
+
+	align	32
 ende:		equ *
 	echo "ENDE : %Hende"
 
-end
+	end

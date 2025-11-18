@@ -41,17 +41,21 @@ obl1_60.bin: obl.S video.h
 OBL=obl0_50.bin obl1_50.bin obl0_60.bin obl1_60.bin video.h
 
 OBJ_INC=torus.inc structs.inc cube.inc bigball.inc  diamant.inc pobjects.inc
-OBJ_INC+= plane.inc prisma.inc draw2_nog.inc
+OBJ_INC+= prisma.inc planex.inc
 
-$(DEMO).o : draw2.inc draw.inc control.js irq.js globalreg.h
+SRC_INC= visible.inc project.inc draw2.inc draw.inc rotate.inc draw2_nog.inc
+SRC_INC+= gouraud.inc createplane.inc
 
-$(DEMO).o : $(DEMO).js poly_mmu.js $(OBL) $(OBJ_INC)
+$(DEMO).o :control.js irq.js globalreg.h engine.h
+
+$(DEMO).o : $(DEMO).js engine.js $(OBL) $(OBJ_INC) $(SRC_INC)
 	$(TJASS)  $(TJFLAGS) $<
 
 $(DEMO).j64: $(DEMO).o
 	@cat sbl.XXX >$@
 	cat $< >> $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >> $@
+	truncate -s 1024K $@
 
 include Rules.launch
 
