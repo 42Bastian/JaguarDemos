@@ -152,6 +152,7 @@ no_123:
 .nn
 	store	r1,(r3)
 .not_option:
+	or	r1,r1
 	btst	#JOY_0_BIT,r0
 	movei	#USE_GOURAUD,r1
 	jr	eq,.not_0

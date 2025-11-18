@@ -124,6 +124,7 @@ triangle:
 	jr	nn,.x_ok
 	cmp	x2,tmp0
 	jump	n,(LR)
+	nop
 .x_ok
 	;; debug
 	movefa	dump.a,r0
