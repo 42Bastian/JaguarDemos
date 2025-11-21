@@ -14,20 +14,18 @@ c		reg 99
 d		reg 99
 e		reg 99
 f		reg 99
-af		reg 99
-bf		reg 99
-ae		reg 99
-be		reg 99
+ac		reg 99
+bc		reg 99
 
 m1		reg 99	;
 m2		reg 99	;
-m3		reg 99	;          / ac afd-be ade+bf \
-m4		reg b!	;          |                  |
-m5		reg 99	; D(x,y,z)=| bc bfd+ae bde-af |
-m6		reg 99	;          |                  |
-m7		reg d!	;          \-d    cf     ce   /
-m8		reg f!	;
-m9		reg c!	;
+m3		reg c!	;          / df      -de       c  \
+m4		reg 99	;          |                      |
+m5		reg 99	; D(x,y,z)=| ac*f+be -ace+bf  -ad  |
+m6		reg 99	;          |                      |
+m7		reg 99	;          \ -bcf+ae bce+af   bd /
+m8		reg 99	;
+m9		reg 99	;
 
 rotate_object::
 	load	(curr_object+obj_angle),a
@@ -40,12 +38,12 @@ rotate_object::
 	shlq	#16,e
 	movei	#SinTab,r14
 	shrq	#16,e
-	load	(r14+a),b	; cos alpha | sin alpha
-	load	(r14+c),d	; cos beta  | sin beta
-	load	(r14+e),f	; cos gamma | sin beta
-	move	b,a
-	move	d,c
-	move	f,e
+	load	(r14+a),a	; cos alpha | sin alpha
+	load	(r14+c),c	; cos beta  | sin beta
+	load	(r14+e),e	; cos gamma | sin beta
+	move	a,b
+	move	c,d
+	move	e,f
 	shrq	#16,b
 	shrq	#16,d
 	shrq	#16,f
@@ -53,59 +51,55 @@ rotate_object::
 *
 ** compute rotation matrix
 *
-	move	a,af
-	move	a,ae
-	imult	f,af
-	imult	e,ae
-	sharq	#15,af
-	sharq	#15,ae
+	move	a,ac
+	move	b,bc
+	imult	c,ac
+	imult	c,bc
+	sharq	#15,ac
+	sharq	#15,bc
 
-	move	b,bf
-	move	b,be
-	imult	f,bf
-	imult	e,be
-	sharq	#15,bf
-	sharq	#15,be
-
-	move	a,m1
-	move	af,m2
-	imult	c,m1
-	imult	d,m2
+	move	e,tmp0
+	move	d,m1
+	neg	tmp0
+	move	d,m2
+	imult	f,m1		; m1 = df
+	imult	tmp0,m2		; m2 = -de
 	sharq	#15,m1
 	sharq	#15,m2
 
-	sub	be,m2
+	move	d,m6
+	move	d,m9
+	neg	m6
+	imult	b,m9
+	imult	a,m6
+	sharq	#15,m9		; m9 = bd
+	sharq	#15,m6		; m6 = -ad
 
-	move	ae,m3
-//->	move	b,m4
-	imult	c,m4
-	imult	d,m3
+	imultn	ac,tmp0
+	imacn	b,f
+	resmac	m5		; m5 = -ace+be
+
+	neg	bc
+
+	imultn	ac,f
+	imacn	b,e
+	resmac	m4		; m4 = acf+be
+
+	imultn	bc,tmp0
+	imacn	a,f
+	resmac	m8		; m8 = bce+af (really: -bc*-e)
+
+	imultn	bc,f
+	imacn	a,e
+	resmac	m7		;-bce+ae
+
 	sharq	#15,m4
-	sharq	#15,m3
-
-
-	add	bf,m3
-
-	move	bf,m5
-	move	be,m6
-	imult	d,m5
-	imult	d,m6
 	sharq	#15,m5
-	sharq	#15,m6
-
-	add	ae,m5
-	sub	af,m6
-
-//->	move	d,m7
-//->	move	f,m8
-	neg	m7
-//->	move	c,m9
-	imult	c,m8
-	imult	e,m9
+	sharq	#15,m7
 	sharq	#15,m8
-	sharq	#15,m9
 
-	UNREG a,b,c,d,e,f,af,bf,ae,be	; release registers
+
+	UNREG a,b,c,d,e,f,ac,bc
 
 ;---------------
 
@@ -274,18 +268,7 @@ rotate_cont
 
 	move	normals_source,xyz_ptr
 	load	(curr_object+obj_normals_rotated),rotated
- IF GOURAUD = 1
-	jr	rc_points
-	addqt	#._ret2-._ret1,LR2
-
-._ret2	load	(curr_object+obj_vnormals_rotated),rotated
-	move	vnormals_source,xyz_ptr
-	cmpq	#0,rotated
-	jump	eq,(LR)
 	move	LR,LR2
- ELSE
-	move	LR,LR2
- ENDIF
 
 rc_points:
 	load	(xyz_ptr),counter

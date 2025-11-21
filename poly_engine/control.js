@@ -31,16 +31,16 @@ Control::
 	addq	#obj_angle_a,r1
 
 	loadw	(r1),r2
-	addq	#16,r2
+	addq	#8,r2
 	and	r0,r2
 	storew	r2,(r1)
-	addq	#2,r1
+	addqt	#2,r1
 
 	loadw	(r1),r2
 	addq	#8,r2
 	and	r0,r2
-	storew	r2,(r1)
-	addq	#2,r1
+;;->	storew	r2,(r1)
+	addqt	#2,r1
 
 	loadw	(r1),r2
 	addq	#8,r2
@@ -186,7 +186,7 @@ no_123:
 	addq	#2,curr_obj
 	movei	#1<<16|(0+30),r1
 	loadw	(curr_obj),r0
-	shrq	#3,r0
+	shrq	#2,r0
 	BL	(print_short)
 
 	POPLR
