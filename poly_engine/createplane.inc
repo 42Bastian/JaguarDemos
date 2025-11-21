@@ -13,7 +13,7 @@ x		reg 99
 wx		reg 99
 wz		reg 99
 cam_sin		reg 99
-cam_sin_neg	reg 99
+neg_cam_sin	reg 99
 cam_cos		reg 99
 xcenter		REG 99
 ycenter		REG 99
@@ -41,17 +41,9 @@ createPlane::
 	movei	#(max_x>>1),xcenter
 	movei	#(max_y>>1),ycenter
 
-	movei	#CAMERA_ANGLE_Y,tmp0
-	movei	#SinTab,tmp1
-	movei	#SinTab+128*4,tmp2
-	load	(tmp0),tmp0
-	add	tmp0,tmp1
-	add	tmp0,tmp2
-	load	(tmp1),cam_sin
-	load	(tmp2),cam_cos
-	move	cam_sin,cam_sin_neg
-	neg	cam_sin_neg
-
+	movefa	cam_cos.a,cam_cos
+	movefa	cam_sin.a,cam_sin
+	movefa	neg_cam_sin.a,neg_cam_sin
 
 	moveq	#dia,iz
 	movei	#plane_y,plane_source
@@ -84,6 +76,9 @@ createPlane::
 	shlq	#grid_size_bits,wx
 	shlq	#grid_size_bits,wz
 
+	addq	#8,wx
+	addq	#8,wz
+
 	movefa	cam_x.a,tmp0
 	movefa	cam_z.a,tmp1
 
@@ -92,7 +87,7 @@ createPlane::
 
 	addq	#8,rotated	; point to z
 
-	imultn	wx,cam_sin_neg
+	imultn	wx,neg_cam_sin
 	imacn	wz,cam_cos
 	resmac	tmp2
 
@@ -202,7 +197,7 @@ n_z		reg 99
 	imacn	n_z,cam_sin
 	resmac	tmp0
 
-	imultn	n_x,cam_sin_neg
+	imultn	n_x,neg_cam_sin
 	imacn	n_z,cam_cos
 	resmac	tmp1
 
@@ -226,7 +221,7 @@ n_z		reg 99
 	imacn	n_z,cam_sin
 	resmac	tmp0
 
-	imultn	n_x,cam_sin_neg
+	imultn	n_x,neg_cam_sin
 	imacn	n_z,cam_cos
 	resmac	tmp1
 
@@ -251,6 +246,7 @@ n_z		reg 99
 
 	unreg rn_ptr,n_ptr,n_x,n_y,n_z
 
+ IF GOURAUD = 1
 ****************************************
 ** rotate vnormals
 ****************************************
@@ -260,17 +256,27 @@ n_x		reg 99
 n_y		reg 99
 n_z		reg 99
 
+l_x		reg 99
+l_y		reg 99
+l_z		reg 99
+
 planeRotateVnormals::
+	movei	#.no_gouraud,r1
+	movei	#USE_GOURAUD,r0
+	load	(r0),r0
+	movei	#RLIGHT_X,r14
+	cmpq	#0,r0
+	load	(r14),l_x
+	jump	eq,(r1)
+	load	(r14+4),l_y
+	load	(r14+8),l_z
 
 	movefa	z_pos.a,z_pos
 
 	moveq	#dia,iz
+	movei	#plane_vnormals_rotated+4-1,rvn_ptr
 	movei	#plane_vnormals,vn_ptr
-	movei	#dia*dia,tmp0
-	movei	#plane_vnormals_rotated,rvn_ptr
-	store	tmp0,(rvn_ptr)
-	addq	#4,rvn_ptr
-	movei	#$3fff,tmp3
+
 ._pc0	move	PC,LOOPX
 	addq	#.loopx0-._pc0,LOOPX
 	move	pc,LOOPZ
@@ -278,11 +284,11 @@ planeRotateVnormals::
 .loopz0:
 	move	z_pos,oz
 	shlq	#32-world_size_bits,oz
-	shrq	#32-2*world_size_bits-3,oz
 	movefa	x_pos.a,x
+	shrq	#32-2*world_size_bits-3,oz
+	move	x,ox
 	moveq	#dia,ix
 .loopx0
-	move	x,ox
 	shlq	#32 - world_size_bits,ox
 	shrq	#32 - world_size_bits-3,ox
 	add	oz,ox
@@ -297,46 +303,52 @@ planeRotateVnormals::
 	imacn	n_z,cam_sin
 	resmac	tmp0
 
-	imultn	n_x,cam_sin_neg
+	imultn	n_x,neg_cam_sin
 	imacn	n_z,cam_cos
 	resmac	tmp1
-
-	add	tmp3,tmp0
-	add	tmp3,tmp1
 
 	sharq	#15,tmp0
 	sharq	#15,tmp1
 
-	store	tmp0,(rvn_ptr)
-	store	n_y,(rvn_ptr+4)
-	store	tmp1,(rvn_ptr+8)
+	imultn	l_x,tmp0
+	imacn	l_y,n_y
+	imacn	l_z,tmp1
+	resmac	tmp1
 
-	subq	#1,ix
+	addqt	#1,rvn_ptr
+	sharq	#8,tmp1
 	addqt	#1,x
+	sat8	tmp1
+	subq	#1,ix
+	storeb	tmp1,(rvn_ptr)
 	jump	ne,(LOOPX)
-	addqt	#16,rvn_ptr
+	move	x,ox
 
 	subq	#1,iz
 	jump	ne,(LOOPZ)
 	addq	#1,z_pos
 
-	unreg rvn_ptr,vn_ptr,n_x,n_y,n_z
-	unreg cam_sin,cam_cos,cam_sin_neg
+.no_gouraud
 
+	unreg rvn_ptr,vn_ptr,n_x,n_y,n_z,l_x,l_y,l_z
+	unreg cam_sin,cam_cos,neg_cam_sin
+ ENDIF
 ****************************************
 ** set triangle colors
 ****************************************
 
 face_ptr	reg 99
 
+planeSetColor::
 	movei	#plane_faces+4+6,face_ptr
 	movefa	z_pos.a,z_pos
 
 	moveq	#dia-1,iz
 	move	z_pos,oz
 	movei	#plane_col,tmp0
+._pc:
 	move	PC,LOOPX
-	addq	#16,LOOPX
+	addq	#.loopx1-._pc,LOOPX
 	move	PC,LOOPZ
 	addq	#4,LOOPZ
 .loopz1

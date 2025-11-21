@@ -6,6 +6,9 @@ LYXASS	EQU 1
 DRAW2		equ 1
 GOURAUD		set 1
 
+MOD		EQU 1
+chip		equ 0
+gone		equ 1
 
 	include <js/symbols/jagregeq.js>
 	include <js/symbols/blit_eq.js>
@@ -16,13 +19,14 @@ GOURAUD		set 1
 	include "video.h"
 	include "structs.inc"
 	include "engine.h"
+ IF MOD = 1
+	include "hively.inc"
+ ENDIF
 
-CAM_X		equ 63
+CAM_X		equ -220
 CAM_Y		equ 80
-CAM_Z		equ 530
-CAM_ANGLE	equ 256
-
-
+CAM_Z		equ 50
+CAM_ANGLE	equ 0
 
 MACRO MyINITMODULE
 .\dest equ (MODrun_\0)+$8000
@@ -129,6 +133,7 @@ init:
 	jump	(r0)
 	nop
 	include "irq.js"
+//->	include "genmap.inc"
 	include "engine.js"
 	include "control.js"
 
@@ -168,6 +173,32 @@ skip_modules
 	moveq	#0,r0
 	movei	#$f00400,r1
 	store	r0,(r1)
+;;; ------------------------------
+ IF  MOD = 1
+	movei	#DSP_start,r0
+	movei	#DSP_RAM,r1
+	movei	#(DSP_end-DSP_start),r2
+	nop
+cpy_dsp:
+	load	(r0),r3
+	addq	#4,r0
+	subq	#4,r2
+	store	r3,(r1)
+	jr	pl,cpy_dsp
+	addq	#4,r1
+
+	movei	#DSP_flag_replay_ON_OFF,r14
+	movei	#song,r0
+	store	r0,(r14+16)
+	movei	#$100,r0
+	store	r0,(r14+12)
+	movei	#binPrecalcTable,r0
+	store	r0,(r14+8)
+	movei	#panning_table,r0
+	store	r0,(r14+4)
+	moveq	#0,r0
+	store	r0,(r14)
+ ENDIF
 ;;; ------------------------------
 
 	movei	#254,r0
@@ -244,6 +275,17 @@ pal:
 	nop
 	nop
 
+ IF MOD = 1
+	moveq	#0,r0
+	bset	#14,r0
+	movei	#$f1a100,r14
+	store	r0,(r14)
+	movei	#$f1b000,r0
+	store	r0,(r14+$10)	; PC
+	moveq	#1,r0
+	store	r0,(r14+$14)	; GO
+ ENDIF
+
 	movei	#OBJECT_LIST,r0
 	movei	#OBJECT_PTR,r1
 	store	r0,(r1)
@@ -254,12 +296,12 @@ pal:
 	addq	#4,r0
 	endm
 
-//->	ADD_OBJ torus2
+	ADD_OBJ torus2
 	ADD_OBJ torus
-//->	ADD_OBJ diamant
+	ADD_OBJ diamant
 	ADD_OBJ cube
-//->	ADD_OBJ cube2
-//->	ADD_OBJ prisma
+	ADD_OBJ cube2
+	ADD_OBJ prisma
 	ADD_OBJ kugel
 
 	movei	#CAMERA_X,r15
@@ -269,12 +311,12 @@ pal:
 	store	r0,(r15+CAMERA_Y-CAMERA_X)	; camera y
 	movei	#CAM_Z,r0
 	store	r0,(r15+CAMERA_Z-CAMERA_X)	; camera z
-	movei	#CAM_ANGLE*4,r0
+	movei	#CAM_ANGLE*8,r0
 	store	r0,(r15+CAMERA_ANGLE_Y-CAMERA_X); camera angle
 
-	movei	#247,r0
-	movei	#-66,r1
-	movei	#0,r2
+	movei	#139,r0
+	movei	#-105,r1
+	movei	#-157,r2
 	store	r0,(r15+LIGHT_X-CAMERA_X)
 	store	r1,(r15+LIGHT_Y-CAMERA_X)
 	store	r2,(r15+LIGHT_Z-CAMERA_X)
@@ -501,7 +543,28 @@ ASCII::
 	include <js/inc/memset.inc>
 	include "pobjects.inc"
 	include "sintab.inc"
-	include "planex.inc"
+	include "plane2.inc"
+
+	IF MOD = 1
+	align 8
+DSP_start:
+	ibytes "hively_player.bin"
+DSP_end:
+	.long
+song:
+ if chip = 1
+        .incbin "mod/chiprolled.hvl.streambits"
+ endif
+ if gone = 1
+        .incbin "mod/gone.ahx.streambits"
+ endif
+	.long
+binPrecalcTable:
+	ibytes "AHX_FilterPrecalc.bin"
+	.long
+panning_table:
+	ibytes "AHX_panning.bin"
+	ENDIF
 
 nnormals	equ (plane_vnormals - plane_normals)/16
 

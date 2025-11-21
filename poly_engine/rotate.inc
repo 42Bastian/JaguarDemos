@@ -35,33 +35,18 @@ rotate_object::
 	load	(curr_object+obj_angle),c
 	subq	#4,curr_object
 
-//->	movei	#rotate_camera,tmp0
-//->	move	a,tmp1
-//->	or	c,tmp1
-//->	jump	eq,(tmp0)
-
-	move	a,b
 	move	c,e
 	shrq	#16,c
 	shlq	#16,e
-	move	c,d
+	movei	#SinTab,r14
 	shrq	#16,e
-	movei	#SinTab+128*4,tmp0
-	movei	#SinTab,tmp1
-	move	e,f
-	add	tmp1,a
-	add	tmp0,b
-	add	tmp1,c
-	add	tmp0,d
-	add	tmp1,e
-	add	tmp0,f
-
-	load	(a),a	; sin alpha
-	load	(b),b	; cos alpha
-	load	(c),c	; sin beta
-	load	(d),d	; cos beta
-	load	(e),e	; sin gamma
-	load	(f),f	; cos gamma
+	load	(r14+a),b	; cos alpha
+	load	(r14+c),d	; cos beta
+	load	(r14+e),f	; cos gamma
+	addq	#4,r14
+	load	(r14+a),a	; sin alpha
+	load	(r14+c),c	; sin beta
+	load	(r14+e),e	; sin gamma
 
 *
 ** compute rotation matrix
@@ -153,7 +138,6 @@ LR2		reg 99
 
 	load	(curr_object+obj_points),xyz_ptr
 	load	(curr_object+obj_rotated),rotated
-	movei	#$3fff,tmp3
 	move	pc,LR2
 	jr	rotate_points
 	addq	#6,LR2
@@ -210,10 +194,6 @@ rotate_points:
 	imacn	m9,z1
 	resmac	tmp2
 
-	add	tmp3,tmp0
-	add	tmp3,tmp1
-	add	tmp3,tmp2
-
 	sharq	#15,tmp0
 	sharq	#15,tmp1
 	sharq	#15,tmp2
@@ -264,7 +244,6 @@ rotate_camera::
 	sub	tmp0,x_pos
 	sub	tmp1,y_pos
 	sub	tmp2,z_pos
-	movei	#$3fff,tmp3
 
 	load	(curr_object+obj_points),vertex_source
 	load	(curr_object+obj_normals),normals_source
@@ -276,16 +255,9 @@ rotate_camera1::
 	load	(curr_object+obj_normals_rotated),normals_source
 	load	(curr_object+obj_vnormals_rotated),vnormals_source
 rotate_cont
-	movei	#CAMERA_ANGLE_Y,tmp0
-	movei	#SinTab,tmp1
-	movei	#SinTab+128*4,tmp2
-	load	(tmp0),tmp0
-	add	tmp0,tmp1
-	add	tmp0,tmp2
-	load	(tmp1),cam_sin
-	load	(tmp2),cam_cos
-	move	cam_sin,neg_cam_sin
-	neg	neg_cam_sin
+	movefa	cam_cos.a,cam_cos
+	movefa	cam_sin.a,cam_sin
+	movefa	neg_cam_sin.a,neg_cam_sin
 
 	move	vertex_source,xyz_ptr
 	load	(curr_object+obj_rotated),rotated
@@ -343,8 +315,6 @@ rc_points:
 	imacn	cam_cos,z1
 	resmac	tmp1
 
-	add	tmp3,tmp0
-	add	tmp3,tmp1
 	sharq	#15,tmp0
 	sharq	#15,tmp1
 

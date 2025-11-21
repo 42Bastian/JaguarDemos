@@ -92,7 +92,7 @@ check_faces_visible::
 
 .z1	cmp	min_z,tmp2
 	jr	pl,.z2
-	nop
+	bset	#31,tmp0	; set "invisible" flag
 	load	(m_ptr+z2),x0
 	addq	#4,z2
 	load	(m_ptr+z2),y0
@@ -104,27 +104,11 @@ check_faces_visible::
  ELSE
 	moveq	#near_z,tmp3
  ENDIF
-	jr	mi,.ko
+	jr	mi,.skip
 	cmp	min_z,tmp3
-	jr	mi,.ok_z
+	jr	pl,.skip
 	nop
-.ko
-	movei	#.skip,tmp1
-	jump	(tmp1)
-	bset	#31,tmp0
-
-.ok_z
-
-//->	movefa	dump0.a,tmp1
-//->	store	min_z,(tmp1)
-//->	addq	#4,tmp1
-//->	moveta	tmp1,dump0.a
-
-//->	movei	#far_z,tmp3
-//->	cmp	min_z,tmp3
-//->	jr	mi,.ko
-
-	imultn	x0,n_x
+	imultn	x0,n_x		; backface culling
 	imacn	y0,n_y
 	imacn	min_z,n_z
 	resmac	tmp0
@@ -133,7 +117,6 @@ check_faces_visible::
 	addqt	#8,n_ptr
 	jump	mi,(NO_LUM)
 	store	tmp0,(v_ptr)	; > 0 => visible
-
 
  IF GOURAUD = 1
 	cmpq	#0,NO_GOURAUD

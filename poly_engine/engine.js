@@ -25,6 +25,9 @@ ENDS
 cam_z.a		reg 99
 cam_y.a		reg 99
 cam_x.a		reg 99
+cam_cos.a	reg 99
+cam_sin.a	reg 99
+neg_cam_sin.a	reg 99
 
  IFND DRAW2
 min_max.a	reg 99
@@ -68,13 +71,15 @@ cam_cos		reg 99
 
 	load	(r15+_CAMERA_ANGLE_Y),tmp0
 	movei	#SinTab,tmp1
-	movei	#SinTab+128*4,tmp2
 	add	tmp0,tmp1
-	add	tmp0,tmp2
+	load	(tmp1),cam_cos
+	addq	#4,tmp1
 	load	(tmp1),cam_sin
-	load	(tmp2),cam_cos
+	moveta	cam_cos,cam_cos.a
 	move	cam_sin,neg_cam_sin
+	moveta	cam_sin,cam_sin.a
 	neg	neg_cam_sin
+	moveta	neg_cam_sin,neg_cam_sin.a
 
 	load	(r15+_LIGHT_X),tmp0
 	load	(r15+_LIGHT_Y),tmp1
@@ -126,16 +131,6 @@ curr_object	reg 15
 	movei	#obj_plane,curr_object
 	movei	#check_faces_visible,r0
 	BL	(r0)
-
- IF GOURAUD = 1
-	movei	#USE_GOURAUD,r0
-	load	(r0),r0
-	cmpq	#0,r0
-	movei	#gouraud,r0
-	move	PC,LR
-	jump	ne,(r0)
-	addq	#6,LR
- ENDIF
 
  IF 1
 	movei	#OBJECT_LIST,object_list
@@ -546,6 +541,7 @@ no_gouraud:
 
 	unreg	object_list
 	unreg	cam_x.a,cam_y.a,cam_z.a
+	unreg	cam_sin.a, neg_cam_sin.a, cam_cos.a
 	unreg	save_curr_object.a
  IFND DRAW2
 	unreg	min_max.a

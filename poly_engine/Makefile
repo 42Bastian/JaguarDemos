@@ -44,9 +44,9 @@ OBJ_INC=torus.inc structs.inc cube.inc bigball.inc  diamant.inc pobjects.inc
 OBJ_INC+= prisma.inc planex.inc
 
 SRC_INC= visible.inc project.inc draw2.inc draw.inc rotate.inc draw2_nog.inc
-SRC_INC+= gouraud.inc createplane.inc
+SRC_INC+= gouraud.inc createplane.inc sintab.inc
 
-$(DEMO).o :control.js irq.js globalreg.h engine.h
+$(DEMO).o :control.js irq.js globalreg.h engine.h hively_player.bin
 
 $(DEMO).o : $(DEMO).js engine.js $(OBL) $(OBJ_INC) $(SRC_INC)
 	$(TJASS)  $(TJFLAGS) $<
@@ -56,6 +56,10 @@ $(DEMO).j64: $(DEMO).o
 	cat $< >> $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >> $@
 	truncate -s 1024K $@
+
+hively_player.bin: hively_player_v21.S
+	rmac -4 -fb -u -i$(BJL_ROOT)/68k_inc $<
+	rln -z -n -a f1b000 x x -o $@ hively_player_v21.o
 
 include Rules.launch
 

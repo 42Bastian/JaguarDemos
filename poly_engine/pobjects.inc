@@ -4,7 +4,7 @@
 	dphrase
 obj_diamant:
 	dc.w	0		; visible
-	dc.w	100,0,400	; position: x,y,z
+	dc.w	-700,80,700	; position: x,y,z
 	dc.w	0		; spare
 	dc.w	0,0,128		; angle: a,b,c
 	dc.l	diamant_points
@@ -28,7 +28,7 @@ obj_prisma:
 	dc.w	0		; visible
 	dc.w	0,160,600	; position: x,y,z
 	dc.w	0		; spare
-	dc.w	20,120,0		; angle: a,b,c
+	dc.w	20*8,120*8,0		; angle: a,b,c
 	dc.l	prisma_points
 	dc.l	prisma_faces
 	dc.l	prisma_normals
@@ -48,7 +48,7 @@ obj_prisma:
 	dphrase
 obj_kugel:
 	dc.w	0		; visible
-	dc.w	0,100,800		; position: x,y,z
+	dc.w	-750,100,300		; position: x,y,z
 	dc.w	0		; spare
 	dc.w 	0,0,0		; angle: a,b,c
 	dc.l	kugel_points
@@ -83,9 +83,9 @@ obj_cube:
 
 obj_cube2:
 	dc.w	0		; visible
-	dc.w	-50,-24,300	; position: x,y,z
+	dc.w	-50,100,300	; position: x,y,z
 	dc.w	0		; spare
-	dc.w	0,20,0		; angle: a,b,c
+	dc.w	0,0,0		; angle: a,b,c
 	dc.l	cube_points
 	dc.l	cube2_faces
 	dc.l	cube2_normals
@@ -104,7 +104,7 @@ obj_cube2:
 	dphrase
 obj_torus:
 	dc.w	0		; visible
-	dc.w	-320,80,-500		; position: x,y,z
+	dc.w	-320,80,-1000		; position: x,y,z
 	dc.w	0		; spare
 	dc.w	0,0,0		; angle: a,b,c
 	dc.l	torus_points
@@ -120,7 +120,7 @@ obj_torus:
 	dphrase
 obj_torus2:
 	dc.w	0		; visible
-	dc.w	184,80,340	; position: x,y,z
+	dc.w	-880,80,-320	; position: x,y,z
 	dc.w	0		; spare
 	dc.w	0,0,0		; angle: a,b,c
 	dc.l	torus_points
