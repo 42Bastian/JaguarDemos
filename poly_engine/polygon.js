@@ -515,10 +515,7 @@ iz		reg 99
 	unreg ix,iz,p0,p1,p2,p3,face_ptr,LOOPZX
 ******************
 * text-data
-Hallo:		dc.b 0
-	DC.B "move: A/B/C + U/D // change focus: O",0
-FaceTxt:	DC.B " faces/",0
-PointsTxt:	DC.B " points",0
+Hallo:		DC.B " 00000     move: 1/2/3 + U/D // focus: O",0
 ms:		DC.B "  ms/f X= 123456 Y= 123456 Z= 123456",0
 	EVEN
 
