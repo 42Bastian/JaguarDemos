@@ -245,7 +245,7 @@ n_z		reg 99
 
  IF GOURAUD = 1
 ****************************************
-** rotate vnormals
+** rotate vnormals and calculate vertex luminance
 ****************************************
 vn_ptr		reg 14
 rvn_ptr		reg 15
@@ -261,7 +261,7 @@ planeRotateVnormals::
 	movei	#.no_gouraud,r1
 	movei	#USE_GOURAUD,r0
 	load	(r0),r0
-	movei	#RLIGHT_X,r14
+	movei	#LIGHT_X,r14	; light vector
 	cmpq	#0,r0
 	load	(r14),l_x
 	jump	eq,(r1)
@@ -271,7 +271,10 @@ planeRotateVnormals::
 	movefa	z_pos.a,z_pos
 
 	moveq	#dia,iz
+	;; storage for vertex luminance, skip count and compensate pre-increment
 	movei	#plane_vnormals_rotated+4-1,rvn_ptr
+
+	;; base vertex normals
 	movei	#plane_vnormals,vn_ptr
 
 ._pc0	move	PC,LOOPX
@@ -296,20 +299,9 @@ planeRotateVnormals::
 	move	n_y,n_z
 	sharq	#16,n_y
 
-	imultn	n_x,cam_cos
-	imacn	n_z,cam_sin
-	resmac	tmp0
-
-	imultn	n_x,neg_cam_sin
-	imacn	n_z,cam_cos
-	resmac	tmp1
-
-	sharq	#15,tmp0
-	sharq	#15,tmp1
-
-	imultn	l_x,tmp0
+	imultn	l_x,n_x	; now calculate luminance
 	imacn	l_y,n_y
-	imacn	l_z,tmp1
+	imacn	l_z,n_z
 	resmac	tmp1
 
 	addqt	#1,rvn_ptr
@@ -317,7 +309,7 @@ planeRotateVnormals::
 	addqt	#1,x
 	sat8	tmp1
 	subq	#1,ix
-	storeb	tmp1,(rvn_ptr)
+	storeb	tmp1,(rvn_ptr)	; just store it, vnormals not needed
 	jump	ne,(LOOPX)
 	move	x,ox
 
