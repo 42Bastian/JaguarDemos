@@ -26,7 +26,7 @@ Control::
 	addq	#1,r0
 	storeb	r0,(curr_obj)
 
-	movei	#511<<3,r0
+	movei	#511<<2,r0
 	move	curr_obj,r1
 	addq	#obj_angle_a,r1
 
@@ -93,16 +93,16 @@ no_object:
 turn_right:
 	subqt	#a_speed,r0
 
-	shlq	#32-9-3,r0
-	shrq	#32-9-3,r0
+	shlq	#32-9-2,r0
+	shrq	#32-9-2,r0
 	store	r0,(r14+CAMERA_ANGLE_Y-CAMERA_X)
 no_turn:
 	load	(r14+CAMERA_X-CAMERA_X),cam_x
 	load	(r14+CAMERA_Z-CAMERA_X),cam_z
 	movei	#SinTab,r15
-	load	(r15+r0),r1		; cos(camera_angle)
-	addq	#4,r0
-	load	(r15+r0),r0		; sin(camera_angle)
+	load	(r15+r0),r1		; cos(camera_angle)|sin(camera_angle)
+	move	r1,r0
+	shrq	#16,r1
 
 	moveq	#speed,r2
 	imult	r2,r0		; dx

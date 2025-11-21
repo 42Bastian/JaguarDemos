@@ -73,10 +73,10 @@ cam_cos		reg 99
 	movei	#SinTab,tmp1
 	add	tmp0,tmp1
 	load	(tmp1),cam_cos
-	addq	#4,tmp1
-	load	(tmp1),cam_sin
-	moveta	cam_cos,cam_cos.a
+	move	cam_cos,cam_sin
+	shrq	#16,cam_cos
 	move	cam_sin,neg_cam_sin
+	moveta	cam_cos,cam_cos.a
 	moveta	cam_sin,cam_sin.a
 	neg	neg_cam_sin
 	moveta	neg_cam_sin,neg_cam_sin.a

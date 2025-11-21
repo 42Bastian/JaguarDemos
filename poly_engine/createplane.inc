@@ -49,9 +49,6 @@ createPlane::
 	movei	#plane_y,plane_source
 	movei	#plane_projected,projected
 	movei	#plane_rotated+4,rotated
-//->	movei	#dia*dia,tmp0
-//->	store	tmp0,(rotated)
-//->	addq	#4,rotated
 
 	move	z_pos,oz
 ._pc	move	PC,LOOPX

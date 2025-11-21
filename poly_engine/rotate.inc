@@ -40,13 +40,15 @@ rotate_object::
 	shlq	#16,e
 	movei	#SinTab,r14
 	shrq	#16,e
-	load	(r14+a),b	; cos alpha
-	load	(r14+c),d	; cos beta
-	load	(r14+e),f	; cos gamma
-	addq	#4,r14
-	load	(r14+a),a	; sin alpha
-	load	(r14+c),c	; sin beta
-	load	(r14+e),e	; sin gamma
+	load	(r14+a),b	; cos alpha | sin alpha
+	load	(r14+c),d	; cos beta  | sin beta
+	load	(r14+e),f	; cos gamma | sin beta
+	move	b,a
+	move	d,c
+	move	f,e
+	shrq	#16,b
+	shrq	#16,d
+	shrq	#16,f
 
 *
 ** compute rotation matrix
