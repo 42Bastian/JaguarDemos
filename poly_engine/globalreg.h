@@ -27,8 +27,7 @@ LR		reg 28
 SP		reg 27
 VBLFlag		reg 26
 
-
-	regtop 25
+	regtop 26
 
 tmp3		reg 3
 tmp2		reg 2

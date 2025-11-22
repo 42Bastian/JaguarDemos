@@ -64,7 +64,9 @@ engine::
 	moveta	tmp1,cam_y.a
 	moveta	tmp2,cam_z.a
 
-	;; rotate light vector
+;;; ----------------------------------------
+;; rotate light vector
+;;; ----------------------------------------
 cam_sin		reg 99
 neg_cam_sin	reg 99
 cam_cos		reg 99
@@ -99,7 +101,9 @@ cam_cos		reg 99
 	store	tmp1,(r15+_RLIGHT_Z)
 
 	unreg	cam_sin, neg_cam_sin, cam_cos
-
+;;; ----------------------------------------
+;;; Clear Z table
+;;; ----------------------------------------
 	movei	#tri_ptrs_ram,r0
 	movei	#255,r1
 	moveq	#0,r2
@@ -108,13 +112,19 @@ cam_cos		reg 99
 	store	r2,(r0)
 	jr	pl,.clear_depthtable
 	addq	#4,r0
+;;; ----------------------------------------
 
 //->	movefa	screen1.a,r7
 //->	movei	#drawHex,r8
 //->	BL	(r8)
 
+	;; debug
 	movei	#$db000,r0
 	moveta	r0,dump0.a
+
+	moveq	#0,r0
+	moveta	r0,dump.a
+	;;
 
 
 	movei	#createPlane,r0
@@ -122,11 +132,6 @@ cam_cos		reg 99
 
 object_list	reg 25
 curr_object	reg 15
-
-	;; debug
-	moveq	#0,r0
-	moveta	r0,dump.a
-	;;
 
 	movei	#obj_plane,curr_object
 	movei	#check_faces_visible,r0
@@ -140,29 +145,40 @@ object_loop:
 	moveq	#0,r0
 	storew	r0,(curr_object) ; flag: object visible
 
+;;; ----------------------------------------
+dx	reg 99
+dz	reg 99
+maxX	reg 99
+
 	;; object center < far_z?
 	move	curr_object,tmp0
 	addqt	#obj_x,tmp0
-	loadw	(tmp0),tmp1
+	loadw	(tmp0),dx
 	addq	#4,tmp0
 	movefa	cam_x.a,tmp2
-	loadw	(tmp0),tmp0
+	loadw	(tmp0),dz
+	shlq	#16,dx
+	shlq	#16,dz
+	sharq	#16,dx
+	sharq	#16,dz
 	movefa	cam_z.a,tmp3
-	sub	tmp2,tmp1
-	sub	tmp3,tmp0
+	sub	tmp2,dx
+	sub	tmp3,dz
+	abs	dx
+	abs	dz
+	movei	#far_x,tmp0
+	movei	#far_z,tmp1
 
-	movei	#far_z*far_z,tmp2
-
-	imultn	tmp1,tmp1
-	imacn	tmp0,tmp0
-	resmac	tmp0
-
-	cmp	tmp0,tmp2
 	movei	#.skip_object,tmp2
-	jr	pl,.ok_object
-	moveta	curr_object,save_curr_object.a
-	jump	(tmp2)
+	cmp	dx,tmp0
 	storew	tmp2,(curr_object) ; flag; unvisible
+	jump	mi,(tmp2)
+	cmp	dz,tmp1
+	jump	mi,(tmp2)
+	moveta	curr_object,save_curr_object.a
+	moveq	#0,tmp2
+	storew	tmp2,(curr_object) ; flag; unvisible
+	unreg dx,dz,maxX
 
 .ok_object
 	movei	#rotate_object,tmp0

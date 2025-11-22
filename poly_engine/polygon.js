@@ -23,10 +23,15 @@ gone		equ 1
 	include "hively.inc"
  ENDIF
 
-CAM_X		equ -220
-CAM_Y		equ 80
-CAM_Z		equ 50
+CAM_X		equ -750
+CAM_Y		equ 30
+CAM_Z		equ 0
 CAM_ANGLE	equ 0
+
+
+	echo "TxtScreen: %H TxtScreen"
+	echo "screen1:   %H screen1"
+	echo "screen0:   %H screen0"
 
 MACRO MyINITMODULE
 .\dest equ (MODrun_\0)+$8000
@@ -170,9 +175,21 @@ skip_modules
 	movei	#VID_MODE,r1
 	storew	r1,(r0)
 
-	moveq	#0,r0
+	movei	#$ffcf,r0
 	movei	#$f00400,r1
 	store	r0,(r1)
+;;; ------------------------------
+	movei	#logo_screen,r0
+	movei	#logo,r1
+	movei	#8*10/4,r2
+cpy_logo:
+	load	(r1),r3
+	addq	#4,r1
+	subq	#1,r2
+	store	r3,(r0)
+	jr	nz,cpy_logo
+	addq	#4,r0
+
 ;;; ------------------------------
  IF  MOD = 1
 	movei	#DSP_start,r0
@@ -296,13 +313,14 @@ pal:
 	addq	#4,r0
 	endm
 
+	ADD_OBJ kugel
 	ADD_OBJ torus2
 	ADD_OBJ torus
 	ADD_OBJ diamant
 	ADD_OBJ cube
 	ADD_OBJ cube2
 	ADD_OBJ prisma
-	ADD_OBJ kugel
+
 
 	movei	#CAMERA_X,r15
 	movei	#CAM_X,r0
@@ -311,7 +329,7 @@ pal:
 	store	r0,(r15+CAMERA_Y-CAMERA_X)	; camera y
 	movei	#CAM_Z,r0
 	store	r0,(r15+CAMERA_Z-CAMERA_X)	; camera z
-	movei	#CAM_ANGLE*8,r0
+	movei	#CAM_ANGLE*4,r0
 	store	r0,(r15+CAMERA_ANGLE_Y-CAMERA_X); camera angle
 
 	movei	#139,r0
@@ -530,6 +548,19 @@ obl0_60hz:
 
 obl1_60hz:
 	.ibytes "obl1_60.bin"
+
+	align 4
+logo:
+	;;    0123456789ABCDEF0123456789ABCDEF
+	dc.l %11111111111111111111111111111110,0
+	dc.l %10000000000000000000000000000010,0
+	dc.l %10110001101000010010001001110010,0
+	dc.l %10101010001010101001010101000010,0
+	dc.l %10110001001110001000000101100010,0
+	dc.l %10101000100010010000001000010010,0
+	dc.l %10110011000010111000011101100010,0
+	dc.l %10000000000000000000000000000010,0
+	dc.l %11111111111111111111111111111110,0
 
 	align 4
 ASCII::

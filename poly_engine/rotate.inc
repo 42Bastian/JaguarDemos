@@ -91,7 +91,7 @@ rotate_object::
 
 	imultn	bc,f
 	imacn	a,e
-	resmac	m7		;-bce+ae
+	resmac	m7		; m7 = -bce+ae
 
 	sharq	#15,m4
 	sharq	#15,m5

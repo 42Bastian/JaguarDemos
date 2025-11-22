@@ -17,7 +17,7 @@ vn_y		reg 99
 vn_z		reg 99
 
 gouraud::
-	movei	#RLIGHT_X,r14
+	movei	#LIGHT_X,r14
 	load	(r14),l_x
 	load	(r14+4),l_y
 	load	(r14+8),l_z
