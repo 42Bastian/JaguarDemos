@@ -127,13 +127,19 @@ triangle:
 	nop
 .x_ok
 	;; debug
-	movefa	dump.a,r0
-	addqt	#1,r0
-	moveta	r0,dump.a
+//->	movefa	dump.a,r0
+//->	addqt	#1,r0
+//->	moveta	r0,dump.a
 
 ;;; ----------------------------------------
-//->_dx	equ 60
-//->	movei	#$7fff4000,color
+_dx	equ 60
+//->	movei	#$7fffffff,color
+//->	movei	#100,x0
+//->	movei	#10,y0
+//->	movei	#100+160,x1
+//->	movei	#10,y1
+//->	movei	#100+160,x2
+//->	movei	#10+160,y2
 //->	movei	#220,x0
 //->	movei	#40-_dx,y0
 //->
@@ -142,7 +148,6 @@ triangle:
 //->
 //->	movei	#150,x2
 //->	movei	#130-_dx,y2
-//->
 //->	movei	#-90,tmp1
 //->	movei	#0,tmp2
 //->	movefa	dump.a,r0

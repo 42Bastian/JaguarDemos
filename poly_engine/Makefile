@@ -1,5 +1,7 @@
 DEMO=polygon
 
+MOD?=0
+
 OS:=$(shell uname -s)
 
 TJASS= lyxass
@@ -9,6 +11,8 @@ RLN= rln
 _68KFLAGS=-4 ~oall -i$(BJL_ROOT)
 //->TJFLAGS= -w -sh
 
+TJFLAGS+= -D MOD=$(MOD)
+
 ifdef DEBUG
 _68KFLAGS+= -DDEBUG
 endif
@@ -16,6 +20,8 @@ endif
 ifdef SKUNK
 _68KFLAGS+= -DSKUNK
 endif
+
+
 
 jaggd vj upload: _68KFLAGS+= -DSKUNK
 
@@ -44,7 +50,7 @@ OBJ_INC=torus.inc structs.inc cube.inc bigball.inc  diamant.inc pobjects.inc
 OBJ_INC+= prisma.inc planex.inc
 
 SRC_INC= visible.inc project.inc draw2.inc draw.inc rotate.inc draw2_nog.inc
-SRC_INC+= gouraud.inc createplane.inc sintab.inc
+SRC_INC+= gouraud.inc createplane.inc sintab.inc addobj.inc
 
 $(DEMO).o :control.js irq.js globalreg.h engine.h hively_player.bin
 
@@ -55,7 +61,11 @@ $(DEMO).j64: $(DEMO).o
 	@cat sbl.XXX >$@
 	cat $< >> $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >> $@
+ifeq ($(MOD),0)
+	truncate -s 512K $@
+else
 	truncate -s 1024K $@
+endif
 
 hively_player.bin: hively_player_v21.S
 	rmac -4 -fb -u -i$(BJL_ROOT)/68k_inc $<

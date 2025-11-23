@@ -20,7 +20,7 @@ ycenter		REG 99
 rotated		reg 99
 LOOPX		reg 99
 LOOPZ		reg 99
-
+rvn_ptr		reg 99
 
 x_pos.a		reg 99
 z_pos.a		reg 99
@@ -39,7 +39,7 @@ createPlane::
 	moveta	z_pos,z_pos.a
 
 	movei	#(max_x>>1),xcenter
-	movei	#(max_y>>1),ycenter
+	movei	#(max_y>>1)+10,ycenter
 
 	movefa	cam_cos.a,cam_cos
 	movefa	cam_sin.a,cam_sin
@@ -49,6 +49,7 @@ createPlane::
 	movei	#plane_y,plane_source
 	movei	#plane_projected,projected
 	movei	#plane_rotated+4,rotated
+	movei	#plane_vnormals_rotated+4,rvn_ptr
 
 	move	z_pos,oz
 ._pc	move	PC,LOOPX
@@ -72,9 +73,6 @@ createPlane::
 
 	shlq	#grid_size_bits,wx
 	shlq	#grid_size_bits,wz
-
-	addq	#8,wx
-	addq	#8,wz
 
 	movefa	cam_x.a,tmp0
 	movefa	cam_z.a,tmp1
@@ -109,25 +107,61 @@ createPlane::
 	store	tmp1,(rotated)	; 3D y
 	subq	#4,rotated
 	store	tmp0,(rotated)	; 3D x
+
+	imultn	tmp2,tmp2	; z^2
+	imacn	tmp0,tmp0	; +x^2
+	resmac	wx
+
+	movei	#dark_dist*dark_dist,wz
+	sub	wz,wx
+	movei	#.no_darken,wz
+	jump	mi,(wz)
+	moveq	#0,tmp2
+
+	PUSH	r0,r1,r3,LR
+	move	wx,r0
+	movei	#sqrt,r1
+	BL	(r1)
+	neg	r0
+	move	r0,r2
+
+	POP	r0,r1,r3,LR
+.no_darken
+	store	tmp2,(rvn_ptr)
+	addq	#4,rvn_ptr
+
 	imult	tmp3,tmp0
 	addqt	#16,rotated
 	imult	tmp3,tmp1
-
-//->	movei	#1<<6,tmp3
-//->	add	tmp3,tmp0
-//->	add	tmp3,tmp1
-
+ IF max_x = 640
 	sharq	#7,tmp0
 	sharq	#7,tmp1
- IF max_x = 320
-	moveq	#21,tmp2
+ ELSE
+	sharq	#7,tmp0
+	sharq	#7,tmp1
+ ENDIF
+
+
+ IF max_x = 384
+_fix_ntsc_aspect2:
+	moveq	#aspect_patch_pal,tmp2
+//->	moveq	#aspect_patch_ntsc,tmp2
 	imult	tmp2,tmp0
 	sharq	#5,tmp0
  ENDIF
- IF max_x = 640
-	moveq	#21,tmp2
+ IF max_x = 320
+_fix_ntsc_aspect2:
+	moveq	#aspect_patch_pal,tmp2
+;;->	moveq	#aspect_patch_ntsc,tmp2
 	imult	tmp2,tmp0
 	sharq	#4,tmp0
+ ENDIF
+ IF max_x = 640
+_fix_ntsc_aspect2:
+	movei	#aspect_patch_pal,tmp2
+//->	movei	#aspect_patch_ntsc,tmp2
+//->	imult	tmp2,tmp1
+//->	sharq	#6,tmp1
  ENDIF
 	neg	tmp1
 	add	xcenter,tmp0
@@ -151,7 +185,7 @@ createPlane::
 
 	unreg xcenter, ycenter
 	unreg projected,plane_source,cam_y
-	unreg rotated
+	unreg rotated,rvn_ptr
 ****************************************
 ** rotate normals
 ****************************************
@@ -166,7 +200,7 @@ n_z		reg 99
 	moveq	#dia-1,iz
 	movei	#plane_normals,n_ptr
 	movei	#plane_normals_rotated+4,rn_ptr
-	movei	#$3fff,tmp3
+//->	movei	#$3fff,tmp3
 ._pc0	move	PC,LOOPX
 	addq	#.loopx0-._pc0,LOOPX
 	move	pc,LOOPZ
@@ -198,8 +232,8 @@ n_z		reg 99
 	imacn	n_z,cam_cos
 	resmac	tmp1
 
-	add	tmp3,tmp0
-	add	tmp3,tmp1
+;;->	add	tmp3,tmp0
+;;->	add	tmp3,tmp1
 
 	sharq	#15,tmp0
 	sharq	#15,tmp1
@@ -222,8 +256,8 @@ n_z		reg 99
 	imacn	n_z,cam_cos
 	resmac	tmp1
 
-	add	tmp3,tmp0
-	add	tmp3,tmp1
+;;->	add	tmp3,tmp0
+;;->	add	tmp3,tmp1
 
 	sharq	#15,tmp0
 	sharq	#15,tmp1
@@ -245,7 +279,9 @@ n_z		reg 99
 
  IF GOURAUD = 1
 ****************************************
-** rotate vnormals and calculate vertex luminance
+** Calculate per vertex luminance
+** XXX: Can be done once for all vertexes then only copy
+**      the ones needed unless LIGHT vector changes.
 ****************************************
 vn_ptr		reg 14
 rvn_ptr		reg 15
@@ -257,7 +293,7 @@ l_x		reg 99
 l_y		reg 99
 l_z		reg 99
 
-planeRotateVnormals::
+planeCalcLuminance::
 	movei	#.no_gouraud,r1
 	movei	#USE_GOURAUD,r0
 	load	(r0),r0
@@ -272,7 +308,7 @@ planeRotateVnormals::
 
 	moveq	#dia,iz
 	;; storage for vertex luminance, skip count and compensate pre-increment
-	movei	#plane_vnormals_rotated+4-1,rvn_ptr
+	movei	#plane_vnormals_rotated+4,rvn_ptr
 
 	;; base vertex normals
 	movei	#plane_vnormals,vn_ptr
@@ -299,17 +335,20 @@ planeRotateVnormals::
 	move	n_y,n_z
 	sharq	#16,n_y
 
-	imultn	l_x,n_x	; now calculate luminance
+	imultn	l_x,n_x		; now calculate luminance
 	imacn	l_y,n_y
 	imacn	l_z,n_z
 	resmac	tmp1
 
-	addqt	#1,rvn_ptr
+	load	(rvn_ptr),tmp0
 	sharq	#8,tmp1
-	addqt	#1,x
 	sat8	tmp1
+	add	tmp0,tmp1
+	addqt	#1,x
+
 	subq	#1,ix
-	storeb	tmp1,(rvn_ptr)	; just store it, vnormals not needed
+	store	tmp1,(rvn_ptr)	; just store it, vnormals not needed
+	addqt	#4,rvn_ptr
 	jump	ne,(LOOPX)
 	move	x,ox
 
@@ -372,6 +411,29 @@ planeSetColor::
 	unreg x,ox,oz,ix,iz,z_pos,wx,wz
 	unreg LOOPX,LOOPZ
 	unreg z_pos.a,x_pos.a
+
+sqrt::
+	normi	r0,r1
+	move	r0,r2
+	addq	#23,r1
+	moveq	#0,r0
+	bclr	#0,r1
+	moveq	#1,r3
+	neg	r1
+	jr	.enter
+	sh	r1,r3
+.loop
+	shrq	#2,r3
+.enter
+	move	r0,r1
+	jump	eq,(LR)
+	add	r3,r1
+	cmp	r1,r2
+	jr	cs,.loop
+	shrq	#1,r0
+	sub	r1,r2
+	jr	.loop
+	add	r3,r0
 
 
 	dphrase

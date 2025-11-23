@@ -98,13 +98,14 @@ check_faces_visible::
 	load	(m_ptr+z2),y0
 	move	tmp2,min_z
 .z2
-	cmpq	#0,min_z
+//->	addq	#8,min_z
+//->	cmpq	#0,min_z
  IF near_z > 31
 	movei	#near_z,tmp3
  ELSE
 	moveq	#near_z,tmp3
  ENDIF
-	jr	mi,.skip
+//->	jr	mi,.skip
 	cmp	min_z,tmp3
 	jr	pl,.skip
 	nop
@@ -112,6 +113,7 @@ check_faces_visible::
 	imacn	y0,n_y
 	imacn	min_z,n_z
 	resmac	tmp0
+
 .skip
 	sharq	#31,tmp0
 	addqt	#8,n_ptr

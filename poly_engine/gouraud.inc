@@ -15,6 +15,7 @@ LOOP		reg 99
 vn_x		reg 99
 vn_y		reg 99
 vn_z		reg 99
+darken		reg 99
 
 gouraud::
 	movei	#LIGHT_X,r14
@@ -28,6 +29,7 @@ gouraud::
 	jump	eq,(LR)
 	addq	#4,vn_ptr
 
+
 	move	pc,LOOP
 	move	vn_ptr,g_ptr
 	addq	#4+2,LOOP
@@ -35,6 +37,7 @@ gouraud::
 	load	(vn_ptr),vn_x
 	load	(vn_ptr+4),vn_y
 	load	(vn_ptr+8),vn_z
+	load	(vn_ptr+12),darken
 	addq	#16,vn_ptr
 
 	imultn	l_x,vn_x
@@ -44,11 +47,12 @@ gouraud::
 
 	sharq	#8,tmp1
 	sat8	tmp1
+	add	darken,tmp1
 
 	subq	#1,p_cnt
-	storeb	tmp1,(g_ptr)
+	store	tmp1,(g_ptr)
 	jr	ne,.loop
-	addq	#1,g_ptr
+	addq	#4,g_ptr
 
 	jump	(LR)
 	nop
@@ -58,4 +62,5 @@ gouraud::
 	unreg	l_y,vn_y
 	unreg	l_z,vn_z
 	unreg	LOOP
+	unreg	darken
  ENDIF

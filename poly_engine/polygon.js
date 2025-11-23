@@ -6,7 +6,10 @@ LYXASS	EQU 1
 DRAW2		equ 1
 GOURAUD		set 1
 
-MOD		EQU 1
+IFND MOD
+MOD		EQU 0
+ENDIF
+
 chip		equ 0
 gone		equ 1
 
@@ -23,10 +26,10 @@ gone		equ 1
 	include "hively.inc"
  ENDIF
 
-CAM_X		equ -750
-CAM_Y		equ 30
-CAM_Z		equ 0
-CAM_ANGLE	equ 0
+CAM_X		equ -660	
+CAM_Y		equ 40
+CAM_Z		equ 2420
+CAM_ANGLE	equ 292
 
 
 	echo "TxtScreen: %H TxtScreen"
@@ -171,6 +174,37 @@ skip_modules
 ;;; ------------------------------
 	include <js/inc/videoinit.inc>
 
+;;; ------------------------------
+;;; patch aspect ration for different resolutions
+;;; in case of NTSC mode
+;;;
+patch_aspect	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
+patch_aspect2	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
+
+	movei	#$00F14003,r0
+	loadb	(r0),r0
+	movei	#patch_aspect,r1
+	btst	#4,r0
+	movei	#patch_aspect2,r2
+	jr	eq,.patch_pal
+	nop
+ IF max_x = 640
+	movei	#aspect_patch_ntsc,r0
+	addq	#2,r1
+	addq	#2,r2
+	storew	r0,(r1)
+	storew	r0,(r2)
+ else
+	movei	#(35<<10)|aspect_patch_ntsc<<5|2,r0 ; moveq #n,r2
+	storew	r0,(r1)
+	storew	r0,(r2)
+ endif
+
+.patch_pal
+;;->	echo "aspect2: %Hpatch_aspect"
+;;->	echo "aspect2: %Hpatch_aspect2"
+;;; ------------------------------
+
 	movei	#$f00028,r0
 	movei	#VID_MODE,r1
 	storew	r1,(r0)
@@ -314,12 +348,12 @@ pal:
 	endm
 
 	ADD_OBJ kugel
-	ADD_OBJ torus2
+//->	ADD_OBJ torus2
 	ADD_OBJ torus
-	ADD_OBJ diamant
+//->	ADD_OBJ diamant
 	ADD_OBJ cube
-	ADD_OBJ cube2
-	ADD_OBJ prisma
+//->	ADD_OBJ cube2
+//->	ADD_OBJ prisma
 
 
 	movei	#CAMERA_X,r15
@@ -338,6 +372,11 @@ pal:
 	store	r0,(r15+LIGHT_X-CAMERA_X)
 	store	r1,(r15+LIGHT_Y-CAMERA_X)
 	store	r2,(r15+LIGHT_Z-CAMERA_X)
+
+	movei	#USE_GOURAUD,r0
+	moveq	#0,r1
+	not	r1
+	store	r1,(r0)
 
 	movei	#VID_PIT0,tmp1
 	movei	#(26591-1)<<16|0,tmp0
@@ -400,29 +439,6 @@ main_loop:
 	movei	#main_loop,r0
 	jump	(r0)
 	nop
-
-sqrt::
-	normi	r0,r1
-	move	r0,r2
-	addq	#23,r1
-	moveq	#0,r0
-	bclr	#0,r1
-	moveq	#1,r3
-	neg	r1
-	jr	.enter
-	sh	r1,r3
-.loop
-	shrq	#2,r3
-.enter
-	move	r0,r1
-	jump	eq,(LR)
-	add	r3,r1
-	cmp	r1,r2
-	jr	cs,.loop
-	shrq	#1,r0
-	sub	r1,r2
-	jr	.loop
-	add	r3,r0
 
 	include <js/inc/txtscr.inc>
 

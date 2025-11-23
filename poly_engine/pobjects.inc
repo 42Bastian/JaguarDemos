@@ -48,7 +48,7 @@ obj_prisma:
 	dphrase
 obj_kugel:
 	dc.w	0		; visible
-	dc.w	-750,100,300		; position: x,y,z
+	dc.w	-100,70,2000		; position: x,y,z
 	dc.w	0		; spare
 	dc.w 	0,0,0		; angle: a,b,c
 	dc.l	kugel_points
@@ -67,8 +67,7 @@ obj_kugel:
 	dphrase
 obj_cube:
 	dc.w	0		; visible
-	dc.w	-200,80,400	; position: x,y,z
-//->	dc.w 0,0,100
+	dc.w	-350,40,2000	; position: x,y,z
 	dc.w	0		; spare
 	dc.w	0,0,00		; angle: a,b,c
 	dc.l	cube_points
@@ -104,7 +103,7 @@ obj_cube2:
 	dphrase
 obj_torus:
 	dc.w	0		; visible
-	dc.w	-320,80,-1000		; position: x,y,z
+	dc.w	-600,80,2000		; position: x,y,z
 	dc.w	0		; spare
 	dc.w	0,0,0		; angle: a,b,c
 	dc.l	torus_points

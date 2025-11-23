@@ -36,7 +36,8 @@ save_curr_object.a reg 99
 
 dump.a		reg 99
 dump0.a		reg 99
-
+far_z.a		reg 99
+far_x.a		reg 99
 ;;->	if (max_x << fp_rez) > $ffff
 ;;->	fail "fp_rez to large"
 ;;->	endif
@@ -100,6 +101,24 @@ cam_cos		reg 99
 	sharq	#15,tmp1
 	store	tmp1,(r15+_RLIGHT_Z)
 
+	movei	#far_x,tmp0
+	movei	#far_z,tmp2
+	moveta	tmp0,far_x.a
+	moveta	tmp2,far_z.a
+
+//->	imultn	cam_cos,tmp0
+//->	imacn	cam_sin,tmp2
+//->	resmac	tmp1
+//->	sharq	#15,tmp1
+//->	abs	tmp1
+//->	moveta	tmp1,far_x.a
+//->	imultn	neg_cam_sin,tmp0
+//->	imacn	cam_cos,tmp2
+//->	resmac	tmp1
+//->	sharq	#15,tmp1
+//->	abs	tmp1
+//->	moveta	tmp1,far_z.a
+//->
 	unreg	cam_sin, neg_cam_sin, cam_cos
 ;;; ----------------------------------------
 ;;; Clear Z table
@@ -143,12 +162,12 @@ curr_object	reg 15
 object_loop:
 	addqt	#4,object_list
 	moveq	#0,r0
+	moveta	curr_object,save_curr_object.a
 	storew	r0,(curr_object) ; flag: object visible
 
 ;;; ----------------------------------------
 dx	reg 99
 dz	reg 99
-maxX	reg 99
 
 	;; object center < far_z?
 	move	curr_object,tmp0
@@ -156,31 +175,34 @@ maxX	reg 99
 	loadw	(tmp0),dx
 	addq	#4,tmp0
 	movefa	cam_x.a,tmp2
+	movefa	cam_z.a,tmp3
 	loadw	(tmp0),dz
 	shlq	#16,dx
 	shlq	#16,dz
 	sharq	#16,dx
 	sharq	#16,dz
-	movefa	cam_z.a,tmp3
 	sub	tmp2,dx
 	sub	tmp3,dz
+	movefa	far_x.a,tmp0
 	abs	dx
 	abs	dz
-	movei	#far_x,tmp0
-	movei	#far_z,tmp1
-
+	sub	dx,tmp0
+	movefa	far_z.a,tmp1
+	moveta	tmp0,dump.a
+	jr	mi,.x_off
+	sub	dz,tmp1
+	jr	pl,.ok_object
+	nop
+.x_off
 	movei	#.skip_object,tmp2
-	cmp	dx,tmp0
+	jump	(tmp2)
 	storew	tmp2,(curr_object) ; flag; unvisible
-	jump	mi,(tmp2)
-	cmp	dz,tmp1
-	jump	mi,(tmp2)
-	moveta	curr_object,save_curr_object.a
-	moveq	#0,tmp2
-	storew	tmp2,(curr_object) ; flag; unvisible
-	unreg dx,dz,maxX
+
+	unreg dx,dz
 
 .ok_object
+;;; ----------------------------------------
+
 	movei	#rotate_object,tmp0
 	BL	(tmp0)
 
@@ -220,18 +242,45 @@ screen_ptr	reg 99
 CLS::
 	movei	#BLIT_A1_BASE,blitter
 	movefa	screen0.a,screen_ptr
-
-	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
 	store	screen_ptr,(blitter)
-	store	tmp0,(blitter+4)
+ IF max_x = 640
+	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	movei	#(max_y)<<16|(max_x/2),tmp1
 	moveq	#0,tmp0
 	store	tmp0,(blitter+_BLIT_A1_PIXEL)	; pel ptr
-	movei	#1<<16|(max_x*max_y>>1),tmp1
 	store	tmp1,(blitter+_BLIT_COUNT)
-//->	moveq	#BLIT_LFU_ZERO,tmp0 		; == 0!
 	store	tmp0,(blitter+_BLIT_CMD)
+ ELSE
+	movei	#$88e088e0,tmp0
+	moveq	#0,tmp0
+	store	tmp0,(blitter+_BLIT_PATD)
+	store	tmp0,(blitter+_BLIT_PATD+4)
+	store	tmp0,(blitter+$40)
+	movei	#(-$500)&0xffffff,tmp0
+	store	tmp0,(blitter+$70)		; int inc
+	store	tmp0,(blitter+$74)		; int inc
+	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPHR,tmp0
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	moveq	#0,tmp1
 
-//->	WAITBLITTER
+	movei	#170<<16|(max_x),tmp2
+	store	tmp1,(blitter+_BLIT_A1_PIXEL)
+	movei	#B_PATDSEL|B_GOURD,tmp1
+	store	tmp2,(blitter+_BLIT_COUNT)
+	store	tmp1,(blitter+_BLIT_CMD)
+
+	WAITBLITTER
+
+	shrq	#16,tmp2
+	shlq	#16,tmp2	; remove X count
+
+	store	tmp2,(blitter+_BLIT_A1_PIXEL)	; pel ptr
+	movei	#(max_y-170-10)<<16|max_x,tmp1
+	moveq	#0,tmp0
+	store	tmp1,(blitter+_BLIT_COUNT)
+	store	tmp0,(blitter+_BLIT_CMD)
+ ENDIF
 
  UNREG blitter,screen_ptr
 
@@ -331,8 +380,8 @@ xd:
 	jr	xd
 	nop
 
+;; ----------------------------------------
 
-****************************************
 	include "rotate.inc"
 
 	include "visible.inc"
@@ -340,208 +389,9 @@ xd:
 	include "gouraud.inc"
 
 	include "project.inc"
-****************************************
-** Add an object to the draw array
 
-tri_array	reg 14
-f_ptr		reg 99
-v_ptr		reg 99
-f_cnt		reg 99
-LR2		reg 99
-y0		reg 99
-z0		reg 99
-y1		reg 99
-z1		reg 99
-y2		reg 99
-z2		reg 99
-lum012		reg 99
-tri_ptrs	reg 99
-scale		reg 99
+	include "addobj.inc"
 
- IF GOURAUD = 1
-lum0		reg 99
-lum1		reg 99
-lum2		reg 99
-vn_ptr		reg 99
-NO_GOURAUD	reg 99
- ENDIF
-LOOP	reg 99
-
-proj_ptr	reg 15!
-
-AddObjects::
-	movei	#tri_array_ram,tri_array
-	movei	#tri_ptrs_ram,tri_ptrs
-	movei	#OBJECT_LIST,object_list
-	load	(object_list),curr_object
- IF GOURAUD = 1
-	movei	#no_gouraud,NO_GOURAUD
- ENDIF
-	movei	#256<<16/far_z/3,scale
-	movei	#addSingleObject,tmp1
-
-	move	PC,LOOP
-	movei	#.skip_this,LR2
-	addq	#4+6,LOOP
-.loop:
-	loadw	(curr_object),tmp0 ; object visible?
-	addqt	#4,object_list
-	load	(curr_object+obj_faces),f_ptr
-	shlq	#24,tmp0
-	load	(curr_object+obj_facesVisible),v_ptr
-	jump	ne,(LR2)
-	nop
- if GOURAUD = 1
-	load	(curr_object+obj_vnormals_rotated),vn_ptr
- endif
-	load	(curr_object+obj_projected),proj_ptr
- if GOURAUD = 1
-	movei	#USE_GOURAUD,tmp0
-	load	(tmp0),tmp0
-	cmpq	#0,tmp0
-	jr	ne,.use_g
-	nop
-	xor	vn_ptr,vn_ptr
-.use_g
-	addqt	#4,vn_ptr
- endif
-	load	(f_ptr),f_cnt
-	jump	(tmp1)
-	addq	#4,f_ptr
-
-.skip_this
-	load	(object_list),curr_object
-	cmpq	#0,curr_object
-	jump	ne,(LOOP)
-	nop
- IF 1
-	;; plane
-	movei	#obj_plane,curr_object
-	load	(curr_object+obj_faces),f_ptr
-	load	(curr_object+obj_facesVisible),v_ptr
- if GOURAUD = 1
-	load	(curr_object+obj_vnormals_rotated),vn_ptr
- endif
-	load	(curr_object+obj_projected),proj_ptr
-
- if GOURAUD = 1
-	movei	#USE_GOURAUD,tmp0
-	load	(tmp0),tmp0
-	cmpq	#0,tmp0
-	jr	ne,.use_g1
-	nop
-	xor	vn_ptr,vn_ptr
-.use_g1
-	addqt	#4,vn_ptr
- endif
-
-	move	LR,LR2
-	load	(f_ptr),f_cnt
-	jump	(tmp1)
-	addq	#4,f_ptr
- ELSE
-	jump	(LR)
-	nop
- ENDIF
-skip_tri:
-	subq	#1,f_cnt
-	addqt	#8-2,f_ptr	; -2 because of delay slot
-	jump	eq,(LR2)
-
-addSingleObject::
-	load	(v_ptr),lum012	; get visible-flag and luminance
-	addqt	#4,v_ptr
-	cmpq	#0,lum012
-	loadw	(f_ptr),y0
-	jr	mi,skip_tri
-
-	addq	#2,f_ptr
-
-	;; debug
-//->	movefa	dump.a,r0
-//->	addqt	#1,r0
-//->	moveta	r0,dump.a
-
-	loadw	(f_ptr),y1
-	addq	#2,f_ptr
-	loadw	(f_ptr),y2
-	addq	#2,f_ptr
-	loadb	(f_ptr),tmp0	; get color
-	addq	#2,f_ptr
-
-	;;
- IF GOURAUD = 1
-	cmpq	#4,vn_ptr
-	move	y0,lum0
-	jump	eq,(NO_GOURAUD)
-	move	y1,lum1
-	move	y2,lum2
-	shlq	#24,lum012
-	add	vn_ptr,lum0
-	shrq	#24,lum012
-	add	vn_ptr,lum1
-	add	vn_ptr,lum2
-	loadb	(lum0),lum0
-	loadb	(lum1),lum1
-	loadb	(lum2),lum2
-	add	lum012,lum0
-	add	lum012,lum1
-	add	lum2,lum012
-	sat8	lum0
-	sat8	lum1
-	sat8	lum012
-
-	shlq	#16,lum0
-	shlq	#8,lum1
-	or	lum0,lum012
-	or	lum1,lum012
-no_gouraud:
- ENDIF
-	shlq	#3,y0
-	shlq	#3,y1
-	shlq	#3,y2
-
-	load	(proj_ptr+y0),z0
-	load	(proj_ptr+y1),z1
-	load	(proj_ptr+y2),z2
-	addq	#4,proj_ptr
-	load	(proj_ptr+y0),y0
-	load	(proj_ptr+y1),y1
-	load	(proj_ptr+y2),y2
-
-	add	z1,z0
-	subqt	#4,proj_ptr
-	add	z2,z0
-	shlq	#24,tmp0
-	abs	z0
-	store	y0,(tri_array+4)
-	mult	scale,z0	; 256*(z0+z1+z2)/3/far_z
-	or	lum012,tmp0
-	shrq	#16,z0
-	store	tmp0,(tri_array)
-	sat8	z0
-	store	y1,(tri_array+8)
-	shlq	#2,z0
-	store	y2,(tri_array+12)
-	add	tri_ptrs,z0
-	load	(z0),tmp0
-	store	tri_array,(z0)
-	subq	#1,f_cnt
-	store	tmp0,(tri_array+16) ; link new triangle
-	jump	ne,(tmp1)
-	addq	#20,tri_array
-
-	jump	(LR2)
-	nop
-
-	unreg	f_ptr,v_ptr,f_cnt,tri_array, LR2, tri_ptrs
-	unreg	y0,z0,y1,z1,y2,z2,proj_ptr,lum012,scale
-	unreg LOOP
- IF GOURAUD = 1
-	unreg	lum0,lum1,lum2,NO_GOURAUD,vn_ptr
- ENDIF
-
-;; ----------------------------------------
  IFD DRAW2
  IF GOURAUD = 1
 	include "draw2.inc"
@@ -558,7 +408,7 @@ no_gouraud:
 	unreg	object_list
 	unreg	cam_x.a,cam_y.a,cam_z.a
 	unreg	cam_sin.a, neg_cam_sin.a, cam_cos.a
-	unreg	save_curr_object.a
+	unreg	save_curr_object.a,far_x.a,far_z.a
  IFND DRAW2
 	unreg	min_max.a
  ENDIF
