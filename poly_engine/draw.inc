@@ -123,7 +123,6 @@ triangle:
 //->	store	color,(tmp3)
 //->	addq	#4,tmp3
 //->	moveta	tmp3,dump0.a
-
 ;;; ----------------------------------------
 ;;->_dx	equ 10
 ;;->//->	movei	#$7f3f7fff,color
@@ -359,7 +358,7 @@ drawLines:
 	movei	#$f02200,blitter
 	WAITBLITTER
 	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPIX,tmp0
-	movefa	min_max.a,min_max
+	movei	#(max_x)<<(16),min_max
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
 	shlq	#3,min_y
 	movefa	x_save.a,ptr

@@ -5,6 +5,7 @@ LYXASS	EQU 1
 
 DRAW2		equ 1
 GOURAUD		set 1
+FPS		set 4		; fixed frame rate
 
 IFND MOD
 MOD		EQU 0
@@ -26,11 +27,15 @@ gone		equ 1
 	include "hively.inc"
  ENDIF
 
-CAM_X		equ -660	
-CAM_Y		equ 40
-CAM_Z		equ 2420
-CAM_ANGLE	equ 292
+;;->CAM_X		equ -840
+;;->CAM_Y		equ 15
+;;->CAM_Z		equ 2900
+;;->CAM_ANGLE	equ 256
 
+CAM_X		equ -352
+CAM_Y		equ 50
+CAM_Z		equ 2138
+CAM_ANGLE	equ 256
 
 	echo "TxtScreen: %H TxtScreen"
 	echo "screen1:   %H screen1"
@@ -53,7 +58,7 @@ stacktop	equ $f03ffc
 
 IRQ_STACK	equ $f03020-4
 
- IFND DRAW2
+ IF DRAW2 = 0
 x_save		equ stacktop-16*4-(max_y+1)*8
  ENDIF
 
@@ -83,7 +88,10 @@ tri_array_ram	equ $168000
 	defobj	diamant,20,36
 //->	defobj	plane, 121,162
 	defobj	plane, dia*dia, 2*(dia-1)*(dia-1)
-	RSB	plane_faces,(dia-1)*(dia-1)*2
+	RSB	plane_faces,4+(dia-1)*(dia-1)*2*face_size
+	RSW	_plane_normals,2+2*(world_size-1)*(world_size-1)*4
+	RSW	_plane_vnormals,2+world_size*world_size*4
+	RSB	_plane_y,world_size*world_size
 	echo "End of object: %hRSADDR"
 
 
@@ -144,6 +152,7 @@ init:
 //->	include "genmap.inc"
 	include "engine.js"
 	include "control.js"
+	include "buildplane.inc"
 
 skip_modules
 	movei	#$f02100,IRQ_FLAGADDR
@@ -178,6 +187,7 @@ skip_modules
 ;;; patch aspect ration for different resolutions
 ;;; in case of NTSC mode
 ;;;
+ IF NO_ASPECT_FIX = 0
 patch_aspect	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
 patch_aspect2	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
 
@@ -203,6 +213,7 @@ patch_aspect2	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
 .patch_pal
 ;;->	echo "aspect2: %Hpatch_aspect"
 ;;->	echo "aspect2: %Hpatch_aspect2"
+ ENDIF
 ;;; ------------------------------
 
 	movei	#$f00028,r0
@@ -259,7 +270,7 @@ cpy_dsp:
 	movei	#InitTxtScreen,r4
 	BL	(r4)
 
- IFND DRAW2
+ IF DRAW2 = 0
 	movei	#x_save,tmp0		; save left/right X in internal RAM
 	movei	#max_y,r1
 	movei	#(max_x)<<(16),r2	; minX:maxX
@@ -326,6 +337,9 @@ pal:
 	nop
 	nop
 
+	MyINITMODULE buildPlane
+	MBL	buildPlane
+
  IF MOD = 1
 	moveq	#0,r0
 	bset	#14,r0
@@ -348,12 +362,12 @@ pal:
 	endm
 
 	ADD_OBJ kugel
-//->	ADD_OBJ torus2
+	ADD_OBJ torus2
 	ADD_OBJ torus
-//->	ADD_OBJ diamant
+	ADD_OBJ diamant
 	ADD_OBJ cube
-//->	ADD_OBJ cube2
-//->	ADD_OBJ prisma
+	ADD_OBJ cube2
+	ADD_OBJ prisma
 
 
 	movei	#CAMERA_X,r15
@@ -407,10 +421,17 @@ main_loop:
 	jr	eq,.wvbl
 	nop
 
+//->	movei	#$00F00052,r2
+//->	loadw	(r2),r0
+//->	neg	r0
+//->	shlq	#16,r0
+//->	shrq	#16,r0
+//->	PUSH	r0
+
 	moveq	#0,r1
 	subq	#1,r1
-	movei	#$00F00052,r0
-	storew	r1,(r0)
+	movei	#$00F00052,r2
+	storew	r1,(r2)
 
 	MyINITMODULE engine
 	MBL	engine
@@ -504,11 +525,17 @@ iz		reg 99
 
 	moveq	#0,p0
 	moveq	#1,p1
+ IF dia < 31
 	moveq	#dia,p2
 	moveq	#dia+1,p3
-
 	moveq	#dia-1,iz
 	moveq	#dia-1,ix
+ else
+	movei	#dia,p2
+	movei	#dia+1,p3
+	movei	#dia-1,iz
+	movei	#dia-1,ix
+ endif
 	move	PC,LOOPZX
 	addq	#4,LOOPZX
 .loopxz
@@ -536,9 +563,9 @@ iz		reg 99
 	addqt	#1,p1
 	addqt	#1,p2
 	subq	#1,iz
-	addqt	#1,p3
-	jump	ne,(LOOPZX)
 	moveq	#dia-1,ix
+	jump	ne,(LOOPZX)
+	addqt	#1,p3
 
 	movei	#plane_faces,tmp0
 	sub	tmp0,face_ptr

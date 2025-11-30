@@ -21,7 +21,7 @@ cube_faces:
   tri 7, 6, 2, $ff2f		; back
   tri 1, 2, 6, $c83f		; right
   tri 6, 5, 1, $c83f		; right
-  tri 0, 4, 7, $c03f		; left
+  tri 0, 4, 7, $03f		; left
   tri 7, 3, 0, $c03f		; left
   tri 3, 2, 1, $8f3f		; bottom
   tri 1, 0, 3, $8f3f		; bottom

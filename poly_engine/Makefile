@@ -51,6 +51,7 @@ OBJ_INC+= prisma.inc planex.inc
 
 SRC_INC= visible.inc project.inc draw2.inc draw.inc rotate.inc draw2_nog.inc
 SRC_INC+= gouraud.inc createplane.inc sintab.inc addobj.inc
+SRC_INC+= buildPlane.inc
 
 $(DEMO).o :control.js irq.js globalreg.h engine.h hively_player.bin
 

@@ -50,7 +50,7 @@ project_object::
 .loop
 	addqt	#16,m_ptr
 	move	z1,tmp1		; save original Z
-	cmpq	#1,z1
+	cmpq	#0,z1
 	movei	#1<<PROJ_REZ,tmp0
 	jr	pl,.ok_z
 	store	z1,(proj_ptr)	; save original Z
@@ -84,6 +84,17 @@ project_object::
 	load	(m_ptr+4),y2
 	load	(m_ptr+8),z2
 
+ IF NO_ASPECT_FIX = 1
+	imult	tmp0,y1
+	imult	tmp0,x1
+	sharq	#7,y1
+	sharq	#7,x1
+	add	xcenter,x1
+	add	ycenter,y1
+	shlq	#16,x1
+	and	mask,y1
+	move	z2,z1
+ ELSE
  IF max_x = 384
 	imult	tmp0,y1
 _fix_ntsc_aspect:
@@ -134,6 +145,7 @@ _fix_ntsc_aspect:
 	move	z2,z1
 	shlq	#16,x1
  ENDIF
+ ENDIF 				; NO_ASPECT_FIX
 	or	x1,y1
 	move	x2,x1
 	store	y1,(proj_ptr)	; save Xscreen/Yscreen

@@ -29,7 +29,7 @@ cam_cos.a	reg 99
 cam_sin.a	reg 99
 neg_cam_sin.a	reg 99
 
- IFND DRAW2
+ IF DRAW2 = 0
 min_max.a	reg 99
  ENDIF
 save_curr_object.a reg 99
@@ -47,7 +47,7 @@ far_x.a		reg 99
 engine::
 	PUSHLR
 
- IFND DRAW2
+ IF DRAW2 = 0
 	movei	#(max_x)<<(16),r0	; minX:maxX
 	moveta	r0,min_max.a
  ENDIF
@@ -138,13 +138,12 @@ cam_cos		reg 99
 //->	BL	(r8)
 
 	;; debug
-	movei	#$db000,r0
+	movei	#$19000,r0
 	moveta	r0,dump0.a
 
 	moveq	#0,r0
 	moveta	r0,dump.a
 	;;
-
 
 	movei	#createPlane,r0
 	BL	(r0)
@@ -188,7 +187,6 @@ dz	reg 99
 	abs	dz
 	sub	dx,tmp0
 	movefa	far_z.a,tmp1
-	moveta	tmp0,dump.a
 	jr	mi,.x_off
 	sub	dz,tmp1
 	jr	pl,.ok_object
@@ -253,7 +251,7 @@ CLS::
 	store	tmp0,(blitter+_BLIT_CMD)
  ELSE
 	movei	#$88e088e0,tmp0
-	moveq	#0,tmp0
+//->	moveq	#0,tmp0
 	store	tmp0,(blitter+_BLIT_PATD)
 	store	tmp0,(blitter+_BLIT_PATD+4)
 	store	tmp0,(blitter+$40)
@@ -276,7 +274,7 @@ CLS::
 	shlq	#16,tmp2	; remove X count
 
 	store	tmp2,(blitter+_BLIT_A1_PIXEL)	; pel ptr
-	movei	#(max_y-170-10)<<16|max_x,tmp1
+	movei	#(max_y-170)<<16|max_x,tmp1
 	moveq	#0,tmp0
 	store	tmp1,(blitter+_BLIT_COUNT)
 	store	tmp0,(blitter+_BLIT_CMD)
@@ -296,37 +294,31 @@ CLS::
 //->	move	r11,r7
 //->	BL	(r8)
 
+	movei	#$190000,r0
+	moveta	r0,dump0.a
+
+	moveq	#0,r0
+	moveta	r0,dump.a
+
 	movei	#Drawfaces,r0
 	BL	(r0)
 
-//->	movefa	dump0.a,r0
-//->	movei	#$12345678,r1
-//->	store	r1,(r0)
 	movefa	screen0.a,r11
 	movei	#max_x-32,r0
 	add	r0,r11
 
-	movei	#33,r10
-//->	movei	#tri_array_ram,r9
-	movei	#kugel_vnormals_rotated,r9
-//->	movei	#$db000,r9
-	movei	#Dump1,r0
-//->	BL	(r0)
-	movei	#max_x*2*2,r0
-	add	r0,r11
-
-//->	movei	#cube_visible,r9
-//->	movei	#$100000,r9
-//->	moveq	#32,r10
+//->	movei	#8,r10
+//->	movei	#cube_rotated+4,r9
 //->	movei	#Dump1,r0
 //->	BL	(r0)
 //->	movei	#max_x*2*2,r0
 //->	add	r0,r11
-//->
-//->	moveq	#3,r10
-//->	movei	#cube_visible,r9
-//->	movei	#Dump1,r0
+	movei	#4,r10
+//->	movei	#cube_projected,r9
+	movei	#$190000,r9
+	movei	#Dump1,r0
 //->	BL	(r0)
+
 
 	POPLR
 
@@ -351,11 +343,11 @@ Dump1:
 	jr	xd1
 	addq	#2,LR
 
-//->	jr	xd
-//->	addq	#4,LR
-//->
-//->	jr	xd
-//->	addq	#4,LR
+	jr	xd
+	addq	#4,LR
+
+	jr	xd
+	addq	#4,LR
 
 //->	addq	#4,r9
 	jr	xd
@@ -366,7 +358,7 @@ xd1	jr	xd
 
 	movei	#max_x*2*6,r0
 	subq	#1,r10
-	subqt	#16+4*0+4*0+2*0,LR
+	subqt	#16+4*1+4*1+2*0,LR
 	jr	eq,.exit
 	add	r0,r11
 
@@ -382,17 +374,20 @@ xd:
 
 ;; ----------------------------------------
 
+
 	include "rotate.inc"
 
+	include "addobj.inc"
+	include "createplane.inc"
+
+	unreg	cam_x.a,cam_y.a,cam_z.a
+	unreg	cam_sin.a, neg_cam_sin.a, cam_cos.a
+
 	include "visible.inc"
-
 	include "gouraud.inc"
-
 	include "project.inc"
 
-	include "addobj.inc"
-
- IFD DRAW2
+ IF DRAW2 = 1
  IF GOURAUD = 1
 	include "draw2.inc"
  ELSE
@@ -401,15 +396,13 @@ xd:
  ELSE
 	include "draw.inc"
  ENDIF
-	include "createplane.inc"
 
 	align 4
 
 	unreg	object_list
-	unreg	cam_x.a,cam_y.a,cam_z.a
-	unreg	cam_sin.a, neg_cam_sin.a, cam_cos.a
+
 	unreg	save_curr_object.a,far_x.a,far_z.a
- IFND DRAW2
+ IF DRAW2 = 0
 	unreg	min_max.a
  ENDIF
 

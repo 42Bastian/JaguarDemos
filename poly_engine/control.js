@@ -89,9 +89,9 @@ no_object:
 	btst	#JOY_LEFT_BIT,joypad
 	jr	eq,no_turn
 	nop
-	addqt	#a_speed*2,r0
+	addqt	#a_speed*4*2,r0
 turn_right:
-	subqt	#a_speed,r0
+	subqt	#a_speed*4,r0
 
 	shlq	#32-9-2,r0
 	shrq	#32-9-2,r0

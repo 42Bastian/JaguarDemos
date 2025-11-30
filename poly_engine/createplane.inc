@@ -39,13 +39,17 @@ createPlane::
 	moveta	z_pos,z_pos.a
 
 	movei	#(max_x>>1),xcenter
-	movei	#(max_y>>1)+10,ycenter
+	movei	#(max_y>>1),ycenter
 
 	movefa	cam_cos.a,cam_cos
 	movefa	cam_sin.a,cam_sin
 	movefa	neg_cam_sin.a,neg_cam_sin
 
+ IF dia < 32
 	moveq	#dia,iz
+ else
+	movei	#dia,iz
+ endif
 	movei	#plane_y,plane_source
 	movei	#plane_projected,projected
 	movei	#plane_rotated+4,rotated
@@ -60,7 +64,11 @@ createPlane::
 	shlq	#32-world_size_bits,oz
 	shrq	#32-2*world_size_bits,oz
 	movefa	x_pos.a,x
+ IF dia < 32
 	moveq	#dia,ix
+ else
+	movei	#dia,ix
+ endif
 .loopx
 	move	x,ox
 	shlq	#32 - world_size_bits,ox
@@ -197,7 +205,11 @@ n_z		reg 99
 
 	movefa	z_pos.a,z_pos
 
+ IF dia < 33
 	moveq	#dia-1,iz
+ else
+	movei	#dia-1,iz
+ endif
 	movei	#plane_normals,n_ptr
 	movei	#plane_normals_rotated+4,rn_ptr
 //->	movei	#$3fff,tmp3
@@ -210,7 +222,11 @@ n_z		reg 99
 	shlq	#32-world_size_bits,oz
 	shrq	#32-2*world_size_bits-4,oz
 	movefa	x_pos.a,x
+ IF dia < 33
 	moveq	#dia-1,ix
+ else
+	movei	#dia-1,ix
+ endif
 .loopx0
 	move	x,ox
 	shlq	#32 - world_size_bits,ox
@@ -306,7 +322,11 @@ planeCalcLuminance::
 
 	movefa	z_pos.a,z_pos
 
+ IF dia < 32
 	moveq	#dia,iz
+ else
+	movei	#dia,iz
+ endif
 	;; storage for vertex luminance, skip count and compensate pre-increment
 	movei	#plane_vnormals_rotated+4,rvn_ptr
 
@@ -323,7 +343,11 @@ planeCalcLuminance::
 	movefa	x_pos.a,x
 	shrq	#32-2*world_size_bits-3,oz
 	move	x,ox
+ IF dia < 32
 	moveq	#dia,ix
+ else
+	movei	#dia,ix
+ endif
 .loopx0
 	shlq	#32 - world_size_bits,ox
 	shrq	#32 - world_size_bits-3,ox
@@ -359,8 +383,8 @@ planeCalcLuminance::
 .no_gouraud
 
 	unreg rvn_ptr,vn_ptr,n_x,n_y,n_z,l_x,l_y,l_z
-	unreg cam_sin,cam_cos,neg_cam_sin
  ENDIF
+	unreg cam_sin,cam_cos,neg_cam_sin
 ****************************************
 ** set triangle colors
 ****************************************
@@ -371,7 +395,11 @@ planeSetColor::
 	movei	#plane_faces+4+6,face_ptr
 	movefa	z_pos.a,z_pos
 
+ IF dia < 33
 	moveq	#dia-1,iz
+ else
+	movei	#dia-1,iz
+ endif
 	move	z_pos,oz
 	movei	#plane_col,tmp0
 ._pc:
@@ -383,7 +411,11 @@ planeSetColor::
 	movefa	x_pos.a,x
 	shlq	#32-world_size_bits,oz
 	shrq	#32-2*world_size_bits-1,oz
+ IF dia < 33
 	moveq	#dia-1,ix
+ else
+	movei	#dia-1,ix
+ endif
 .loopx1
 	move	x,ox
 	shlq	#32-world_size_bits,ox
