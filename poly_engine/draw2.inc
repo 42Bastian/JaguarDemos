@@ -127,62 +127,47 @@ triangle:
 	nop
 .x_ok
 	;; debug
-//->	movefa	dump.a,r0
-//->	addqt	#1,r0
-//->	moveta	r0,dump.a
+	movefa	dump.a,r0
+	addqt	#1,r0
+	moveta	r0,dump.a
 
 ;;; ----------------------------------------
-_dx	equ 60
-//->	movei	#$7fffffff,color
-//->	movei	#100,x0
-//->	movei	#10,y0
-//->	movei	#100+160,x1
-//->	movei	#10,y1
-//->	movei	#100+160,x2
-//->	movei	#10+160,y2
-//->	movei	#220,x0
-//->	movei	#40-_dx,y0
-//->
-//->	movei	#250,x1
-//->	movei	#90-_dx,y1
-//->
-//->	movei	#150,x2
-//->	movei	#130-_dx,y2
-//->	movei	#-90,tmp1
-//->	movei	#0,tmp2
-//->	movefa	dump.a,r0
-//->	cmpq	#1,r0
-//->	jr	eq,.first
-//->	nop
-//->	bclr	#31,color
-//->	sub	tmp2,x0
-//->	sub	tmp2,x1
-//->	sub	tmp2,x2
-//->	sub	tmp1,y0
-//->	sub	tmp1,y1
-//->	sub	tmp1,y2
-//->	movefa	LR.a,LR
-.first
+;;->_dx	equ 160
+;;->	movei	#$7f80ff00,color
+;;->	movei	#350,x0
+;;->	movei	#10,y0
+;;->	movei	#400,x1
+;;->	movei	#40,y1
+;;->	movei	#300,x2
+;;->	movei	#120,y2
+;;->	movefa	dump.a,r1
+;;->	movei	#_dx,tmp0
+;;->	cmpq	#1,r1
+;;->	jr	eq,.first
+;;->	nop
+;;->//->	bclr	#31,color
+;;->	sub	tmp0,x0
+;;->	sub	tmp0,x1
+;;->	sub	tmp0,x2
+;;->//->	sub	tmp1,y0
+;;->//->	sub	tmp1,y1
+;;->//->	sub	tmp1,y2
+;;->	movefa	LR.a,LR
+;;->.first
 
 	;; extract lightning data and color
-	;; 8.6 fixpoint because values are 0..$FF!
-	;;
-	movei	#$ff<<COLOR_FP,tmp0
+
+	movei	#$ff,tmp0
 	move	color,l0
 	move	color,l1
 	move	color,l2
-	shrq	#8+(8-COLOR_FP),l0
-	shrq	#8-COLOR_FP,l1
-	shlq	#COLOR_FP,l2
+	shrq	#16,l0
+	shrq	#8,l1
 	and	tmp0,l0
 	and	tmp0,l1
-	shrq	#24,color
 	and	tmp0,l2
+	shrq	#24,color
 	shlq	#8,color
-
-//->	or	tmp0,l0
-//->	or	tmp0,l1
-//->	or	tmp0,l2
 
 	; sort y
 	cmp    	y0,y1
@@ -229,56 +214,96 @@ _dx	equ 60
 	sub	x0,dx02
 	sub	x1,dx12
 
-	movei	#1<<fp_reci,tmp0
-	move	y2,dy02
-	move	y1,dy01
-	sub	y0,dy02
-	move	y2,dy12
-	jump	eq,(LR)		; flat triangle
-	div	dy02,tmp0	; 1/dy02
-	sub	y0,dy01
-	movei	#1<<fp_reci,tmp1
-	jr	ne,.dy01_non_zero
-	sub	y1,dy12
-	moveq	#0,tmp1
-	moveq	#1,dy01
-.dy01_non_zero:
-	movei	#1<<fp_reci,tmp2
-	jr	ne,.dy12_none_zero
 	move	l2,dl02
-	moveq	#0,tmp2
-	moveq	#1,dy12
-.dy12_none_zero:
-
 	move	l1,dl01
 	move	l2,dl12
 	sub	l0,dl01
 	sub	l0,dl02
 	sub	l1,dl12
 
-;;->	REPT 4
-;;->	nop
-;;->	ENDR
+	move	y2,dy02
+	sub	y0,dy02
+	moveq	#16,tmp0
+	jump	eq,(LR)		; flat triangle
+	normi	dy02,tmp1
 
-	div	dy01,tmp1	; 1/dy01
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+	div	dy02,tmp0
+	move	tmp1,tmp2
+	neg	tmp1
+	neg	tmp2
+	subq	#4,tmp1
+	subq	#2,tmp2
+
 	imult	tmp0,dx02	; (x2-x0)/dy02
-	imult	tmp0,dl02	; (l2-l0)/dy02
+	imult	tmp0,dl02	; (x2-x0)/dy02
+	sha	tmp1,dx02
+	sha	tmp2,dl02
 
-	sharq	#fp_reci-fp_rez,dx02
-	sharq	#fp_reci,dl02
+	move	y1,dy01
+	sub	y0,dy01
+	moveq	#16,tmp0
+	jr	ne,.dy01_non_zero
+	normi	dy01,tmp1
 
+	moveq	#0,dl01
+	jr	.dy01_zero
+	moveq	#0,dx01
+
+.dy01_non_zero:
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	div	dy01,tmp0	; 1/dy01
+	move	tmp1,tmp2
+	neg	tmp1
+	neg	tmp2
+	subq	#4,tmp1
+	subq	#2,tmp2
+
+	imult	tmp0,dx01
+	imult	tmp0,dl01
+	sha	tmp1,dx01
+	sha	tmp2,dl01
+
+.dy01_zero
+	move	y2,dy12
+	sub	y1,dy12
+	moveq	#16,tmp0
+	jr	ne,.dy12_none_zero
+	normi	dy12,tmp1
+
+	moveq	#0,dx12
+	jr	.dy12_zero
+	moveq	#0,dl12
+
+.dy12_none_zero:
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+	div	dy12,tmp0
+	move	tmp1,tmp2
+	neg	tmp1
+	neg	tmp2
+	subq	#4,tmp1
+	subq	#2,tmp2
+
+	imult	tmp0,dx12	; (x2-x1)/dy12
+	imult	tmp0,dl12	; (x2-x1)/dy12
+	sha	tmp1,dx12
+	sha	tmp2,dl12
+.dy12_zero:
 	shlq	#fp_rez,x0
 	shlq	#fp_rez,x1
 
+	shlq	#COLOR_FP,l0
+	shlq	#COLOR_FP,l1
+
 	move	x0,x2
 	move	l0,l2
-
-	div	dy12,tmp2	; 1/dy12
-	imult	tmp1,dx01	; (x1-x0)/dy01
-	imult	tmp1,dl01	; (l1-l0)/dy01
-	sharq	#fp_reci-fp_rez,dx01
-	sharq	#fp_reci,dl01
-
 
 x1save.a	reg 99
 l1save.a	reg 99
@@ -301,13 +326,6 @@ l1save.a	reg 99
 
 	moveq	#0,y0
 .y0_top_ok:
-
-	imult	tmp2,dx12	; (x2-x1)/dy12
-	imult	tmp2,dl12	; (l2-l1)/dy12
-
-	sharq	#fp_reci-fp_rez,dx12
-	sharq	#fp_reci,dl12
-
 	cmpq	#0,y1
 	move	dx12,tmp0
 	jr	pl,.y1_top_ok
@@ -344,7 +362,8 @@ LR2		reg	99
 	jump	nn_ne,(HLINE)
 	addq	#10,LR2
 	jr	.top_done
-	nop
+	movefa	x1save.a,x0
+
 .loop_top:
 	add	dx01,x0
 	add	dl01,l0
@@ -353,16 +372,9 @@ LR2		reg	99
 	addqt	#1,y0
 	jump	ne,(HLINE)
 	add	dl02,l2
-.top_done:
 	movefa	x1save.a,x0
+.top_done:
 	movefa	l1save.a,l0
-
-//->	movei	#$190000,tmp3
-//->	movefa	dump0.a,tmp3
-//->	movei	#$aaaa5555,tmp0
-//->	store	tmp0,(tmp3)
-//->	addq	#4,tmp3
-//->	moveta	tmp3,dump0.a
 
 	sub	y0,y2
 	move	pc,LR2
@@ -375,62 +387,70 @@ LR2		reg	99
 	add	dx02,x2
 	subq	#1,y2
 	addqt	#1,y0
-	jump	ne,(HLINE)
+	jump	eq,(LR)
 	add	dl02,l2
-.btm_done:
-	jump	(LR)
-	nop
+
+	;; fall thru
 
 ****************
 * draw H-Lines
 
-tmp4	reg 99
+sign	reg 99
+dl.a	reg 99
 
 hline:
-	movei	#1<<(fp_rez-1),tmp0
 	move	x0,x1		; left
 	move	l0,l1
-	add	tmp0,x1		; round up
-	add	x2,tmp0		; right
+	move	x2,tmp0		; right
+
 	sharq	#fp_rez,x1
 	sharq	#fp_rez,tmp0
 	move	l2,tmp1
 	move	tmp0,tmp2
-	sub	x1,tmp0
+	sub	l1,tmp1		; dl
+	sub	x1,tmp0		; dx
 	movei	#max_x,tmp3
 	jr	pl,.ok
-	sub	l1,tmp1
+	shlq	#16,tmp1	; prepare division
 
-	add	tmp0,x1
+	add	tmp0,x1		; swap left<->right
 	move	l2,l1
 	sub	tmp0,tmp2
 	neg	tmp1
 	neg	tmp0
 .ok
+	move	tmp1,sign	; save dl sign
+	abs	tmp1
 	sub	tmp2,tmp3	; right clipping
-	moveq	#0,tmp4
+	div	tmp0,tmp1	; dl/dx
 	jr	pl,.rx
-	shlq	#16,tmp1	; prepare division
+	move	y0,tmp2
+
 	add	tmp3,tmp0	; reduce count
 .rx
-	abs	tmp1
-	move	l1,tmp3		; left luminance
-	jr	cc,.pos
-	div	tmp0,tmp1
-	moveq	#1,tmp4		; flag, decrement luminance
-.pos
 	cmpq	#0,x1		; left clip
-	move	y0,tmp2
+	move	l1,tmp3		; left luminance
 	jr	pl,.lx
 	shlq	#16,tmp2
 
+	or	tmp1,tmp1	; moveta score board bug
+
+	cmpq	#0,sign		; check sign(dl)
+	moveta	tmp1,dl.a	; save dl
+	jr	mi,.neg_step
+	shrq	#16,tmp1	; 24bit FP => 15bit FP
+	neg	tmp1
+.neg_step:
 	add	x1,tmp0		; reduce count
-	;; XXX adjust tmp3 (luminance)
+
+	imult	tmp1,x1
+	movefa	dl.a,tmp1
+	add	x1,tmp3		; adjust luminance for x = 0
 	moveq	#0,x1
 .lx
 	cmpq	#0,tmp0
 	jr	nn_ne,.count_ok	; tmp0 (count) > 0 ?
-	shrq	#COLOR_FP,tmp3
+	sharq	#COLOR_FP,tmp3	; => 8.16 FP for blitter
 	jump	(LR2)		; <= 0, do not draw
 .count_ok:
 	or	tmp2,x1		; y:x
@@ -441,14 +461,14 @@ hline:
 	jr	z,.waitblit
 	or	color,tmp3
 
-	cmpq	#0,tmp4		; negative color step?
+	cmpq	#0,sign		; negative color step?
 	store	tmp3,(blitter+_BLIT_PATD)
-	jr	eq,.pos2
+	jr	pl,.pos2
 	bset	#16,tmp0
 	neg	tmp1
 .pos2
 	shrq	#16,tmp3
-	shlq	#8-COLOR_FP,tmp1		; remove fixpoint
+	shlq	#8-COLOR_FP,tmp1	; remove fixpoint, remove top 8bits
 	store	tmp3,(blitter+_BLIT_SRCD)
 	shrq	#8,tmp1
 	movei	#B_PATDSEL|B_GOURD,tmp3
@@ -456,12 +476,11 @@ hline:
 	store	x1,(blitter+_BLIT_A1_PIXEL)
 	store	tmp0,(blitter+_BLIT_COUNT)
 	jump	(LR2)
-//->	nop
 	store	tmp3,(blitter+_BLIT_CMD)
 
-	unreg	dx01,dx02,dx12
+	unreg	dx01,dx02,dx12,dl.a
 	unreg	dl01,dl02,dl12
 	unreg	l0,l1,l2,HLINE,LR2
-	unreg	x1save.a,l1save.a,tmp4
+	unreg	x1save.a,l1save.a,sign
 	unreg	tri_array, f_cnt.a, x0,x1,x2, blitter
 	unreg	tri_ptrs.a,color,y0,y1,y2,max_y.a,LR.a,x1.a
