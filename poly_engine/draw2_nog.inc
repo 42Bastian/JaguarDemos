@@ -29,8 +29,6 @@ LR3		reg 99
 
 max_y.a		reg 99
 
-
-
 Drawfaces::
 	move	LR,f_cnt
 	movei	#$f02200,blitter
@@ -91,6 +89,29 @@ triangle:
 	sharq	#16,y0
 	sharq	#16,y1
 	sharq	#16,y2
+
+;;; ----------------------------------------
+_dx	equ 60
+//->	movei	#$ffffffff,color
+//->	movei	#50,x0
+//->	movei	#10,y0
+//->	movei	#300,x1
+//->	movei	#40,y1
+//->	movei	#20,x2
+//->	movei	#120,y2
+//->	movefa	dump.a,r0
+//->	cmpq	#1,r0
+//->	jump	ne,(LR3)
+//->	nop
+//->	bclr	#31,color
+//->	sub	tmp2,x0
+//->	sub	tmp2,x1
+//->	sub	tmp2,x2
+//->	sub	tmp1,y0
+//->	sub	tmp1,y1
+//->	sub	tmp1,y2
+//->	movefa	LR.a,LR
+.first
 
 	;; check if triangle is outside screen
 	move	y0,tmp0		; triangle y < 0
@@ -156,15 +177,21 @@ triangle:
 	move	tmp0,x0
 	move	tmp1,y0
 .no_swap3:
-
 	move	y2,dy02
-	movei	#1<<fp_reci,tmp0
 	sub	y0,dy02
-	move	y1,dy01
+	moveq	#16,tmp0
 	jump	eq,(LR3)		; flat triangle
-	div	dy02,tmp0	; 1/dy02
+	normi	dy02,tmp1
 
-	move	y2,dy12
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	div	dy02,tmp0	; 1/dy02
+	neg	tmp1
+	subq	#4,tmp1
+
+	move	y1,dy01
 
 	move	x1,dx01
 	move	x2,dx02
@@ -173,34 +200,60 @@ triangle:
 	sub	x0,dx02
 	sub	x1,dx12
 
-	sub	y0,dy01
-	movei	#1<<fp_reci,tmp1
-	jr	ne,.dy01_non_zero
-	sub	y1,dy12
-	moveq	#0,tmp1
-	moveq	#1,dy01
-.dy01_non_zero:
-	movei	#1<<fp_reci,tmp2
-	jr	ne,.dy12_none_zero
-	nop
-	moveq	#0,tmp2
-	moveq	#1,dy12
-.dy12_none_zero:
-
 	imult	tmp0,dx02	; (x2-x0)/dy02
+	sha	tmp1,dx02
 
-	div	dy01,tmp1	; 1/dy01
+	sub	y0,dy01
+	moveq	#16,tmp0
+	jr	ne,.dy01_non_zero
+	normi	dy01,tmp1
+	jr	.dy01_zero
+	moveq	#0,tmp0
 
-	sharq	#fp_reci-fp_rez,dx02
+.dy01_non_zero:
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	store	dy01,(tmp2)
+	addq	#4,tmp2
+
+	store	tmp0,(tmp2)
+	addq	#4,tmp2
+
+	div	dy01,tmp0	; 1/dy01
+	neg	tmp1
+	subq	#4,tmp1
+.dy01_zero
+	imult	tmp0,dx01	; (x2-x0)/dy02
+	sha	tmp1,dx01
+
+	move	y2,dy12
+	sub	y1,dy12
+	moveq	#16,tmp0
+	jr	ne,.dy12_none_zero
+	normi	dy12,tmp1
+
+	jr	.dy12_zero
+	moveq	#0,tmp0
+
+.dy12_none_zero:
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	div	dy12,tmp0	; 1/dy12
+	neg	tmp1
+	subq	#4,tmp1
+.dy12_zero:
+
+	imult	tmp0,dx12	; (x2-x1)/dy12
+	sha	tmp1,dx12
 
 	shlq	#fp_rez,x0
 	shlq	#fp_rez,x1
 
 	move	x0,x2
-	imult	tmp1,dx01	; (x1-x0)/dy01
-
-	div	dy12,tmp2	; 1/dy12
-	sharq	#fp_reci-fp_rez,dx01
 
 	cmpq	#0,y0
 	move	dx01,tmp0
@@ -214,13 +267,10 @@ triangle:
 
 	moveq	#0,y0
 .y0_top_ok:
-
-	imult	tmp2,dx12	; (x2-x1)/dy12
-
 	cmpq	#0,y1
 	movefa	max_y.a,tmp0
 	jr	pl,.y1_top_ok
-	sharq	#fp_reci-fp_rez,dx12
+	nop
 
 	imult	dx12,y1
 	sub	y1,x1
@@ -236,7 +286,7 @@ triangle:
 	jr	pl,.y_btm2_ok
 	nop
 	move	tmp0,y1
-.y_btm2_ok
+.y_btm2_ok:
 
 	unreg dy01,dy02,dy12
 
@@ -259,7 +309,10 @@ LR2		reg	99
 
 	move	x1,x0
 
+
 .top_done:
+//->	jump	(LR3)		;---
+
 	sub	y0,y2
 	move	pc,LR2
 	jump	ne,(HLINE)
