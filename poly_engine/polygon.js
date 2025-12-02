@@ -5,6 +5,9 @@ LYXASS	EQU 1
 
 DRAW2		equ 1
 GOURAUD		set 1
+SOFTCLIP	set 0
+LANDSCAPE	set 1
+
 FPS		set 4		; fixed frame rate
 
 IFND MOD
@@ -27,15 +30,15 @@ gone		equ 1
 	include "hively.inc"
  ENDIF
 
-;;->CAM_X		equ -840
-;;->CAM_Y		equ 15
-;;->CAM_Z		equ 2900
-;;->CAM_ANGLE	equ 256
-
-CAM_X		equ -352
+CAM_X		equ -280
 CAM_Y		equ 50
-CAM_Z		equ 2138
-CAM_ANGLE	equ 256
+CAM_Z		equ 1900
+CAM_ANGLE	equ 52
+
+//->CAM_X		equ -318
+//->CAM_Y		equ 50
+//->CAM_Z		equ 2468
+//->CAM_ANGLE	equ 256
 
 	echo "TxtScreen: %H TxtScreen"
 	echo "screen1:   %H screen1"
@@ -120,6 +123,7 @@ tri_array_ram	equ $168000
 	RSL	Y_POS
 	RSL	Z_POS
 	RSL	USE_GOURAUD
+	RSL	USE_PHRASE
 	RSL	LastJoy,2
 
 _CAMERA_Y	EQU CAMERA_Y-CAMERA_X
@@ -361,13 +365,13 @@ pal:
 	addq	#4,r0
 	endm
 
-	ADD_OBJ kugel
-	ADD_OBJ torus2
-	ADD_OBJ torus
-	ADD_OBJ diamant
+//->	ADD_OBJ kugel
+//->	ADD_OBJ torus2
+//->	ADD_OBJ torus
+//->	ADD_OBJ diamant
 	ADD_OBJ cube
-	ADD_OBJ cube2
-	ADD_OBJ prisma
+//->	ADD_OBJ cube2
+//->	ADD_OBJ prisma
 
 
 	movei	#CAMERA_X,r15
@@ -390,6 +394,8 @@ pal:
 	movei	#USE_GOURAUD,r0
 	moveq	#0,r1
 	not	r1
+	store	r1,(r0)
+	addq	#4,r0
 	store	r1,(r0)
 
 	movei	#VID_PIT0,tmp1
@@ -455,6 +461,13 @@ main_loop:
 	movefa	dump.a,r0
 	moveq	#0,r1
 	movei	#PrintDEC_YX,r2
+	BL	(r2)
+
+	movefa	dump0.a,r0
+	movei	#USE_PHRASE,r0
+	load	(r0),r0
+	moveq	#8,r1
+	movei	#PrintHEX_YX,r2
 	BL	(r2)
 
 	movei	#main_loop,r0

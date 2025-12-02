@@ -47,11 +47,11 @@ obl1_60.bin: obl.S video.h
 OBL=obl0_50.bin obl1_50.bin obl0_60.bin obl1_60.bin video.h
 
 OBJ_INC=torus.inc structs.inc cube.inc bigball.inc  diamant.inc pobjects.inc
-OBJ_INC+= prisma.inc planex.inc
+OBJ_INC+= prisma.inc planex.inc draw2_phr.inc
 
 SRC_INC= visible.inc project.inc draw2.inc draw.inc rotate.inc draw2_nog.inc
 SRC_INC+= gouraud.inc createplane.inc sintab.inc addobj.inc
-SRC_INC+= buildPlane.inc
+SRC_INC+= buildPlane.inc draw2_hc.inc
 
 $(DEMO).o :control.js irq.js globalreg.h engine.h hively_player.bin
 

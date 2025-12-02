@@ -2,7 +2,7 @@
 ****************
 * draw polys
 
-COLOR_FP	equ 6
+COLOR_FP	equ 4
 
 tri_array	reg 15!
 blitter		reg 14
@@ -111,7 +111,7 @@ triangle:
 	jump	n,(LR)		; all x < 0
 	movefa	max_y.a,tmp1
 	cmp	y0,tmp1		; triangle > y_max ?
-	movei	#max_x,tmp0
+	movei	#max_x-1,tmp0
 	jr	nn,.y_ok
 	cmp	y1,tmp1
 	jr	nn,.y_ok
@@ -132,40 +132,19 @@ triangle:
 	moveta	r0,dump.a
 
 ;;; ----------------------------------------
-_dx	equ 260
-//->	movei	#$7fff007f,color
-//->	movei	#230,x0
-//->	movei	#10,y0
-//->	movei	#31,x1
-//->	movei	#100,y1
-//->	movei	#300,x2
-//->	movei	#120,y2
-//->	movefa	dump.a,r1
-//->	movei	#_dx,tmp0
-//->	cmpq	#1,r1
-//->	jr	eq,.first
-	nop
-
-;;->	movei	#$ffff0001,color
-;;->	movei	#430,x0
+;;->_dx	equ 160
+;;->	movei	#$7f80ff00,color
+;;->	movei	#350,x0
 ;;->	movei	#10,y0
-;;->	movei	#420,x1
-;;->	movei	#50,y1
+;;->	movei	#400,x1
+;;->	movei	#40,y1
 ;;->	movei	#300,x2
 ;;->	movei	#120,y2
 ;;->	movefa	dump.a,r1
 ;;->	movei	#_dx,tmp0
-;;->
-;;->//->	movei	#$cf2fffff,color
-;;->//->	movei	#300,x0
-;;->//->	movei	#10,y0
-;;->//->	movei	#420,x1
-;;->//->	movei	#20,y1
-;;->//->	movei	#350,x2
-;;->//->	movei	#120,y2
 ;;->	cmpq	#1,r1
-;;->//->	jr	eq,.first
-;;->//->	nop
+;;->	jr	eq,.first
+;;->	nop
 ;;->//->	bclr	#31,color
 ;;->	sub	tmp0,x0
 ;;->	sub	tmp0,x1
@@ -228,35 +207,36 @@ _dx	equ 260
 	move   	tmp2,l0
 .no_swap3:
 
+	move	x1,dx01
+	move	x2,dx02
 	move	x2,dx12
-	move	y2,dy02
+	sub	x0,dx01
+	sub	x0,dx02
 	sub	x1,dx12
+
+	move	l2,dl02
+	move	l1,dl01
+	move	l2,dl12
+	sub	l0,dl01
+	sub	l0,dl02
+	sub	l1,dl12
+
+	move	y2,dy02
 	sub	y0,dy02
 	moveq	#16,tmp0	; 16 == shift left 4
 	jump	eq,(LR)		; flat triangle
 	normi	dy02,tmp1	; get max. resolution for FP divide
-	move	l2,dl02
+
 	addq	#32,tmp1
-	move	l1,dl01
 	neg	tmp1
-	move	l2,dl12
 	sh	tmp1,tmp0	; 1 << (44 - CLZ(dy02))
-	sub	l0,dl01
+
 	div	dy02,tmp0
-
-	sub	l0,dl02
-	sub	l1,dl12
-
-	move	x1,dx01
-	move	x2,dx02
-	sub	x0,dx01
-	sub	x0,dx02
-
 	move	tmp1,tmp2
 	neg	tmp1
 	neg	tmp2
 	subq	#fp_rez-4,tmp1
-	subq	#COLOR_FP-4,tmp2
+//->	subq	#COLOR_FP-4,tmp2
 
 	imult	tmp0,dx02	; (x2-x0)/dy02
 	imult	tmp0,dl02	; (l2-l0)/dy02
@@ -283,7 +263,7 @@ _dx	equ 260
 	neg	tmp1
 	neg	tmp2
 	subq	#fp_rez-4,tmp1
-	subq	#COLOR_FP-4,tmp2
+//->	subq	#COLOR_FP-4,tmp2
 
 	imult	tmp0,dx01	; (x1-x0)/dy01
 	imult	tmp0,dl01	; (l1-l0)/dy01
@@ -310,7 +290,7 @@ _dx	equ 260
 	neg	tmp1
 	neg	tmp2
 	subq	#fp_rez-4,tmp1
-	subq	#COLOR_FP-4,tmp2
+//->	subq	#COLOR_FP-4,tmp2
 
 	imult	tmp0,dx12	; (x2-x1)/dy12
 	imult	tmp0,dl12	; (l2-l1)/dy12
@@ -425,55 +405,29 @@ hline:
 	move	x2,tmp0		; right
 
 	sharq	#fp_rez,x1
-	sharq	#fp_rez,tmp0
 	move	l2,tmp1
-	move	tmp0,tmp2
+	sharq	#fp_rez,tmp0
 	sub	l1,tmp1		; dl
 	sub	x1,tmp0		; dx
-	movei	#max_x,tmp3
+	jump	eq,(LR2)
+	move	tmp1,sign	; save dl sign
 	jr	pl,.ok
 	shlq	#16,tmp1	; prepare division
 
 	add	tmp0,x1		; swap left<->right
 	move	l2,l1
-	sub	tmp0,tmp2
 	neg	tmp1
 	neg	tmp0
+	neg	sign
 .ok
-	move	tmp1,sign	; save dl sign
 	abs	tmp1
-	sub	tmp2,tmp3	; right clipping
-	div	tmp0,tmp1	; dl/dx
-	jr	pl,.rx
 	move	y0,tmp2
-
-	add	tmp3,tmp0	; reduce count
-.rx
-	cmpq	#0,x1		; left clip
-	move	l1,tmp3		; left luminance
-	jr	pl,.lx
+	div	tmp0,tmp1	; dl/dx
 	shlq	#16,tmp2
-
-	or	tmp1,tmp1	; moveta score board bug
-
-	cmpq	#0,sign		; check sign(dl)
-	moveta	tmp1,dl.a	; save dl
-	jr	mi,.neg_step
-	shrq	#16,tmp1	; 24bit FP => 15bit FP
-	neg	tmp1
-.neg_step:
-	add	x1,tmp0		; reduce count
-
-	imult	tmp1,x1
-	movefa	dl.a,tmp1
-	add	x1,tmp3		; adjust luminance for x = 0
-	moveq	#0,x1
-.lx
-	cmpq	#0,tmp0
-	jr	nn_ne,.count_ok	; tmp0 (count) > 0 ?
-	rorq	#COLOR_FP,tmp3
-	jump	(LR2)		; <= 0, do not draw
-.count_ok:
+	shlq	#16,x1
+	move	l1,tmp3		; left luminance
+	shrq	#16,x1
+	rorq	#COLOR_FP,tmp3	; => 8.16 FP for blitter
 	or	tmp2,x1		; y:x
 
 .waitblit:
@@ -482,28 +436,19 @@ hline:
 	jr	z,.waitblit
 	or	color,tmp3
 
-	store	x1,(blitter+_BLIT_A1_PIXEL)
 	cmpq	#0,sign		; negative color step?
 	store	tmp3,(blitter+_BLIT_PATD)
 	jr	pl,.pos2
 	bset	#16,tmp0
 	neg	tmp1
 .pos2
-	rorq	#16,tmp3
+	shrq	#16,tmp3
 	shlq	#8-COLOR_FP,tmp1	; remove fixpoint, remove top 8bits
 	store	tmp3,(blitter+_BLIT_SRCD)
 	shrq	#8,tmp1
-
-	movefa	dump0.a,x1
-	store	tmp3,(x1)
-	addq	#4,x1
-	store	tmp1,(x1)
-	addq	#4,x1
-	moveta	x1,dump0.a
-
-	movei	#B_PATDSEL|B_GOURD,tmp3
+	movei	#B_PATDSEL|B_GOURD|B_CLIP_A1,tmp3
 	store	tmp1,(blitter+_BLIT_IINC)
-
+	store	x1,(blitter+_BLIT_A1_PIXEL)
 	store	tmp0,(blitter+_BLIT_COUNT)
 	jump	(LR2)
 	store	tmp3,(blitter+_BLIT_CMD)

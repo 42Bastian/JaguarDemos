@@ -156,6 +156,14 @@ no_123:
 	not	r2
 	store	r2,(r1)
 .not_0:
+	btst	#JOY_HASH_BIT,r0
+	movei	#USE_PHRASE,r1
+	jr	eq,.not_hash
+	load	(r1),r2
+	not	r2
+	store	r2,(r1)
+.not_hash:
+
 .exit
 ;;; ----- output values -----
 

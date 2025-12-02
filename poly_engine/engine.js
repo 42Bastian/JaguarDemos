@@ -47,6 +47,64 @@ far_x.a		reg 99
 engine::
 	PUSHLR
 
+****************
+* CLS
+
+blitter		reg 14
+screen_ptr	reg 99
+
+CLS::
+	movei	#BLIT_A1_BASE,blitter
+ IF SOFTCLIP = 1
+	moveq	#0,tmp0
+ ELSE
+	movei	#max_y<<16|max_x,tmp0
+ ENDIF
+	store	tmp0,(blitter+_BLIT_A1_CLIP)
+
+	movefa	screen0.a,screen_ptr
+	store	screen_ptr,(blitter)
+ IF max_x = 640
+	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	movei	#(max_y)<<16|(max_x/2),tmp1
+	moveq	#0,tmp0
+	store	tmp0,(blitter+_BLIT_A1_PIXEL)	; pel ptr
+	store	tmp1,(blitter+_BLIT_COUNT)
+	store	tmp0,(blitter+_BLIT_CMD)
+ ELSE
+//->	movei	#$88e088e0,tmp0
+	moveq	#0,tmp0
+	store	tmp0,(blitter+_BLIT_PATD)
+	store	tmp0,(blitter+_BLIT_PATD+4)
+	store	tmp0,(blitter+$40)
+	movei	#(-$500)&0xffffff,tmp0
+	store	tmp0,(blitter+$70)		; int inc
+	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPHR,tmp0
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	moveq	#0,tmp1
+
+	movei	#170<<16|(max_x),tmp2
+	store	tmp1,(blitter+_BLIT_A1_PIXEL)
+	movei	#B_PATDSEL|B_GOURD,tmp1
+	store	tmp2,(blitter+_BLIT_COUNT)
+	store	tmp1,(blitter+_BLIT_CMD)
+
+	WAITBLITTER
+
+	shrq	#16,tmp2
+	shlq	#16,tmp2	; remove X count
+
+	store	tmp2,(blitter+_BLIT_A1_PIXEL)	; pel ptr
+	movei	#(max_y-170)<<16|max_x,tmp1
+	moveq	#0,tmp0
+	store	tmp1,(blitter+_BLIT_COUNT)
+	store	tmp0,(blitter+_BLIT_CMD)
+ ENDIF
+
+ UNREG blitter,screen_ptr
+
+
  IF DRAW2 = 0
 	movei	#(max_x)<<(16),r0	; minX:maxX
 	moveta	r0,min_max.a
@@ -138,22 +196,25 @@ cam_cos		reg 99
 //->	BL	(r8)
 
 	;; debug
-	movei	#$19000,r0
-	moveta	r0,dump0.a
+//->	movei	#$19000,r0
+//->	moveta	r0,dump0.a
 
 	moveq	#0,r0
 	moveta	r0,dump.a
 	;;
-
+ IF LANDSCAPE = 1
 	movei	#createPlane,r0
 	BL	(r0)
+ ENDIF
 
 object_list	reg 25
 curr_object	reg 15
 
+ IF LANDSCAPE = 1
 	movei	#obj_plane,curr_object
 	movei	#check_faces_visible,r0
 	BL	(r0)
+ ENDIF
 
  IF 1
 	movei	#OBJECT_LIST,object_list
@@ -231,57 +292,6 @@ dz	reg 99
 	movei	#AddObjects,r0
 	BL	(r0)
  endif
-****************
-* CLS
-
-blitter		reg 14
-screen_ptr	reg 99
-
-CLS::
-	movei	#BLIT_A1_BASE,blitter
-	movefa	screen0.a,screen_ptr
-	store	screen_ptr,(blitter)
- IF max_x = 640
-	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
-	store	tmp0,(blitter+_BLIT_A1_FLAGS)
-	movei	#(max_y)<<16|(max_x/2),tmp1
-	moveq	#0,tmp0
-	store	tmp0,(blitter+_BLIT_A1_PIXEL)	; pel ptr
-	store	tmp1,(blitter+_BLIT_COUNT)
-	store	tmp0,(blitter+_BLIT_CMD)
- ELSE
-	movei	#$88e088e0,tmp0
-//->	moveq	#0,tmp0
-	store	tmp0,(blitter+_BLIT_PATD)
-	store	tmp0,(blitter+_BLIT_PATD+4)
-	store	tmp0,(blitter+$40)
-	movei	#(-$500)&0xffffff,tmp0
-	store	tmp0,(blitter+$70)		; int inc
-	store	tmp0,(blitter+$74)		; int inc
-	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPHR,tmp0
-	store	tmp0,(blitter+_BLIT_A1_FLAGS)
-	moveq	#0,tmp1
-
-	movei	#170<<16|(max_x),tmp2
-	store	tmp1,(blitter+_BLIT_A1_PIXEL)
-	movei	#B_PATDSEL|B_GOURD,tmp1
-	store	tmp2,(blitter+_BLIT_COUNT)
-	store	tmp1,(blitter+_BLIT_CMD)
-
-	WAITBLITTER
-
-	shrq	#16,tmp2
-	shlq	#16,tmp2	; remove X count
-
-	store	tmp2,(blitter+_BLIT_A1_PIXEL)	; pel ptr
-	movei	#(max_y-170)<<16|max_x,tmp1
-	moveq	#0,tmp0
-	store	tmp1,(blitter+_BLIT_COUNT)
-	store	tmp0,(blitter+_BLIT_CMD)
- ENDIF
-
- UNREG blitter,screen_ptr
-
 //->	movei	#Dump,r0
 //->	movefa	screen0.a,r11
 //->	BL	(r0)
@@ -300,8 +310,15 @@ CLS::
 	moveq	#0,r0
 	moveta	r0,dump.a
 
-	movei	#Drawfaces,r0
-	BL	(r0)
+	movei	#USE_PHRASE,r0
+	load	(r0),r0
+	movei	#Drawfaces,r1
+	cmpq	#0,r0
+	jr	eq, pixel
+	nop
+	movei	#Drawfaces_phr,r1
+pixel:
+	BL	(r1)
 
 	movefa	screen0.a,r11
 	movei	#max_x-32,r0
@@ -313,7 +330,7 @@ CLS::
 //->	BL	(r0)
 //->	movei	#max_x*2*2,r0
 //->	add	r0,r11
-	movei	#4,r10
+	movei	#30,r10
 //->	movei	#cube_projected,r9
 	movei	#$190000,r9
 	movei	#Dump1,r0
@@ -390,6 +407,7 @@ xd:
  IF DRAW2 = 1
  IF GOURAUD = 1
 	include "draw2.inc"
+	include "draw2_phr.inc"
  ELSE
 	include "draw2_nog.inc"
  ENDIF
