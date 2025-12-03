@@ -218,7 +218,7 @@ pal:
 	store	r1,(r0)
 
 	movefa	IRQ_FLAGADDR.a,r0
-	movei	#1<<14|%11111<<9|%01000<<<4,r1
+	movei	#1<<14|%11111<<9|%01000<<4,r1
 	store	r1,(r0)
 	nop
 	nop

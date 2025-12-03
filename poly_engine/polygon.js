@@ -336,7 +336,7 @@ pal:
 	shlq	#16+8,r1
 	store	r1,(r0)
 
-	movei	#1<<14|%11111<<9|%01000<<<4,r1
+	movei	#1<<14|%11111<<9|%01000<<4,r1
 	store	r1,(IRQ_FLAGADDR)
 	nop
 	nop

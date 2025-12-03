@@ -107,7 +107,7 @@ pal:
 	movei	#screen1,r0
 	moveta	r0,screen0.a
 
-	movei	#1<<14|%11111<<9|%01000<<<4,r1
+	movei	#1<<14|%11111<<9|%01000<<4,r1
 	store	r1,(IRQ_FLAGADDR)
 	nop
 	nop
