@@ -13,17 +13,15 @@ op::
 	load	(IRQ_FLAGADDR.a),IRQ_FLAG.a
 	load	(IRQ_SP.a),IRQ_RTS.a
 	bset	#9+3,IRQ_FLAG.a
-	movefa	VBLFlag,IRQScratch1.a
 	bclr	#3,IRQ_FLAG.a
-	cmpq	#0,IRQScratch1.a
+	cmpq	#0,VBLFlag.a
 	move	obl0.a,IRQScratch0.a
 	jr	ne,.no_swap
 	subq	#1,vbl_counter.a
-	moveq	#1,IRQScratch1.a
 	jr	pl,.no_swap
 	nop
 	moveq	#FPS-1,vbl_counter.a
-	moveta	IRQScratch1.a,VBLFlag
+	moveq	#1,VBLFlag.a
 	move	obl1.a,obl0.a
 	move	IRQScratch0.a,obl1.a
 

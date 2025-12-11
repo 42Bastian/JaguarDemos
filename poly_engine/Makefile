@@ -47,11 +47,18 @@ obl1_60.bin: obl.S video.h
 OBL=obl0_50.bin obl1_50.bin obl0_60.bin obl1_60.bin video.h
 
 OBJ_INC=torus.inc structs.inc cube.inc bigball.inc  diamant.inc pobjects.inc
-OBJ_INC+= prisma.inc planex.inc draw2_phr.inc
+OBJ_INC+= prisma.inc plane2.inc
 
-SRC_INC= visible.inc project.inc draw2.inc draw.inc rotate.inc draw2_nog.inc
+SRC_INC= visible.inc project.inc rotate.inc
 SRC_INC+= gouraud.inc createplane.inc sintab.inc addobj.inc
-SRC_INC+= buildPlane.inc draw2_hc.inc
+SRC_INC+= buildPlane.inc
+# Renderer
+# Flat
+SRC_INC+= draw2_nog_hc.inc draw2_nog.inc draw2_txt.inc 
+# Gouraud
+SRC_INC+= draw2.inc draw2_phr.inc
+# Old
+SRC_INC+= draw.inc
 
 $(DEMO).o :control.js irq.js globalreg.h engine.h hively_player.bin
 
@@ -63,9 +70,9 @@ $(DEMO).j64: $(DEMO).o
 	cat $< >> $@
 	bzcat $(BJL_ROOT)/bin/allff.bin.bz2 >> $@
 ifeq ($(MOD),0)
-	truncate -s 512K $@
+	truncate -s 1M $@
 else
-	truncate -s 1024K $@
+	truncate -s 2M $@
 endif
 
 hively_player.bin: hively_player_v21.S

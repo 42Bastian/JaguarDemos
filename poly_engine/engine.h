@@ -1,6 +1,7 @@
 ;-*- asm -*-
 fp_reci		equ 15
 fp_rez		equ 8		; sub-pixel precision for edges
+COLOR_FP	equ 7		; fixpoint for color gradient
 
 ambient		equ 16
 near_z		equ 10

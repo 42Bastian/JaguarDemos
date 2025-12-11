@@ -2,7 +2,7 @@
 ****************
 * draw polys
 
-LOCAL_USE_PHRASE equ 1
+LOCAL_USE_PHRASE		equ 1
 
 tri_array	reg 15!
 blitter		reg 14
@@ -26,7 +26,6 @@ dx02		reg 99
 dx12		reg 99
 f_cnt		reg 99
 LR3		reg 99
-
 max_y.a		reg 99
 
 Drawfaces::
@@ -71,11 +70,6 @@ Drawfaces::
 	nop
 
 triangle:
-	;; debug
-//->	movefa	dump.a,r0
-//->	addqt	#1,r0
-//->	moveta	r0,dump.a
-
 	;; split x and y and sign-extend
 	move	y0,x0
 	move	y1,x1
@@ -215,6 +209,12 @@ _dx	equ 60
 	neg	tmp1
 	sh	tmp1,tmp0
 
+	store	dy01,(tmp2)
+	addq	#4,tmp2
+
+	store	tmp0,(tmp2)
+	addq	#4,tmp2
+
 	div	dy01,tmp0	; 1/dy01
 	neg	tmp1
 	subq	#4,tmp1
@@ -302,8 +302,8 @@ LR2		reg	99
 	add	dx02,x2
 
 	move	x1,x0
-
 .top_done:
+
 	sub	y0,y2
 	move	pc,LR2
 	jump	ne,(HLINE)
@@ -316,46 +316,30 @@ LR2		reg	99
 	jump	eq,(LR3)
 	add	dx02,x2
 
-	;; fall thru
 ****************
 * draw H-Lines
 xl	reg 99
 
 hline:
+	move	x2,tmp0
 	move	x0,xl		; left
-	movei	#1<<(fp_rez-1),tmp0
-	add	tmp0,xl		; round up
-	add	x2,tmp0		; right
-	sharq	#fp_rez,xl
 	sharq	#fp_rez,tmp0
+	sharq	#fp_rez,xl
 	move	tmp0,tmp2	; xr
-	sub	xl,tmp0
-	movei	#max_x,tmp3
+	sub	xl,tmp0		; dx
+	jump	eq,(LR2)
+	move	y0,tmp3
 	jr	pl,.ok
 	nop
 	add	tmp0,xl
 	sub	tmp0,tmp2
 	neg	tmp0
 .ok
-	sub	tmp2,tmp3	; right clipping
-	jr	pl,.rx
-	nop
-	add	tmp3,tmp0
-.rx
-	cmpq	#0,xl		; left clip
-	move	y0,tmp2
-	jr	pl,.lx
-	shlq	#16,tmp2
-
-	add	xl,tmp0		; reduce count
-	moveq	#0,xl
-.lx
-	or	tmp2,xl		; y:x
-	cmpq	#0,tmp0
-	movei	#B_PATDSEL,tmp3
-	jump	eq,(LR2)
+	shlq	#16,xl
+	movei	#B_PATDSEL|B_CLIP_A1,tmp2
+	or	tmp3,xl		; y:x
 	load	(blitter+$38),tmp1 ; wait for previous blit
-	jump	mi,(LR2)
+	rorq	#16,xl
 	bset	#16,tmp0
 .waitblit:
 	btst	#0,tmp1
@@ -369,7 +353,7 @@ hline:
 	store	xl,(blitter+_BLIT_A1_PIXEL)
 	store	tmp0,(blitter+_BLIT_COUNT)
 	jump	(LR2)
-	store	tmp3,(blitter+_BLIT_CMD)
+	store	tmp2,(blitter+_BLIT_CMD)
 
 	unreg	dx01,dx02,dx12,xl
 	unreg	l0,l1,l2,HLINE,LR2

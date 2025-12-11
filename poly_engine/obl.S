@@ -24,6 +24,11 @@ text_x = 0
 bpp		= 4
 gr_phrase	= max_x/4
 
+ IF max_x = 384
+gr_x	equ 20
+ ELSE
+gr_x	equ 0
+ endif
 	.objproc
 	.org	op_list
  branch VC < y_start,_stop0
@@ -52,14 +57,16 @@ _bm:
  bitmap background,0,y_start,320*2/8,320*2/8,200,4,0,NOTRANS RELEASE,0,1
  ENDIF
  ENDIF
+
  IF ^^defined background
  bitmap screen,0,y_start,gr_phrase,gr_phrase,max_y,bpp,0,TRANS RELEASE,0,1
  ELSE
- bitmap screen,0,y_start,gr_phrase,gr_phrase,max_y,bpp,0,NOTRANS RELEASE,0,1
+ bitmap screen,gr_x,y_start,gr_phrase,gr_phrase,max_y,bpp,0,NOTRANS RELEASE,0,1
  ENDIF
+
  ENDIF
- bitmap	TxtScreen, text_x,y_start+max_y-10,(max_x_txt/64),(max_x_txt/64),max_y_txt, 0,127, NORELEASE,0,1
- bitmap	logo_screen, 0,y_start+max_y-20,1,1,9, 0,0,TRANS  RELEASE,0,1
+ bitmap	TxtScreen, gr_x+text_x,y_start+max_y,(max_x_txt/64),(max_x_txt/64),max_y_txt, 0,127, NOTRANS RELEASE,0,1
+ bitmap	logo_screen, gr_x,y_start+max_y-10,1,1,9, 0,0,TRANS  RELEASE,0,1
  stop
 
 	.qphrase

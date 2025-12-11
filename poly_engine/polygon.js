@@ -5,10 +5,10 @@ LYXASS	EQU 1
 
 DRAW2		equ 1
 GOURAUD		set 1
-SOFTCLIP	set 0
+SOFTCLIP	set 1
 LANDSCAPE	set 1
-
-FPS		set 4		; fixed frame rate
+TEXTURE		set 1
+FPS		set 5		; fixed frame rate
 
 IFND MOD
 MOD		EQU 0
@@ -30,10 +30,20 @@ gone		equ 1
 	include "hively.inc"
  ENDIF
 
-CAM_X		equ -280
+//->CAM_X		equ -350
+//->CAM_Y		equ 50
+//->CAM_Z		equ 2150
+//->CAM_ANGLE	equ 256
+
+CAM_X		equ -635
 CAM_Y		equ 50
-CAM_Z		equ 1900
-CAM_ANGLE	equ 52
+CAM_Z		equ 2528
+CAM_ANGLE	equ 308
+
+;;->CAM_X		equ -280
+;;->CAM_Y		equ 50
+;;->CAM_Z		equ 1900
+;;->CAM_ANGLE	equ 52
 
 //->CAM_X		equ -318
 //->CAM_Y		equ 50
@@ -65,9 +75,9 @@ IRQ_STACK	equ $f03020-4
 x_save		equ stacktop-16*4-(max_y+1)*8
  ENDIF
 
-object_data	equ $e0000
-tri_ptrs_ram	equ $100000
-tri_array_ram	equ $168000
+object_data	equ $110000
+tri_ptrs_ram	equ $190000
+tri_array_ram	equ tri_ptrs_ram+256*4
 
 	macro	defobj 	; name,npoints,nfaces
 	RSB	\0_rotated,	 	4+\1*_3d_size
@@ -150,6 +160,7 @@ _RLIGHT_Z	EQU RLIGHT_Z-CAMERA_X
 * init
 init:
 	movei	#skip_modules,r0
+	nop
 	jump	(r0)
 	nop
 	include "irq.js"
@@ -158,6 +169,7 @@ init:
 	include "control.js"
 	include "buildplane.inc"
 
+	align	4
 skip_modules
 	movei	#$f02100,IRQ_FLAGADDR
 	moveta	IRQ_FLAGADDR,IRQ_FLAGADDR.a
@@ -285,6 +297,12 @@ cpy_dsp:
 	addqt	#8,tmp0
  ENDIF
 	movei	#PrintString_YX,r5
+	movei	#info,r0
+	moveq	#3,r1
+	shlq	#16,r1
+	BL	(r5)
+
+	movei	#PrintString_YX,r5
 	movei	#Hallo,r0
 	moveq	#0,r1
 	BL	(r5)
@@ -341,6 +359,7 @@ pal:
 	nop
 	nop
 
+	nop
 	MyINITMODULE buildPlane
 	MBL	buildPlane
 
@@ -396,6 +415,7 @@ pal:
 	not	r1
 	store	r1,(r0)
 	addq	#4,r0
+	moveq	#0,r1
 	store	r1,(r0)
 
 	movei	#VID_PIT0,tmp1
@@ -403,6 +423,7 @@ pal:
 	store	tmp0,(tmp1)
 
 	movei	#createPlaneFaces,r0
+	nop
 	BL	(r0)
 
 //->	MyINITMODULE engine
@@ -418,14 +439,19 @@ main_loop:
 //->	movefa	vbl_counter.a,r0
 //->	BL	(r8)
 
-	xor	VBLFlag,VBLFlag
-	nop
-	movei	#$00F00058,r0
-	storew	r0,(r0)
+	movei	#$00F00058,r1
+	moveq	#31,r0
+	storew	r0,(r1)
+
+	moveq	#0,r0
+	moveta	r0,VBLFlag.a
+//->	xor	VBLFlag,VBLFlag
 .wvbl:
-	or	VBLFlag,VBLFlag
+	cmpq	#0,r0
+//->	or	VBLFlag,VBLFlag
 	jr	eq,.wvbl
-	nop
+	movefa	VBLFlag.a,r0
+
 
 //->	movei	#$00F00052,r2
 //->	loadw	(r2),r0
@@ -455,7 +481,7 @@ main_loop:
 	POP	r0
 	moveq	#0,r1
 	bset	#17,r1
-	movei	#PrintDEC2_YX,r2
+	movei	#PrintDEC_YX,r2
 	BL	(r2)
 
 	movefa	dump.a,r0
@@ -464,13 +490,14 @@ main_loop:
 	BL	(r2)
 
 	movefa	dump0.a,r0
-	movei	#USE_PHRASE,r0
-	load	(r0),r0
-	moveq	#8,r1
-	movei	#PrintHEX_YX,r2
-	BL	(r2)
+//->	movei	#USE_PHRASE,r0
+//->	load	(r0),r0
+//->	moveq	#8,r1
+//->	movei	#PrintHEX_YX,r2
+//->	BL	(r2)
 
 	movei	#main_loop,r0
+	nop
 	jump	(r0)
 	nop
 
@@ -488,8 +515,10 @@ minihex_screen_width	equ max_x
 ;-----------------------------------------
 blitter		reg 14
 
+	align 4
 overlay::
 	movei	#BLIT_A1_BASE,blitter
+	nop
 .wbl
 	load (blitter+_BLIT_CMD),r3
 	shrq #1,r3
@@ -523,6 +552,7 @@ overlay::
 *
 * Done only once
 ****************************************
+	align	4
 createPlaneFaces::
 
 face_ptr	reg 99
@@ -535,6 +565,7 @@ ix		reg 99
 iz		reg 99
 
 	movei	#plane_faces+4,face_ptr
+	nop
 
 	moveq	#0,p0
 	moveq	#1,p1
@@ -572,6 +603,7 @@ iz		reg 99
 	jump	ne,(LOOPZX)
 	addqt	#4,face_ptr
 
+	nop
 	addqt	#1,p0
 	addqt	#1,p1
 	addqt	#1,p2
@@ -583,14 +615,16 @@ iz		reg 99
 	movei	#plane_faces,tmp0
 	sub	tmp0,face_ptr
 	shrq	#3,face_ptr
+	nop
 	jump	(LR)
 	store	face_ptr,(tmp0)
 
 	unreg ix,iz,p0,p1,p2,p3,face_ptr,LOOPZX
 ******************
 * text-data
-Hallo:		DC.B " 00000     move: 1/2/3 + U/D // focus: O",0
-ms:		DC.B "  ms/f X= 123456 Y= 123456 Z= 123456",0
+Hallo:		DC.B " 000000 tris   move: 1/2/3 + U/D // focus: O",0
+ms:		DC.B "        ms/f X= 123456 Y= 123456 Z= 123456",0
+info:		dc.b "  3D poly/texture engine (c) 2025 42Bastian",0
 	EVEN
 
 	align 8
@@ -625,9 +659,18 @@ ASCII::
 	.align 8
 	include <js/inc/memzero.inc>
 	include <js/inc/memset.inc>
+	include <js/inc/memcpy.inc>
 	include "pobjects.inc"
 	include "sintab.inc"
 	include "plane2.inc"
+texture:
+	incbin "texture.cry"
+brick:
+	incbin "brick.cry"
+grass:
+	incbin "grass.cry"
+waves:
+	incbin "waves.cry"
 
 	IF MOD = 1
 	align 8

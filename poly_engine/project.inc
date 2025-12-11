@@ -25,11 +25,16 @@ proj_ptr	reg 99
 LOOP		reg 99
 mask		reg 99
 rvn_ptr		reg 99
+LR_save		reg 99
+reci		reg 99
+DARK_DIST	reg 99
+
 
 
 PROJ_REZ	equ 15
 
 project_object::
+	move	LR,LR_save
 	load	(curr_object+obj_rotated),m_ptr
 	load	(m_ptr),m_cnt
 	addq	#4,m_ptr
@@ -38,6 +43,7 @@ project_object::
 
 	load	(m_ptr),x1
 	load	(m_ptr+4),y1
+	movei	#dark_dist*dark_dist,DARK_DIST
 	load	(m_ptr+8),z1
 
 	load	(curr_object+obj_vnormals_rotated),rvn_ptr
@@ -49,34 +55,28 @@ project_object::
 	addq	#4+6,LOOP
 .loop
 	addqt	#16,m_ptr
-	move	z1,tmp1		; save original Z
 	cmpq	#0,z1
-	movei	#1<<PROJ_REZ,tmp0
+	movei	#1<<PROJ_REZ,reci
 	jr	pl,.ok_z
 	store	z1,(proj_ptr)	; save original Z
 	moveq	#1,z1
 .ok_z
-	div	z1,tmp0
+	div	z1,reci
 	addqt	#4,proj_ptr
 
-	imultn	tmp1,tmp1
+	imultn	z1,z1
 	imacn	x1,x1
 	resmac	tmp1
 
-	movei	#dark_dist*dark_dist,tmp2
-	sub	tmp2,tmp1
-	movei	#.no_darken,tmp2
-	jump	mi,(tmp2)
-	moveq	#0,tmp2
-	PUSH	r0,LR
+	sub	DARK_DIST,tmp1
+	moveq	#0,tmp0
+	jr	mi,.no_darken
+	neg	tmp1
+
 	move	tmp1,tmp0
-	movei	#sqrt,tmp1
-	BL	(tmp1)
-	neg	r0
-	move	r0,r2
-	POP	r0,LR
+
 .no_darken
-	store	tmp2,(rvn_ptr)
+	store	tmp0,(rvn_ptr)
 	addq	#16,rvn_ptr
 
 	neg	y1
@@ -85,8 +85,8 @@ project_object::
 	load	(m_ptr+8),z2
 
  IF NO_ASPECT_FIX = 1
-	imult	tmp0,y1
-	imult	tmp0,x1
+	imult	reci,y1
+	imult	reci,x1
 	sharq	#7,y1
 	sharq	#7,x1
 	add	xcenter,x1
@@ -96,11 +96,11 @@ project_object::
 	move	z2,z1
  ELSE
  IF max_x = 384
-	imult	tmp0,y1
+	imult	reci,y1
 _fix_ntsc_aspect:
 	moveq	#aspect_patch_pal,tmp2
 //->	moveq	#aspect_patch_ntsc,tmp2
-	imult	tmp0,x1
+	imult	reci,x1
 	sharq	#7,y1
 	sharq	#7,x1
 	imult	tmp2,y1
@@ -113,11 +113,11 @@ _fix_ntsc_aspect:
 	shlq	#16,x1
  ENDIF
  IF max_x = 320
-	imult	tmp0,y1
+	imult	reci,y1
 _fix_ntsc_aspect:
 	moveq	#aspect_patch_pal,tmp2
 ;;->	moveq	#aspect_patch_ntsc,tmp2
-	imult	tmp0,x1
+	imult	reci,x1
 	sharq	#7,y1
 	sharq	#7,x1
 	imult	tmp2,y1
@@ -130,11 +130,11 @@ _fix_ntsc_aspect:
 	shlq	#16,x1
  ENDIF
  IF max_x = 640
-	imult	tmp0,x1
+	imult	reci,x1
 _fix_ntsc_aspect:
 	movei	#aspect_patch_pal,tmp2
 //->	movei	#aspect_patch_ntsc,tmp2
-	imult	tmp0,y1
+	imult	reci,y1
 	sharq	#7,x1
 	sharq	#7,y1
 	imult	tmp2,y1
@@ -154,7 +154,7 @@ _fix_ntsc_aspect:
 	jump	nz,(LOOP)
 	addqt	#4,proj_ptr
 
-	jump	(LR)
+	jump	(LR_save)
 	nop
 
 	UNREG m_cnt,m_ptr,LOOP
@@ -163,3 +163,6 @@ _fix_ntsc_aspect:
 	UNREG x2,y2,z2
 	UNREG proj_ptr,mask
 	UNREG rvn_ptr
+	UNREG LR_save
+	UNREG reci
+	UNREG DARK_DIST

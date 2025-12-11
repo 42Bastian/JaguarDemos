@@ -11,7 +11,7 @@ obl0.a		reg 26
 screen1.a	reg 25
 screen0.a	reg 24
 vbl_counter.a	reg 23
-
+VBLFlag.a	reg 22
 
 
 IRQScratch4.a	REG  4
@@ -25,7 +25,7 @@ IRQ_RTS		REG 30
 IRQ_FLAGADDR	REG 29
 LR		reg 28
 SP		reg 27
-VBLFlag		reg 26
+
 
 	regtop 26
 

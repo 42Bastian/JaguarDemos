@@ -1,8 +1,8 @@
 ;;; -*-asm-*-
 ****************
-* draw polys
-
-COLOR_FP	equ 6
+* Draw Gouraud shaded triangles in pixel mode
+* with software clipping
+****************
 
 tri_array	reg 15!
 blitter		reg 14
@@ -41,7 +41,7 @@ Drawfaces::
 	movei	#$f02200,blitter
 	moveta	tmp0,f_cnt.a
 
-	WAITBLITTER
+	WAITBLITTER		; wait for CLS to finish
 	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPIX,tmp0
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
 
@@ -81,11 +81,6 @@ Drawfaces::
 	nop
 
 triangle:
-//->	movei	#$abcd,tmp0
-//->	movefa	dump0.a,tmp3
-//->	store	tmp0,(tmp3)
-//->	addq	#4,tmp3
-//->	moveta	tmp3,dump0.a
 	;; split x and y and sign-extend
 	move	y0,x0
 	move	y1,x1
@@ -127,35 +122,24 @@ triangle:
 	nop
 .x_ok
 	;; debug
-	movefa	dump.a,r0
-	addqt	#1,r0
-	moveta	r0,dump.a
+	movefa	dump.a,r1
+	addqt	#1,r1
+	moveta	r1,dump.a
 
 ;;; ----------------------------------------
-_dx	equ 260
-//->	movei	#$7fff007f,color
-//->	movei	#230,x0
-//->	movei	#10,y0
-//->	movei	#31,x1
-//->	movei	#100,y1
-//->	movei	#300,x2
-//->	movei	#120,y2
-//->	movefa	dump.a,r1
-//->	movei	#_dx,tmp0
-//->	cmpq	#1,r1
-//->	jr	eq,.first
-	nop
-
-;;->	movei	#$ffff0001,color
-;;->	movei	#430,x0
+;;->_dx	equ 260
+;;->	movei	#$7f3fff00,color
+;;->	movei	#230,x0
 ;;->	movei	#10,y0
-;;->	movei	#420,x1
-;;->	movei	#50,y1
+;;->	movei	#31,x1
+;;->	movei	#100,y1
 ;;->	movei	#300,x2
-;;->	movei	#120,y2
+;;->	movei	#180,y2
 ;;->	movefa	dump.a,r1
 ;;->	movei	#_dx,tmp0
-;;->
+;;->	cmpq	#1,r1
+;;->	jr	eq,.first
+;;->	nop
 ;;->//->	movei	#$cf2fffff,color
 ;;->//->	movei	#300,x0
 ;;->//->	movei	#10,y0
@@ -178,7 +162,8 @@ _dx	equ 260
 
 	;; extract lightning data and color
 
-	movei	#$ff,tmp0
+	sat8	tmp0		; => $ff
+
 	move	color,l0
 	move	color,l1
 	move	color,l2
@@ -417,7 +402,6 @@ LR2		reg	99
 * draw H-Lines
 
 sign	reg 99
-dl.a	reg 99
 
 hline:
 	move	x0,x1		; left
@@ -450,28 +434,24 @@ hline:
 	add	tmp3,tmp0	; reduce count
 .rx
 	cmpq	#0,x1		; left clip
-	move	l1,tmp3		; left luminance
 	jr	pl,.lx
 	shlq	#16,tmp2
 
-	or	tmp1,tmp1	; moveta score board bug
-
 	cmpq	#0,sign		; check sign(dl)
-	moveta	tmp1,dl.a	; save dl
+	move	tmp1,tmp3	; save dl
 	jr	mi,.neg_step
-	shrq	#16,tmp1	; 24bit FP => 15bit FP
-	neg	tmp1
+	shrq	#16,tmp3	; 24bit FP => 15bit FP
+	neg	tmp3
 .neg_step:
 	add	x1,tmp0		; reduce count
 
-	imult	tmp1,x1
-	movefa	dl.a,tmp1
-	add	x1,tmp3		; adjust luminance for x = 0
+	imult	tmp3,x1
+	add	x1,l1		; adjust luminance for x = 0
 	moveq	#0,x1
 .lx
 	cmpq	#0,tmp0
 	jr	nn_ne,.count_ok	; tmp0 (count) > 0 ?
-	rorq	#COLOR_FP,tmp3
+	rorq	#COLOR_FP,l1
 	jump	(LR2)		; <= 0, do not draw
 .count_ok:
 	or	tmp2,x1		; y:x
@@ -480,26 +460,19 @@ hline:
 	load	(blitter+$38),tmp2 ; wait for previous blit
 	btst	#0,tmp2
 	jr	z,.waitblit
-	or	color,tmp3
+	or	color,l1
 
 	store	x1,(blitter+_BLIT_A1_PIXEL)
 	cmpq	#0,sign		; negative color step?
-	store	tmp3,(blitter+_BLIT_PATD)
+	store	l1,(blitter+_BLIT_PATD)
 	jr	pl,.pos2
 	bset	#16,tmp0
 	neg	tmp1
 .pos2
-	rorq	#16,tmp3
+	rorq	#16,l1
 	shlq	#8-COLOR_FP,tmp1	; remove fixpoint, remove top 8bits
-	store	tmp3,(blitter+_BLIT_SRCD)
+	store	l1,(blitter+_BLIT_SRCD)
 	shrq	#8,tmp1
-
-	movefa	dump0.a,x1
-	store	tmp3,(x1)
-	addq	#4,x1
-	store	tmp1,(x1)
-	addq	#4,x1
-	moveta	x1,dump0.a
 
 	movei	#B_PATDSEL|B_GOURD,tmp3
 	store	tmp1,(blitter+_BLIT_IINC)
@@ -508,7 +481,7 @@ hline:
 	jump	(LR2)
 	store	tmp3,(blitter+_BLIT_CMD)
 
-	unreg	dx01,dx02,dx12,dl.a
+	unreg	dx01,dx02,dx12
 	unreg	dl01,dl02,dl12
 	unreg	l0,l1,l2,HLINE,LR2
 	unreg	x1save.a,l1save.a,sign

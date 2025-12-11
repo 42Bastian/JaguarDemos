@@ -1,4 +1,5 @@
- -*-asm-*-
+;;; -*-asm-*-
+
 
 SWITCH max_x
 CASE 640
@@ -36,8 +37,7 @@ save_curr_object.a reg 99
 
 dump.a		reg 99
 dump0.a		reg 99
-far_z.a		reg 99
-far_x.a		reg 99
+
 ;;->	if (max_x << fp_rez) > $ffff
 ;;->	fail "fp_rez to large"
 ;;->	endif
@@ -64,6 +64,8 @@ CLS::
 
 	movefa	screen0.a,screen_ptr
 	store	screen_ptr,(blitter)
+
+ IF 1
  IF max_x = 640
 	movei	#BLIT_PITCH1|BLIT_PIXEL32|BLIT_WID3584|BLIT_XADDPHR,tmp0
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
@@ -74,7 +76,8 @@ CLS::
 	store	tmp0,(blitter+_BLIT_CMD)
  ELSE
 //->	movei	#$88e088e0,tmp0
-	moveq	#0,tmp0
+	movei	#$00e000e0,tmp0
+//->	moveq	#0,tmp0
 	store	tmp0,(blitter+_BLIT_PATD)
 	store	tmp0,(blitter+_BLIT_PATD+4)
 	store	tmp0,(blitter+$40)
@@ -101,7 +104,7 @@ CLS::
 	store	tmp1,(blitter+_BLIT_COUNT)
 	store	tmp0,(blitter+_BLIT_CMD)
  ENDIF
-
+ ENDIF
  UNREG blitter,screen_ptr
 
 
@@ -159,24 +162,6 @@ cam_cos		reg 99
 	sharq	#15,tmp1
 	store	tmp1,(r15+_RLIGHT_Z)
 
-	movei	#far_x,tmp0
-	movei	#far_z,tmp2
-	moveta	tmp0,far_x.a
-	moveta	tmp2,far_z.a
-
-//->	imultn	cam_cos,tmp0
-//->	imacn	cam_sin,tmp2
-//->	resmac	tmp1
-//->	sharq	#15,tmp1
-//->	abs	tmp1
-//->	moveta	tmp1,far_x.a
-//->	imultn	neg_cam_sin,tmp0
-//->	imacn	cam_cos,tmp2
-//->	resmac	tmp1
-//->	sharq	#15,tmp1
-//->	abs	tmp1
-//->	moveta	tmp1,far_z.a
-//->
 	unreg	cam_sin, neg_cam_sin, cam_cos
 ;;; ----------------------------------------
 ;;; Clear Z table
@@ -196,8 +181,8 @@ cam_cos		reg 99
 //->	BL	(r8)
 
 	;; debug
-//->	movei	#$19000,r0
-//->	moveta	r0,dump0.a
+	movei	#$190000,r0
+	moveta	r0,dump0.a
 
 	moveq	#0,r0
 	moveta	r0,dump.a
@@ -243,11 +228,11 @@ dz	reg 99
 	sharq	#16,dz
 	sub	tmp2,dx
 	sub	tmp3,dz
-	movefa	far_x.a,tmp0
+	movei	#far_x,tmp0
 	abs	dx
 	abs	dz
 	sub	dx,tmp0
-	movefa	far_z.a,tmp1
+	movei	#far_z,tmp1
 	jr	mi,.x_off
 	sub	dz,tmp1
 	jr	pl,.ok_object
@@ -304,20 +289,24 @@ dz	reg 99
 //->	move	r11,r7
 //->	BL	(r8)
 
-	movei	#$190000,r0
-	moveta	r0,dump0.a
+//->	movei	#$190000,r0
+//->	moveta	r0,dump0.a
 
 	moveq	#0,r0
 	moveta	r0,dump.a
 
-	movei	#USE_PHRASE,r0
-	load	(r0),r0
+ IF GOURAUD = 1
+//->	movei	#USE_PHRASE,r0
+//->	load	(r0),r0
 	movei	#Drawfaces,r1
-	cmpq	#0,r0
-	jr	eq, pixel
-	nop
-	movei	#Drawfaces_phr,r1
+//->	cmpq	#0,r0
+//->	jr	eq, pixel
+//->	nop
+//->	movei	#Drawfaces_phr,r1
 pixel:
+ ELSE
+	movei	#Drawfaces,r1
+ ENDIF
 	BL	(r1)
 
 	movefa	screen0.a,r11
@@ -330,9 +319,9 @@ pixel:
 //->	BL	(r0)
 //->	movei	#max_x*2*2,r0
 //->	add	r0,r11
-	movei	#30,r10
-//->	movei	#cube_projected,r9
-	movei	#$190000,r9
+	movei	#15,r10
+	movei	#plane_faces+4,r9
+//->	movei	#$190000,r9
 	movei	#Dump1,r0
 //->	BL	(r0)
 
@@ -340,8 +329,10 @@ pixel:
 	POPLR
 
 Dump::
+
 	moveq	#12,r10
 Dump1:
+ if 0
 	PUSHLR
 	movei	#drawHex,r8
 //->	movei	#$190000,r9
@@ -360,11 +351,11 @@ Dump1:
 	jr	xd1
 	addq	#2,LR
 
-	jr	xd
-	addq	#4,LR
+;;->	jr	xd
+;;->	addq	#4,LR
 
-	jr	xd
-	addq	#4,LR
+;;->	jr	xd
+;;->	addq	#4,LR
 
 //->	addq	#4,r9
 	jr	xd
@@ -375,7 +366,7 @@ xd1	jr	xd
 
 	movei	#max_x*2*6,r0
 	subq	#1,r10
-	subqt	#16+4*1+4*1+2*0,LR
+	subqt	#16+4*0+4*0+2*0,LR
 	jr	eq,.exit
 	add	r0,r11
 
@@ -388,7 +379,7 @@ xd:
 	POP	LR
 	jr	xd
 	nop
-
+ endif
 ;; ----------------------------------------
 
 
@@ -405,12 +396,24 @@ xd:
 	include "project.inc"
 
  IF DRAW2 = 1
- IF GOURAUD = 1
+   IF TEXTURE = 1
+     IF SOFTCLIP = 1
+	include "draw2_txt.inc"
+     ELSE
+	include "draw2_txt_hc.inc"
+     ENDIF
+   ELSE
+   IF GOURAUD = 1
 	include "draw2.inc"
-	include "draw2_phr.inc"
- ELSE
+//->	include "draw2_phr.inc"
+   ELSE
+     IF SOFTCLIP = 1
 	include "draw2_nog.inc"
- ENDIF
+     ELSE
+	include "draw2_nog_hc.inc"
+     ENDIF
+   ENDIF
+   ENDIF
  ELSE
 	include "draw.inc"
  ENDIF
@@ -419,7 +422,7 @@ xd:
 
 	unreg	object_list
 
-	unreg	save_curr_object.a,far_x.a,far_z.a
+	unreg	save_curr_object.a
  IF DRAW2 = 0
 	unreg	min_max.a
  ENDIF

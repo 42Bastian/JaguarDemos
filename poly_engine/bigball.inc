@@ -140,9 +140,17 @@ kugel_points:
 
 kugel_faces:
 	dc.l 264
-
+ IF TEXTURE = 1
+col_ball	equ %001011<<8
+col_balla	equ %010011<<8
+col_ball1	equ %001011<<8
+col_ball1a	equ %010011<<8
+ ELSE
 col_ball	equ $f010
 col_ball1	equ $8810
+col_balla	equ $f010
+col_ball1a	equ $8810
+ ENDIF
 
  tri 2, 0, 1,   col_ball1
  tri 3, 0, 2,   col_ball
@@ -158,267 +166,267 @@ col_ball1	equ $8810
  tri 1, 0,12 ,  col_ball
 ;;; 2nd ring
  tri 14,2,1,   col_ball
- tri 13,14,1,   col_ball
+ tri 13,14,1,   col_balla
  tri 15,3,2,   col_ball1
- tri 14,15,2,   col_ball1
+ tri 14,15,2,   col_ball1a
  tri 16,4,3,   col_ball
- tri 15,16,3,   col_ball
+ tri 15,16,3,   col_balla
  tri 17,5,4,   col_ball1
- tri 16,17,4,   col_ball1
+ tri 16,17,4,   col_ball1a
  tri 18,6,5,   col_ball
- tri 17,18,5,   col_ball
+ tri 17,18,5,   col_balla
  tri 19,7,6,   col_ball1
- tri 18,19,6,   col_ball1
+ tri 18,19,6,   col_ball1a
  tri 20,8,7,   col_ball
- tri 19,20,7,   col_ball
+ tri 19,20,7,   col_balla
  tri 21,9,8,   col_ball1
- tri 20,21,8,   col_ball1
+ tri 20,21,8,   col_ball1a
  tri 22,10,9,  col_ball
- tri 21,22,9,  col_ball
+ tri 21,22,9,  col_balla
  tri 23,11,10, col_ball1
- tri 22,23,10, col_ball1
+ tri 22,23,10, col_ball1a
  tri 24,12,11, col_ball
- tri 23,24,11, col_ball
+ tri 23,24,11, col_balla
  tri 13,1,12,  col_ball1
- tri 24,13,12,  col_ball1
+ tri 24,13,12,  col_ball1a
 ;;; 3rd ring
  tri 26,14,13, col_ball1
- tri 25,26,13, col_ball1
+ tri 25,26,13, col_ball1a
  tri 27,15,14, col_ball
- tri 26,27,14, col_ball
+ tri 26,27,14, col_balla
  tri 28,16,15, col_ball1
- tri 27,28,15, col_ball1
+ tri 27,28,15, col_ball1a
  tri 29,17,16, col_ball
- tri 28,29,16, col_ball
+ tri 28,29,16, col_balla
  tri 30,18,17, col_ball1
- tri 29,30,17, col_ball1
+ tri 29,30,17, col_ball1a
  tri 31,19,18, col_ball
- tri 30,31,18, col_ball
+ tri 30,31,18, col_balla
  tri 32,20,19, col_ball1
- tri 31,32,19, col_ball1
+ tri 31,32,19, col_ball1a
  tri 33,21,20, col_ball
- tri 32,33,20, col_ball
+ tri 32,33,20, col_balla
  tri 34,22,21, col_ball1
- tri 33,34,21, col_ball1
+ tri 33,34,21, col_ball1a
  tri 35,23,22, col_ball
- tri 34,35,22, col_ball
+ tri 34,35,22, col_balla
  tri 36,24,23, col_ball1
- tri 35,36,23, col_ball1
+ tri 35,36,23, col_ball1a
  tri 25,13,24, col_ball
- tri 36,25,24, col_ball
+ tri 36,25,24, col_balla
 ;;; 4th
  tri 38,26,25, col_ball
- tri 37,38,25, col_ball
+ tri 37,38,25, col_balla
  tri 39,27,26, col_ball1
- tri 38,39,26, col_ball1
+ tri 38,39,26, col_ball1a
  tri 40,28,27, col_ball
- tri 39,40,27, col_ball
+ tri 39,40,27, col_balla
  tri 41,29,28, col_ball1
- tri 40,41,28, col_ball1
+ tri 40,41,28, col_ball1a
  tri 42,30,29, col_ball
- tri 41,42,29, col_ball
+ tri 41,42,29, col_balla
  tri 43,31,30, col_ball1
- tri 42,43,30, col_ball1
+ tri 42,43,30, col_ball1a
  tri 44,32,31, col_ball
- tri 43,44,31, col_ball
+ tri 43,44,31, col_balla
  tri 45,33,32, col_ball1
- tri 44,45,32, col_ball1
+ tri 44,45,32, col_ball1a
  tri 46,34,33, col_ball
- tri 45,46,33, col_ball
+ tri 45,46,33, col_balla
  tri 47,35,34, col_ball1
- tri 46,47,34, col_ball1
+ tri 46,47,34, col_ball1a
  tri 48,36,35, col_ball
- tri 47,48,35, col_ball
+ tri 47,48,35, col_balla
  tri 37,25,36, col_ball1
- tri 48,37,36, col_ball1
+ tri 48,37,36, col_ball1a
 ;;; 5th
  tri 50,38,37, col_ball1
- tri 49,50,37, col_ball1
+ tri 49,50,37, col_ball1a
  tri 51,39,38, col_ball
- tri 50,51,38, col_ball
+ tri 50,51,38, col_balla
  tri 52,40,39, col_ball1
- tri 51,52,39, col_ball1
+ tri 51,52,39, col_ball1a
  tri 53,41,40, col_ball
- tri 52,53,40, col_ball
+ tri 52,53,40, col_balla
  tri 54,42,41, col_ball1
- tri 53,54,41, col_ball1
+ tri 53,54,41, col_ball1a
  tri 55,43,42, col_ball
- tri 54,55,42, col_ball
+ tri 54,55,42, col_balla
  tri 56,44,43, col_ball1
- tri 55,56,43, col_ball1
+ tri 55,56,43, col_ball1a
  tri 57,45,44, col_ball
- tri 56,57,44, col_ball
+ tri 56,57,44, col_balla
  tri 58,46,45, col_ball1
- tri 57,58,45, col_ball1
+ tri 57,58,45, col_ball1a
  tri 59,47,46, col_ball
- tri 58,59,46, col_ball
+ tri 58,59,46, col_balla
  tri 60,48,47, col_ball1
- tri 59,60,47, col_ball1
+ tri 59,60,47, col_ball1a
  tri 49,37,48, col_ball
- tri 60,49,48, col_ball
+ tri 60,49,48, col_balla
 ;;; 6th
  tri 62,50,49, col_ball
- tri 61,62,49, col_ball
+ tri 61,62,49, col_balla
  tri 63,51,50, col_ball1
- tri 62,63,50, col_ball1
+ tri 62,63,50, col_ball1a
  tri 64,52,51, col_ball
- tri 63,64,51, col_ball
+ tri 63,64,51, col_balla
  tri 65,53,52, col_ball1
- tri 64,65,52, col_ball1
+ tri 64,65,52, col_ball1a
  tri 66,54,53, col_ball
- tri 65,66,53, col_ball
+ tri 65,66,53, col_balla
  tri 67,55,54, col_ball1
- tri 66,67,54, col_ball1
+ tri 66,67,54, col_ball1a
  tri 68,56,55, col_ball
- tri 67,68,55, col_ball
+ tri 67,68,55, col_balla
  tri 69,57,56, col_ball1
- tri 68,69,56, col_ball1
+ tri 68,69,56, col_ball1a
  tri 70,58,57, col_ball
- tri 69,70,57, col_ball
+ tri 69,70,57, col_balla
  tri 71,59,58, col_ball1
- tri 70,71,58, col_ball1
+ tri 70,71,58, col_ball1a
  tri 72,60,59, col_ball
- tri 71,72,59, col_ball
+ tri 71,72,59, col_balla
  tri 61,49,60, col_ball1
- tri 72,61,60, col_ball1
+ tri 72,61,60, col_ball1a
 ;;; 7th
  tri 74,62,61, col_ball1
- tri 73,74,61, col_ball1
+ tri 73,74,61, col_ball1a
  tri 75,63,62, col_ball
- tri 74,75,62, col_ball
+ tri 74,75,62, col_balla
  tri 76,64,63, col_ball1
- tri 75,76,63, col_ball1
+ tri 75,76,63, col_ball1a
  tri 77,65,64, col_ball
- tri 76,77,64, col_ball
+ tri 76,77,64, col_balla
  tri 78,66,65, col_ball1
- tri 77,78,65, col_ball1
+ tri 77,78,65, col_ball1a
  tri 79,67,66, col_ball
- tri 78,79,66, col_ball
+ tri 78,79,66, col_balla
  tri 80,68,67, col_ball1
- tri 79,80,67, col_ball1
+ tri 79,80,67, col_ball1a
  tri 81,69,68, col_ball
- tri 80,81,68, col_ball
+ tri 80,81,68, col_balla
  tri 82,70,69, col_ball1
- tri 81,82,69, col_ball1
+ tri 81,82,69, col_ball1a
  tri 83,71,70, col_ball
- tri 82,83,70, col_ball
+ tri 82,83,70, col_balla
  tri 84,72,71, col_ball1
- tri 83,84,71, col_ball1
+ tri 83,84,71, col_ball1a
  tri 73,61,72, col_ball
- tri 84,73,72, col_ball
+ tri 84,73,72, col_balla
 ;;; 8th
  tri 86,74,73,  col_ball
- tri 85,86,73,  col_ball
+ tri 85,86,73,  col_balla
  tri 87,75,74,  col_ball1
- tri 86,87,74,  col_ball1
+ tri 86,87,74,  col_ball1a
  tri 88,76,75,  col_ball
- tri 87,88,75,  col_ball
+ tri 87,88,75,  col_balla
  tri 89,77,76,  col_ball1
- tri 88,89,76,  col_ball1
+ tri 88,89,76,  col_ball1a
  tri 90,78,77,  col_ball
- tri 89,90,77,  col_ball
+ tri 89,90,77,  col_balla
  tri 91,79,78,  col_ball1
- tri 90,91,78,  col_ball1
+ tri 90,91,78,  col_ball1a
  tri 92,80,79,  col_ball
- tri 91,92,79,  col_ball
+ tri 91,92,79,  col_balla
  tri 93,81,80,  col_ball1
- tri 92,93,80,  col_ball1
+ tri 92,93,80,  col_ball1a
  tri 94,82,81,  col_ball
- tri 93,94,81,  col_ball
+ tri 93,94,81,  col_balla
  tri 95,83,82,  col_ball1
- tri 94,95,82,  col_ball1
+ tri 94,95,82,  col_ball1a
  tri 96,84,83,  col_ball
- tri 95,96,83,  col_ball
+ tri 95,96,83,  col_balla
  tri 85,73,84,  col_ball1
- tri 96,85,84,  col_ball1
+ tri 96,85,84,  col_ball1a
 ;;; 9th
  tri 98,86,85,  col_ball1
- tri 97  ,98,85,col_ball1
+ tri 97  ,98,85,col_ball1a
  tri 99,87,86,  col_ball
- tri 98  ,99,86,col_ball
+ tri 98  ,99,86,col_balla
  tri 100,88,87, col_ball1
- tri 99 ,100,87,col_ball1
+ tri 99 ,100,87,col_ball1a
  tri 101,89,88, col_ball
- tri 100,101,88,col_ball
+ tri 100,101,88,col_balla
  tri 102,90,89, col_ball1
- tri 101,102,89,col_ball1
+ tri 101,102,89,col_ball1a
  tri 103,91,90, col_ball
- tri 102,103,90,col_ball
+ tri 102,103,90,col_balla
  tri 104,92,91, col_ball1
- tri 103,104,91,col_ball1
+ tri 103,104,91,col_ball1a
  tri 105,93,92, col_ball
- tri 104,105,92,col_ball
+ tri 104,105,92,col_balla
  tri 106,94,93, col_ball1
- tri 105,106,93,col_ball1
+ tri 105,106,93,col_ball1a
  tri 107,95,94, col_ball
- tri 106,107,94,col_ball
+ tri 106,107,94,col_balla
  tri 108,96,95, col_ball1
- tri 107,108,95,col_ball1
+ tri 107,108,95,col_ball1a
  tri 97,85,96, col_ball
- tri 108 ,97,96,col_ball
+ tri 108 ,97,96,col_balla
 ;;; 10th
  tri 110,98,97,   col_ball
- tri 109 ,110,97, col_ball
+ tri 109 ,110,97, col_balla
  tri 111,99,98,   col_ball1
- tri 110 ,111,98, col_ball1
+ tri 110 ,111,98, col_ball1a
  tri 112,100,99,  col_ball
- tri 111,112,99,  col_ball
+ tri 111,112,99,  col_balla
  tri 113,101,100, col_ball1
- tri 112,113,100, col_ball1
+ tri 112,113,100, col_ball1a
  tri 114,102,101, col_ball
- tri 113,114,101, col_ball
+ tri 113,114,101, col_balla
  tri 115,103,102, col_ball1
- tri 114,115,102, col_ball1
+ tri 114,115,102, col_ball1a
  tri 116,104,103, col_ball
- tri 115,116,103, col_ball
+ tri 115,116,103, col_balla
  tri 117,105,104, col_ball1
- tri 116,117,104, col_ball1
+ tri 116,117,104, col_ball1a
  tri 118,106,105, col_ball
- tri 117,118,105, col_ball
+ tri 117,118,105, col_balla
  tri 119,107,106, col_ball1
- tri 118,119,106, col_ball1
+ tri 118,119,106, col_ball1a
  tri 120,108,107, col_ball
- tri 119,120,107, col_ball
+ tri 119,120,107, col_balla
  tri 109, 97,108, col_ball1
- tri 120,109,108, col_ball1
+ tri 120,109,108, col_ball1a
 ;;; 11th
  tri 122,110,109, col_ball1
- tri 121,122,109, col_ball1
+ tri 121,122,109, col_ball1a
  tri 123,111,110, col_ball
- tri 122,123,110, col_ball
+ tri 122,123,110, col_balla
  tri 124,112,111, col_ball1
- tri 123,124,111, col_ball1
+ tri 123,124,111, col_ball1a
  tri 125,113,112, col_ball
- tri 124,125,112, col_ball
+ tri 124,125,112, col_balla
  tri 126,114,113, col_ball1
- tri 125,126,113, col_ball1
+ tri 125,126,113, col_ball1a
  tri 127,115,114, col_ball
- tri 126,127,114, col_ball
+ tri 126,127,114, col_balla
  tri 128,116,115, col_ball1
- tri 127,128,115, col_ball1
+ tri 127,128,115, col_ball1a
  tri 129,117,116, col_ball
- tri 128,129,116, col_ball
+ tri 128,129,116, col_balla
  tri 130,118,117, col_ball1
- tri 129,130,117, col_ball1
+ tri 129,130,117, col_ball1a
  tri 131,119,118, col_ball
- tri 130,131,118, col_ball
+ tri 130,131,118, col_balla
  tri 132,120,119, col_ball1
- tri 131,132,119, col_ball1
+ tri 131,132,119, col_ball1a
  tri 121,109,120, col_ball
- tri 132,121,120, col_ball
+ tri 132,121,120, col_balla
 
  tri 121,133,122, col_ball
- tri 122,133,123, col_ball1
+ tri 122,133,123, col_ball1a
  tri 123,133,124, col_ball
- tri 124,133,125, col_ball1
+ tri 124,133,125, col_ball1a
  tri 125,133,126, col_ball
- tri 126,133,127, col_ball1
+ tri 126,133,127, col_ball1a
  tri 127,133,128, col_ball
- tri 128,133,129, col_ball1
+ tri 128,133,129, col_ball1a
  tri 129,133,130, col_ball
- tri 130,133,131, col_ball1
+ tri 130,133,131, col_ball1a
  tri 131,133,132, col_ball
- tri 132,133,121, col_ball1
+ tri 132,133,121, col_ball1a
 
 	align 4
 kugel_normals:

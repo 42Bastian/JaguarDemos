@@ -182,7 +182,8 @@ torus_faces:
  _tri 11, 23, 12, $7820
  _tri 11, 12, 0,  $8820
 
-col_torus equ $0730
+//->col_torus equ $0730
+col_torus equ $c730
 
   _tri 12, 24, 25, col_torus	;24
   _tri 12, 25, 13, col_torus

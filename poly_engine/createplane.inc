@@ -22,6 +22,11 @@ LOOPX		reg 99
 LOOPZ		reg 99
 rvn_ptr		reg 99
 
+
+rx		reg wx!
+ry		reg ox!
+rz		reg wz!
+
 x_pos.a		reg 99
 z_pos.a		reg 99
 
@@ -40,7 +45,6 @@ createPlane::
 
 	movei	#(max_x>>1),xcenter
 	movei	#(max_y>>1),ycenter
-
 	movefa	cam_cos.a,cam_cos
 	movefa	cam_sin.a,cam_sin
 	movefa	neg_cam_sin.a,neg_cam_sin
@@ -105,81 +109,73 @@ createPlane::
 
 	imultn	wx,cam_cos
 	imacn	wz,cam_sin
+	resmac	rx
+	move	tmp2,rz
+
+	loadb	(ox),ry
+
+	movei	#dark_dist*dark_dist,tmp2
+
+	sharq	#15,rx
+	sub	cam_y,ry
+	subq	#4,rotated
+	store	ry,(rotated)	; 3D y
+	subq	#4,rotated
+	store	rx,(rotated)	; 3D x
+
+	imultn	rz,rz		; z^2
+	imacn	rx,rx		; +x^2
 	resmac	tmp0
 
-	loadb	(ox),tmp1
+	imult	tmp3,rx
+	imult	tmp3,ry
 
-	sharq	#15,tmp0	; x
-	sub	cam_y,tmp1
-	subq	#4,rotated
-	store	tmp1,(rotated)	; 3D y
-	subq	#4,rotated
-	store	tmp0,(rotated)	; 3D x
-
-	imultn	tmp2,tmp2	; z^2
-	imacn	tmp0,tmp0	; +x^2
-	resmac	wx
-
-	movei	#dark_dist*dark_dist,wz
-	sub	wz,wx
-	movei	#.no_darken,wz
-	jump	mi,(wz)
+	sub	tmp2,tmp0
+	addqt	#16,rotated
+	jr	mi,.no_darken
 	moveq	#0,tmp2
 
-	PUSH	r0,r1,r3,LR
-	move	wx,r0
-	movei	#sqrt,r1
-	BL	(r1)
-	neg	r0
+//->	neg	r0
 	move	r0,r2
+	sat8	r2
 
-	POP	r0,r1,r3,LR
 .no_darken
 	store	tmp2,(rvn_ptr)
 	addq	#4,rvn_ptr
 
-	imult	tmp3,tmp0
-	addqt	#16,rotated
-	imult	tmp3,tmp1
- IF max_x = 640
-	sharq	#7,tmp0
-	sharq	#7,tmp1
- ELSE
-	sharq	#7,tmp0
-	sharq	#7,tmp1
- ENDIF
-
+	sharq	#7,rx
+	sharq	#7,ry
 
  IF max_x = 384
 _fix_ntsc_aspect2:
 	moveq	#aspect_patch_pal,tmp2
 //->	moveq	#aspect_patch_ntsc,tmp2
-	imult	tmp2,tmp0
-	sharq	#5,tmp0
+	imult	tmp2,rx
+	sharq	#5,rx
  ENDIF
  IF max_x = 320
 _fix_ntsc_aspect2:
 	moveq	#aspect_patch_pal,tmp2
 ;;->	moveq	#aspect_patch_ntsc,tmp2
-	imult	tmp2,tmp0
-	sharq	#4,tmp0
+	imult	tmp2,rx
+	sharq	#4,rx
  ENDIF
  IF max_x = 640
 _fix_ntsc_aspect2:
 	movei	#aspect_patch_pal,tmp2
 //->	movei	#aspect_patch_ntsc,tmp2
-//->	imult	tmp2,tmp1
-//->	sharq	#6,tmp1
+//->	imult	tmp2,ry
+//->	sharq	#6,ry
  ENDIF
-	neg	tmp1
-	add	xcenter,tmp0
-	add	ycenter,tmp1
+	neg	ry
+	add	xcenter,rx
+	add	ycenter,ry
 
-	shlq	#16,tmp0
-	shlq	#16,tmp1
-	shrq	#16,tmp1
-	or	tmp0,tmp1
-	store	tmp1,(projected+4)	; save Xscreen/Yscreen
+	shlq	#16,rx
+	shlq	#16,ry
+	shrq	#16,ry
+	or	rx,ry
+	store	ry,(projected+4)	; save Xscreen/Yscreen
 
 	subq	#1,ix
 	addqt	#8,projected
@@ -194,6 +190,7 @@ _fix_ntsc_aspect2:
 	unreg xcenter, ycenter
 	unreg projected,plane_source,cam_y
 	unreg rotated,rvn_ptr
+	unreg rx,ry,rz
 ****************************************
 ** rotate normals
 ****************************************
@@ -364,10 +361,10 @@ planeCalcLuminance::
 	imacn	l_z,n_z
 	resmac	tmp1
 
-	load	(rvn_ptr),tmp0
+	load	(rvn_ptr),tmp0	; darken
 	sharq	#8,tmp1
 	sat8	tmp1
-	add	tmp0,tmp1
+	sub	tmp0,tmp1
 	addqt	#1,x
 
 	subq	#1,ix
@@ -423,12 +420,23 @@ planeSetColor::
 	add	oz,ox
 	add	tmp0,ox
 	loadw	(ox),tmp1
-
+ IF TEXTURE = 1
+	movei	#%10001101<<8,tmp2
+	shrq	#8,tmp1
+	movei	#%10001011<<8,tmp1
+	jr	ne,.sea
+	nop
+	bset	#6+8,tmp1
+	bset	#6+8,tmp2
+.sea
+ ELSE
+	move	tmp1,tmp2
+ ENDIF
 	storew	tmp1,(face_ptr)
 	addq	#8,face_ptr
 	addqt	#1,x
 	subq	#1,ix
-	storew	tmp1,(face_ptr)
+	storew	tmp2,(face_ptr)
 	jump	ne,(LOOPX)
 	addqt	#8,face_ptr
 
@@ -440,10 +448,11 @@ planeSetColor::
 	POPLR
 
 	unreg face_ptr
-	unreg x,ox,oz,ix,iz,z_pos,wx,wz
+	unreg x,ox,oz,ix,iz,z_pos,wz,wx
 	unreg LOOPX,LOOPZ
 	unreg z_pos.a,x_pos.a
 
+ IF 0
 sqrt::
 	normi	r0,r1
 	move	r0,r2
@@ -466,7 +475,7 @@ sqrt::
 	sub	r1,r2
 	jr	.loop
 	add	r3,r0
-
+ ENDIF
 
 	dphrase
 obj_plane:
