@@ -3,7 +3,7 @@
 * draw polys
 
 DIRECT_TEXTURE	equ 1
-TXT_FP	equ 5
+TXT_FP		equ 8
 
 
 tri_array	reg 15!
@@ -37,25 +37,35 @@ texture.a	reg 99
 dv01.a		reg 99
 dv02.a		reg 99
 dv12.a		reg 99
-LR.a		reg 99
+
 tri_ptrs.a	reg 99
 max_y.a		reg 99
 f_cnt.a		reg 99
-object_list.a	reg 99
+
 tri_array.a	reg 99
 ul.a		reg 99
 vl.a		reg 99
+luminance.a	reg 99
 
 Drawfaces::
-	moveta	LR,LR.a
+	PUSHLR	object_list
+
 	move	LR,tmp0
 	movei	#$f02200,blitter
 	sat8	tmp0		; => 255
 	moveta	tmp0,f_cnt.a
-	moveta	object_list,object_list.a
+
 
 	WAITBLITTER
 
+	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WID64|BLIT_XADDINC,tmp1
+	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPIX,tmp2
+	store	tmp1,(blitter+_BLIT_A1_FLAGS)
+	store	tmp2,(blitter+_BLIT_A2_FLAGS)
+ IF DIRECT_TEXTURE = 1
+	movefa	screen0.a,tmp1
+	store	tmp1,(blitter+_BLIT_A2_BASE)
+ ENDIF
 	movei	#tri_ptrs_ram+255*4,tmp0
 	moveta	tmp0,tri_ptrs.a
 	move	pc,LR3
@@ -80,18 +90,15 @@ Drawfaces::
 	jump	pl,(LR3)
 	moveta	tmp0,f_cnt.a
 
-	movefa	LR.a,LR
-	jump	(LR)
-	movefa	object_list.a,object_list
+	POPLR object_list
 
 triangle:
-	movei	#$80000000,tmp2
+	movei	#$60000000,tmp2
 	move	tmp0,tmp1
 	shlq	#8,tmp1
 	sub	tmp2,tmp1
-	shrq	#24,tmp1
-	shlq	#16,tmp1
-	moveta	tmp1,dump0.a
+	shrq	#8,tmp1
+	moveta	tmp1,luminance.a
 
 	movei	#max_y,tmp1
 	moveta	tmp1,max_y.a
@@ -115,7 +122,7 @@ triangle:
 	sharq	#16,y1
 	sharq	#16,y2
 
-	movei	#255<<TXT_FP,tmp1
+	movei	#63<<TXT_FP,tmp1
 	moveq	#1,u0
 	moveq	#1,v0
 	moveq	#1,u1
@@ -147,17 +154,8 @@ triangle:
 	mult	tmp1,v2
 
 
-	shlq	#17,tmp0
+	shlq	#13,tmp0
 	movei	#texture,tmp1
-	jr	eq,.xx
-	nop
-	shrq	#1,u0
-	shrq	#1,v0
-	shrq	#1,u1
-	shrq	#1,v1
-	shrq	#1,u2
-	shrq	#1,v2
-.xx
 	add	tmp0,tmp1
 	moveta	tmp1,texture.a
 ;;; ----------------------------------------
@@ -180,7 +178,7 @@ _dx	equ 60
 //->	sub	tmp1,y0
 //->	sub	tmp1,y1
 //->	sub	tmp1,y2
-//->	movefa	LR.a,LR
+//->	POP	LR
 .first
 
 	;; check if triangle is outside screen
@@ -209,9 +207,9 @@ _dx	equ 60
 	jump	n,(LR3)
 .x_ok
 	;; debug
-	movefa	dump.a,r0
-	addqt	#1,r0
-	moveta	r0,dump.a
+//->	movefa	dump.a,r0
+//->	addqt	#1,r0
+//->	moveta	r0,dump.a
 
 	; sort y
 	cmp	y0,y1
@@ -436,7 +434,6 @@ _dx	equ 60
 
 .y_btm2_ok:
 
-
 	unreg dy01,dy02,dy12,max_y.a
 
 x1.a		reg 99
@@ -444,6 +441,7 @@ u1.a		reg 99
 v1.a		reg 99
 HLINE		reg	99
 LR2		reg	99
+
 
 	moveta	x1,x1.a
 	moveta	u1,u1.a
@@ -477,8 +475,6 @@ LR2		reg	99
 	movefa	u1.a,u0
 	movefa	v1.a,v0
 
-//->	jump	(LR3)
-
 	sub	y0,y2
 	move	pc,LR2
 	jump	ne,(HLINE)
@@ -506,7 +502,6 @@ reci	reg 99
 du	reg 99
 dv	reg 99
 
-//->	regmap
 hline:
 	move	x0,xl		; left
 	move	x2,tmp0		; right
@@ -521,22 +516,20 @@ hline:
 	sub	v0,dv
 
 	move	tmp0,tmp2	; xr
-	sub	xl,tmp0
 	movei	#max_x,tmp3
-	jr	pl,.ok
+	sub	xl,tmp0
 	moveq	#1,reci
+	jr	pl,.ok
+	shlq	#15,reci
 
 	add	tmp0,xl
 	sub	tmp0,tmp2
 	neg	tmp0
-	move	u2,tmp1
 	neg	du
 	neg	dv
 	moveta	u2,ul.a
 	moveta	v2,vl.a
-
 .ok
-	shlq	#15,reci
 	div	tmp0,reci
 
 	sharq	#fp_rez,du
@@ -558,124 +551,119 @@ hline:
 	shlq	#16,tmp2
 
 	move	du,tmp3
-	sharq	#TXT_FP-1,tmp3
+	sharq	#TXT_FP-4,tmp3
 	imult	xl,tmp3
 	movefa	ul.a,tmp1
-	shlq	#1,tmp3
+	shlq	#4,tmp3
 	sub	tmp3,tmp1
+	move	dv,tmp3
 	moveta	tmp1,ul.a
 
-	move	dv,tmp3
-	sharq	#TXT_FP-1,tmp3
+	sharq	#TXT_FP-4,tmp3
 	imult	xl,tmp3
 	movefa	vl.a,tmp1
-	shlq	#1,tmp3
+	shlq	#4,tmp3
 	sub	tmp3,tmp1
+	add	xl,tmp0		; reduce count
 	moveta	tmp1,vl.a
 
-	add	xl,tmp0		; reduce count
+
 	moveq	#0,xl
 .lx
 	or	tmp2,xl		; y:x
+
 	cmpq	#0,tmp0
+	move	dv,tmp1
 	jump	eq,(LR2)
-	load	(blitter+$38),tmp1 ; wait for previous blit
+	move	du,tmp2
 	jump	mi,(LR2)
 	bset	#16,tmp0
-.waitblit:
-	btst	#0,tmp1
-	jr	z,.waitblit
-	load	(blitter+$38),tmp1 ; wait for previous blit
-	nop
 
- IF DIRECT_TEXTURE = 1
-	store	xl,(blitter+_BLIT_A2_PIXEL)
- ELSE
-	xor	tmp1,tmp1
-	store	tmp1,(blitter+_BLIT_A2_PIXEL)
- ENDIF
-	movei	#1<<(TXT_FP+fp_rez)-1,tmp3
-	movefa	vl.a,tmp1
-	add	tmp3,tmp1
-	shrq	#TXT_FP+fp_rez,tmp1
-	shlq	#16,tmp1
-
-	movefa	ul.a,tmp2
-	add	tmp3,tmp2
-	shrq	#TXT_FP+fp_rez,tmp2
-	or	tmp2,tmp1
-	store	tmp1,(blitter+_BLIT_A1_PIXEL)
-
-	movefa	ul.a,tmp2
-	movefa	vl.a,tmp1
-	shlq	#16+TXT_FP+fp_rez,tmp2
-	shlq	#16+TXT_FP+fp_rez,tmp1
-	shrq	#16,tmp2
-	or	tmp1,tmp2
-	store	tmp2,(blitter+_BLIT_A1_FPIXEL)
-
-	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WID256|BLIT_XADDINC,tmp1
-	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPIX,tmp2
-	store	tmp1,(blitter+_BLIT_A1_FLAGS)
-	store	tmp2,(blitter+_BLIT_A2_FLAGS)
-
- IF DIRECT_TEXTURE = 1
-	movefa	screen0.a,tmp1
- ELSE
-	movei	#$f04000-max_x*2,tmp1
-//->	movei	#logo_screen-max_x*2,tmp1
-//->	movefa	screen0.a,tmp1
- ENDIF
-	movefa	texture.a,tmp3
-	store	tmp1,(blitter+_BLIT_A2_BASE)
-	store	tmp3,(blitter+_BLIT_A1_BASE)
-
-	move	dv,tmp1
-	move	du,tmp2
 	shrq	#16,tmp1	; int(dv)
 	shrq	#16,tmp2	; int(du)
 	shlq	#16,tmp1
-	or	tmp2,tmp1
-	move	dv,tmp2
-	store	tmp1,(blitter+_BLIT_A1_INC)
-	move	du,tmp1
-	shlq	#16,tmp2
-	shlq	#16,tmp1
-	shrq	#16,tmp1
-	or	tmp2,tmp1
-	store	tmp1,(blitter+_BLIT_A1_FINC)
+	or	tmp1,tmp2
+	shlq	#16,du
+	shlq	#16,dv
+	shrq	#16,du
+	movefa	vl.a,tmp1
+	or	dv,du		; FINC
+	movei	#1<<(TXT_FP+fp_rez)-1,tmp3
+	move	tmp2,dv		; INC
 
-	movefa	dump0.a,tmp1
+	add	tmp3,tmp1
+	movefa	ul.a,tmp2
+	shrq	#TXT_FP+fp_rez,tmp1
+	add	tmp3,tmp2
+	shlq	#16,tmp1
+	shrq	#TXT_FP+fp_rez,tmp2
+	movefa	vl.a,tmp3
+	or	tmp2,tmp1	; A1_PIXEL => texture
+	movefa	ul.a,tmp2
+	shlq	#16+TXT_FP+fp_rez,tmp3
+	shlq	#16+TXT_FP+fp_rez,tmp2
+	shrq	#16,tmp2
+	or	tmp3,tmp2	; A1_FPIXEL
+
+	load	(blitter+$38),tmp3 ; wait for previous blit
+	btst	#0,tmp3
+	jr	nz,.direct
+	nop
+	movefa	dump0.a,tmp3
+	addqt	#1,tmp3
+	moveta	tmp3,dump0.a
+.waitblit:
+	load	(blitter+$38),tmp3 ; wait for previous blit
+	btst	#0,tmp3
+	jr	z,.waitblit
+	nop
+.direct
+ IF DIRECT_TEXTURE = 1
+	store	xl,(blitter+_BLIT_A2_PIXEL)
+ ELSE
+	xor	tmp3,tmp3
+	store	tmp3,(blitter+_BLIT_A2_PIXEL)
+ ENDIF
+	store	tmp1,(blitter+_BLIT_A1_PIXEL)
+	movefa	texture.a,tmp3
+	store	tmp2,(blitter+_BLIT_A1_FPIXEL)
+
+ IF DIRECT_TEXTURE = 0
+	movei	#$f04000-max_x*2,tmp1
+//->	movei	#logo_screen-max_x*2,tmp1
+	store	tmp1,(blitter+_BLIT_A2_BASE)
+ ENDIF
+	store	tmp3,(blitter+_BLIT_A1_BASE)
+
+	store	dv,(blitter+_BLIT_A1_INC)
+	movefa	luminance.a,tmp1
+	store	du,(blitter+_BLIT_A1_FINC)
+
 	store	tmp1,(blitter+_BLIT_IINC)
 
-;;->	store	tmp1,(blitter+_BLIT_SRCD)
-;;->	store	tmp1,(blitter+$7c)
-;;->	store	tmp1,(blitter+$80)
-;;->	addq	#8,blitter
-;;->	store	tmp1,(blitter+$7c)
-;;->	store	tmp1,(blitter+$80)
-;;->	subq	#8,blitter
-//->	movei	#BLIT_SRCEN|BLIT_LFU_REPLACE|BLIT_DSTA2|BLIT_UPDA1|BLIT_UPDA1F,tmp3
-
-	movei	#BLIT_SRCEN|BLIT_LFU_REPLACE|BLIT_DSTA2|BLIT_UPDA1|BLIT_UPDA1F|BLIT_SRCSHADE|BLIT_GOURZ,tmp3
+	movei	#BLIT_SRCEN|BLIT_LFU_REPLACE|BLIT_DSTA2|BLIT_UPDA1|BLIT_SRCSHADE|BLIT_GOURZ,tmp3
 	store	tmp0,(blitter+_BLIT_COUNT)
+
+	movefa	dump.a,r1
+	addqt	#1,r1
+	moveta	r1,dump.a
 
  IF DIRECT_TEXTURE = 1
 	jump	(LR2)
 	store	tmp3,(blitter+_BLIT_CMD)
  ELSE
+;; ----------------------------------------
+;; ----------------------------------------
+;; ----------------------------------------
+
 	store	tmp3,(blitter+_BLIT_CMD)
 .waitblit2:
 	load	(blitter+$38),tmp2 ; wait for previous blit
 	btst	#0,tmp2
 	jr	z,.waitblit2
 	nop
-;; ----------------------------------------
-;; ----------------------------------------
-;; ----------------------------------------
 ;;->
-	regmap
-	movefa	dump0.a,tmp1
+	movefa	luminance.a,tmp1
 	store	tmp1,(blitter+_BLIT_IINC)
 
 	moveq	#0,tmp1
@@ -704,7 +692,7 @@ hline:
 	unreg	HLINE,LR2,reci,du,dv
 	unreg	tri_array, x0,x2, blitter,LR3
 	unreg	tri_ptrs.a,y0,y1,y2,f_cnt.a
-	unreg	object_list.a,du01,du02,du12
+	unreg	du01,du02,du12
 	unreg	dv01.a,dv12.a,dv02.a,u2,v2,u0,v0
 	unreg 	ul.a,vl.a
 	unreg	texture.a

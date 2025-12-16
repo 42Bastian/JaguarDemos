@@ -16,6 +16,7 @@ ENDIF
 
 chip		equ 0
 gone		equ 1
+galactic	equ 0
 
 	include <js/symbols/jagregeq.js>
 	include <js/symbols/blit_eq.js>
@@ -30,15 +31,12 @@ gone		equ 1
 	include "hively.inc"
  ENDIF
 
-//->CAM_X		equ -350
-//->CAM_Y		equ 50
-//->CAM_Z		equ 2150
-//->CAM_ANGLE	equ 256
 
-CAM_X		equ -635
+CAM_X		equ -402
 CAM_Y		equ 50
-CAM_Z		equ 2528
-CAM_ANGLE	equ 308
+CAM_Z		equ 2238
+//->CAM_Z		equ 2408 	; texture glitch
+CAM_ANGLE	equ 288
 
 ;;->CAM_X		equ -280
 ;;->CAM_Y		equ 50
@@ -76,8 +74,6 @@ x_save		equ stacktop-16*4-(max_y+1)*8
  ENDIF
 
 object_data	equ $110000
-tri_ptrs_ram	equ $190000
-tri_array_ram	equ tri_ptrs_ram+256*4
 
 	macro	defobj 	; name,npoints,nfaces
 	RSB	\0_rotated,	 	4+\1*_3d_size
@@ -96,17 +92,34 @@ tri_array_ram	equ tri_ptrs_ram+256*4
 	defobj	cube,8,12
 	defobj	kugel,134,264
 	defobj	torus2,144,288
+ IF 0
+	set@	0
+	rept 40
+	defobj	cube@,8,12
+	inc@
+	endr
+ ENDIF
 	defobj	cube2,8,12
 	defobj	prisma,5,6
 	defobj	diamant,20,36
-//->	defobj	plane, 121,162
+
+
 	defobj	plane, dia*dia, 2*(dia-1)*(dia-1)
 	RSB	plane_faces,4+(dia-1)*(dia-1)*2*face_size
 	RSW	_plane_normals,2+2*(world_size-1)*(world_size-1)*4
 	RSW	_plane_vnormals,2+world_size*world_size*4
 	RSB	_plane_y,world_size*world_size
 	echo "End of object: %hRSADDR"
+	RSALIGN 8
+	RSB	blit_buf,32*4000
+blit_buf_end equ RSADDR
+	RSL	tri_ptrs_ram,256
+	RSB	tri_array_ram,_tri_size*900
+mem_end	EQU RSADDR
 
+	echo "blit_buf %H blit_buf"
+	echo "blit_buf_end %H blit_buf_end"
+	echo "memory end: %H mem_end"
 
 	echo "stacktop %H stacktop"
  IFD x_save
@@ -114,7 +127,7 @@ tri_array_ram	equ tri_ptrs_ram+256*4
  ENDIF
 
 	RSSET $1000
-	RSL	OBJECT_LIST,32
+	RSL	OBJECT_LIST,64
 	RSL	CAMERA_X
 	RSL	CAMERA_Y
 	RSL	CAMERA_Z
@@ -134,6 +147,7 @@ tri_array_ram	equ tri_ptrs_ram+256*4
 	RSL	Z_POS
 	RSL	USE_GOURAUD
 	RSL	USE_PHRASE
+	RSL	IS_PAL
 	RSL	LastJoy,2
 
 _CAMERA_Y	EQU CAMERA_Y-CAMERA_X
@@ -148,6 +162,8 @@ _RLIGHT_Z	EQU RLIGHT_Z-CAMERA_X
 
 	include <js/var/txtscr.var>
 
+	echo "RSPC: %H RSADDR"
+
 	MACRO WAITBLITTER
 .\waitblit	load (blitter+$38),tmp0
 	btst	#0,tmp0
@@ -155,7 +171,9 @@ _RLIGHT_Z	EQU RLIGHT_Z-CAMERA_X
 	nop
 	ENDM
 
-	run $4000
+	run $2000
+//->	run $6000 		; for VJ
+start::
 ********************
 * init
 init:
@@ -163,6 +181,7 @@ init:
 	nop
 	jump	(r0)
 	nop
+	dc.l	$4e722700
 	include "irq.js"
 //->	include "genmap.inc"
 	include "engine.js"
@@ -171,6 +190,8 @@ init:
 
 	align	4
 skip_modules
+
+
 	movei	#$f02100,IRQ_FLAGADDR
 	moveta	IRQ_FLAGADDR,IRQ_FLAGADDR.a
 
@@ -179,34 +200,47 @@ skip_modules
 	nop
 	nop
 
+patch_fps		equ _patch_fps-MODrun_irq+MODstart_irq
+
+	movei	#$00F14003,r0
+	loadb	(r0),r0
+	movei	#patch_fps,r1
+	btst	#4,r0
+	loadw	(r1),r0
+	jr	eq,.no_fps_fix
+	addq	#32,r0		; increase "MOVEQ"
+	storew	r0,(r1)
+.no_fps_fix:
+
 	INITMODULE irq
 
 	movei	#IRQ_STACK,IRQ_SP
 	moveta	IRQ_SP,IRQ_SP.a
 	movei	#stacktop,SP
 
-	nop
-
 	movei	#memzero,r4
-	moveq	#8,r0
-	movei	#$4000-8,r1
+	movei	#$180,r0
+	movei	#start-$120,r1
 	BL	(r4)
 
 	movei	#memzero,r4
 	movei	#ende,r0
 	movei	#$200000-ende,r1
 	BL	(r4)
+
 ;;; ------------------------------
 	include <js/inc/videoinit.inc>
-
 ;;; ------------------------------
 ;;; patch aspect ration for different resolutions
 ;;; in case of NTSC mode
 ;;;
+
  IF NO_ASPECT_FIX = 0
 patch_aspect	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
 patch_aspect2	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
 
+
+	movei	#20*50,r4
 	movei	#$00F14003,r0
 	loadb	(r0),r0
 	movei	#patch_aspect,r1
@@ -214,6 +248,8 @@ patch_aspect2	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
 	movei	#patch_aspect2,r2
 	jr	eq,.patch_pal
 	nop
+	movei	#16*60,r4
+	addq	#10,r4
  IF max_x = 640
 	movei	#aspect_patch_ntsc,r0
 	addq	#2,r1
@@ -227,6 +263,8 @@ patch_aspect2	equ _fix_ntsc_aspect-MODrun_engine+MODstart_engine
  endif
 
 .patch_pal
+	movei	#IS_PAL,r3
+	store	r4,(r3)
 ;;->	echo "aspect2: %Hpatch_aspect"
 ;;->	echo "aspect2: %Hpatch_aspect2"
  ENDIF
@@ -268,7 +306,7 @@ cpy_dsp:
 	movei	#DSP_flag_replay_ON_OFF,r14
 	movei	#song,r0
 	store	r0,(r14+16)
-	movei	#$100,r0
+	movei	#$120,r0
 	store	r0,(r14+12)
 	movei	#binPrecalcTable,r0
 	store	r0,(r14+8)
@@ -384,13 +422,20 @@ pal:
 	addq	#4,r0
 	endm
 
-//->	ADD_OBJ kugel
-//->	ADD_OBJ torus2
-//->	ADD_OBJ torus
-//->	ADD_OBJ diamant
+	ADD_OBJ kugel
+	ADD_OBJ torus2
+	ADD_OBJ torus
+	ADD_OBJ diamant
 	ADD_OBJ cube
-//->	ADD_OBJ cube2
-//->	ADD_OBJ prisma
+ IF 0
+	set@ 	0
+	rept	40
+	ADD_OBJ cube@
+	inc@
+	endr
+ ENDIF
+	ADD_OBJ cube2
+	ADD_OBJ prisma
 
 
 	movei	#CAMERA_X,r15
@@ -426,6 +471,7 @@ pal:
 	nop
 	BL	(r0)
 
+
 //->	MyINITMODULE engine
 //->	MyINITMODULE control
 
@@ -443,43 +489,58 @@ main_loop:
 	moveq	#31,r0
 	storew	r0,(r1)
 
+	movei	#$00F00052,r2
+	loadw	(r2),r0		; work time
+	PUSH	r0
+
 	moveq	#0,r0
 	moveta	r0,VBLFlag.a
-//->	xor	VBLFlag,VBLFlag
 .wvbl:
 	cmpq	#0,r0
-//->	or	VBLFlag,VBLFlag
 	jr	eq,.wvbl
 	movefa	VBLFlag.a,r0
 
-
-//->	movei	#$00F00052,r2
-//->	loadw	(r2),r0
-//->	neg	r0
-//->	shlq	#16,r0
-//->	shrq	#16,r0
-//->	PUSH	r0
+	loadw	(r2),r0		; total frame time
+	PUSH	r0
 
 	moveq	#0,r1
 	subq	#1,r1
-	movei	#$00F00052,r2
 	storew	r1,(r2)
 
 	MyINITMODULE engine
 	MBL	engine
 
-	movei	#$00F00052,r0
-	loadw	(r0),r0
-	neg	r0
-	shlq	#16,r0
-	shrq	#16,r0
-	PUSH	r0
+//->	movei	#$00F00052,r0
+//->	loadw	(r0),r0
+//->	neg	r0
+//->	shlq	#16,r0
+//->	shrq	#16,r0
+//->	PUSH	r0
 
 	MyINITMODULE control
 	MBL	control
 
-	POP	r0
+	POP	r1
+	neg	r1
+	shlq	#16,r1
+	shrq	#16,r1
+	move	r1,r2
+	shrq	#1,r2
+	movei	#1000,r0
+	add	r2,r0
+	div	r1,r0
+
 	moveq	#0,r1
+	bset	#17,r1
+	movei	#PrintDEC2_YX,r2
+	BL	(r2)
+
+	POP	r0
+	neg	r0
+	shlq	#16,r0
+	shrq	#16,r0
+
+	moveq	#6,r1
 	bset	#17,r1
 	movei	#PrintDEC_YX,r2
 	BL	(r2)
@@ -490,11 +551,9 @@ main_loop:
 	BL	(r2)
 
 	movefa	dump0.a,r0
-//->	movei	#USE_PHRASE,r0
-//->	load	(r0),r0
-//->	moveq	#8,r1
-//->	movei	#PrintHEX_YX,r2
-//->	BL	(r2)
+	moveq	#9,r1
+	movei	#PrintDEC_YX,r2
+	BL	(r2)
 
 	movei	#main_loop,r0
 	nop
@@ -623,8 +682,8 @@ iz		reg 99
 ******************
 * text-data
 Hallo:		DC.B " 000000 tris   move: 1/2/3 + U/D // focus: O",0
-ms:		DC.B "        ms/f X= 123456 Y= 123456 Z= 123456",0
-info:		dc.b "  3D poly/texture engine (c) 2025 42Bastian",0
+ms:		DC.B "00FPS  000000ms   X 123456 Y 123456 Z 123456",0
+info:		dc.b "     3D poly engine (c)'25 42Bastian",0
 	EVEN
 
 	align 8
@@ -663,21 +722,24 @@ ASCII::
 	include "pobjects.inc"
 	include "sintab.inc"
 	include "plane2.inc"
-texture:
-	incbin "texture.cry"
+
+	include "texture.inc"
 brick:
-	incbin "brick.cry"
+	incbin "brick_64x64.cry"
 grass:
-	incbin "grass.cry"
+	incbin "grass_64x64.cry"
 waves:
-	incbin "waves.cry"
+//->	rept 256*256
+//->	dc.w	$80ff
+//->	endr
+	incbin "waves_64x64.cry"
 
 	IF MOD = 1
 	align 8
 DSP_start:
 	ibytes "hively_player.bin"
 DSP_end:
-	.long
+	align 8
 song:
  if chip = 1
         .incbin "mod/chiprolled.hvl.streambits"
@@ -685,6 +747,9 @@ song:
  if gone = 1
         .incbin "mod/gone.ahx.streambits"
  endif
+     if galactic = 1
+	.incbin "mod/galactic_emeralds.hvl.streambits"
+     endif
 	.long
 binPrecalcTable:
 	ibytes "AHX_FilterPrecalc.bin"

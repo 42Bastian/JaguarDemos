@@ -20,6 +20,7 @@ op::
 	subq	#1,vbl_counter.a
 	jr	pl,.no_swap
 	nop
+_patch_fps:
 	moveq	#FPS-1,vbl_counter.a
 	moveq	#1,VBLFlag.a
 	move	obl1.a,obl0.a

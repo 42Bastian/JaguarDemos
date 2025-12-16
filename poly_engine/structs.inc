@@ -54,6 +54,13 @@ proj_size	equ RSCOUNT
 
 _3d_size	equ RSCOUNT
 
+	RSRESET
+	RSL	tri_col
+	RSL	tri_xy0
+	RSL	tri_xy1
+	RSL	tri_xy2
+	RSL	tri_next
+_tri_size	equ RSCOUNT
 
 	macro face ; p1,p2,p3,p4,col
 	dc.w \0,\1,\2,\4

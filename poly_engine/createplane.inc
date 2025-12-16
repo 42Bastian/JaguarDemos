@@ -135,7 +135,6 @@ createPlane::
 	jr	mi,.no_darken
 	moveq	#0,tmp2
 
-//->	neg	r0
 	move	r0,r2
 	sat8	r2
 
@@ -146,11 +145,13 @@ createPlane::
 	sharq	#7,rx
 	sharq	#7,ry
 
+ IF NO_ASPECT_FIX = 0
  IF max_x = 384
 _fix_ntsc_aspect2:
 	moveq	#aspect_patch_pal,tmp2
 //->	moveq	#aspect_patch_ntsc,tmp2
 	imult	tmp2,rx
+	addq	#16,rx
 	sharq	#5,rx
  ENDIF
  IF max_x = 320
@@ -166,6 +167,7 @@ _fix_ntsc_aspect2:
 //->	movei	#aspect_patch_ntsc,tmp2
 //->	imult	tmp2,ry
 //->	sharq	#6,ry
+ ENDIF
  ENDIF
 	neg	ry
 	add	xcenter,rx

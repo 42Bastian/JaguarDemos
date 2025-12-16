@@ -35,9 +35,6 @@ min_max.a	reg 99
  ENDIF
 save_curr_object.a reg 99
 
-dump.a		reg 99
-dump0.a		reg 99
-
 ;;->	if (max_x << fp_rez) > $ffff
 ;;->	fail "fp_rez to large"
 ;;->	endif
@@ -76,12 +73,12 @@ CLS::
 	store	tmp0,(blitter+_BLIT_CMD)
  ELSE
 //->	movei	#$88e088e0,tmp0
-	movei	#$00e000e0,tmp0
-//->	moveq	#0,tmp0
+//->	movei	#$00e000e0,tmp0
+	moveq	#0,tmp0
 	store	tmp0,(blitter+_BLIT_PATD)
 	store	tmp0,(blitter+_BLIT_PATD+4)
 	store	tmp0,(blitter+$40)
-	movei	#(-$500)&0xffffff,tmp0
+	movei	#($600)&0xffffff,tmp0
 	store	tmp0,(blitter+$70)		; int inc
 	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPHR,tmp0
 	store	tmp0,(blitter+_BLIT_A1_FLAGS)
@@ -181,11 +178,12 @@ cam_cos		reg 99
 //->	BL	(r8)
 
 	;; debug
-	movei	#$190000,r0
-	moveta	r0,dump0.a
+//->	movei	#$190000,r0
+//->	moveta	r0,dump0.a
 
-	moveq	#0,r0
-	moveta	r0,dump.a
+//->	moveq	#0,r0
+//->	moveta	r0,dump.a
+//->	moveta	r0,dump0.a
 	;;
  IF LANDSCAPE = 1
 	movei	#createPlane,r0
@@ -277,36 +275,28 @@ dz	reg 99
 	movei	#AddObjects,r0
 	BL	(r0)
  endif
-//->	movei	#Dump,r0
-//->	movefa	screen0.a,r11
-//->	BL	(r0)
-
-//->	movei	#tri_ptrs_ram,r9
-//->	load	(r9),r0
-//->	shrq	#2,r0
-//->	movei	#drawHex,r8
-//->	movefa	dump.a,r0
-//->	move	r11,r7
-//->	BL	(r8)
 
 //->	movei	#$190000,r0
 //->	moveta	r0,dump0.a
+//->	moveq	#0,r0
+//->	moveta	r0,dump.a
 
 	moveq	#0,r0
 	moveta	r0,dump.a
+	moveta	r0,dump0.a
 
- IF GOURAUD = 1
+//-> IF GOURAUD = 1
 //->	movei	#USE_PHRASE,r0
 //->	load	(r0),r0
-	movei	#Drawfaces,r1
+//->	movei	#Drawfaces,r1
 //->	cmpq	#0,r0
 //->	jr	eq, pixel
 //->	nop
 //->	movei	#Drawfaces_phr,r1
 pixel:
- ELSE
+//-> ELSE
 	movei	#Drawfaces,r1
- ENDIF
+//-> ENDIF
 	BL	(r1)
 
 	movefa	screen0.a,r11
@@ -319,12 +309,11 @@ pixel:
 //->	BL	(r0)
 //->	movei	#max_x*2*2,r0
 //->	add	r0,r11
-	movei	#15,r10
-	movei	#plane_faces+4,r9
+//->	movei	#15,r10
+//->	movei	#plane_faces+4,r9
 //->	movei	#$190000,r9
-	movei	#Dump1,r0
+//->	movei	#Dump1,r0
 //->	BL	(r0)
-
 
 	POPLR
 

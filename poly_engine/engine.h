@@ -19,6 +19,6 @@ a_speed		equ 4
 far_z		equ grid_size*(radius)
 far_x		equ far_z	;*341/256
 
-dark_dist	equ far_z-1*grid_size
+dark_dist	equ far_z-2*grid_size
 
 NO_ASPECT_FIX	equ 0

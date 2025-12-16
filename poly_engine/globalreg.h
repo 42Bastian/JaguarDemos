@@ -12,6 +12,8 @@ screen1.a	reg 25
 screen0.a	reg 24
 vbl_counter.a	reg 23
 VBLFlag.a	reg 22
+dump.a		reg 21
+dump0.a		reg 20
 
 
 IRQScratch4.a	REG  4

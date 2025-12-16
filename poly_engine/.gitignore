@@ -1,1 +1,4 @@
 hively_player.bin
+*.equ
+polygon*.bin*
+romloader_lz4.bin
