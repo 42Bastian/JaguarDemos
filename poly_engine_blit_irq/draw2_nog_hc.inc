@@ -1,0 +1,361 @@
+;-*-asm-*-
+****************
+* draw polys
+
+LOCAL_USE_PHRASE		equ 1
+
+tri_array	reg 15!
+blitter		reg 14
+
+x0		reg 99
+y0		reg 99
+x1		reg 99
+y1		reg 99
+x2		reg 99
+y2		reg 99
+color		reg 99
+l0		reg 99
+l1		reg 99
+l2		reg 99
+tri_ptrs	reg 99
+dy01		reg 99
+dy02		reg 99
+dy12		reg 99
+dx01		reg 99
+dx02		reg 99
+dx12		reg 99
+f_cnt		reg 99
+LR3		reg 99
+max_y.a		reg 99
+
+Drawfaces::
+	move	LR,f_cnt
+	movei	#$f02200,blitter
+	sat8	f_cnt		; => 255
+
+	WAITBLITTER
+
+ IF LOCAL_USE_PHRASE = 1
+	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPHR,tmp0
+ ELSE
+	movei	#BLIT_PITCH1|BLIT_PIXEL16|BLIT_WIDTH|BLIT_XADDPIX,tmp0
+ ENDIF
+	movei	#max_y,tmp1
+	store	tmp0,(blitter+_BLIT_A1_FLAGS)
+	moveta	tmp1,max_y.a
+
+	movei	#tri_ptrs_ram+255*4,tri_ptrs
+	move	pc,LR3
+	load	(tri_ptrs),tri_array
+	addq	#6,LR3
+.loop
+	cmpq	#0,tri_array
+	load	(tri_array),color
+	jr	eq,.next
+	load	(tri_array+4),y0
+
+//->	move	LR,LR3
+
+	load	(tri_array+8),y1
+	load	(tri_array+12),y2
+	jr	triangle
+	load	(tri_array+16),tri_array
+.next
+	subq	#1,f_cnt
+	subqt	#4,tri_ptrs
+	jump	pl,(LR3)
+	load	(tri_ptrs),tri_array
+
+	jump	(LR)
+	nop
+
+triangle:
+	;; split x and y and sign-extend
+	move	y0,x0
+	move	y1,x1
+	move	y2,x2
+	shlq	#16,y0
+	shlq	#16,y1
+	shlq	#16,y2
+	sharq	#16,x0
+	sharq	#16,x1
+	sharq	#16,x2
+	sharq	#16,y0
+	sharq	#16,y1
+	sharq	#16,y2
+
+;;; ----------------------------------------
+_dx	equ 60
+//->	movei	#$ffffffff,color
+//->	movei	#50,x0
+//->	movei	#10,y0
+//->	movei	#300,x1
+//->	movei	#40,y1
+//->	movei	#20,x2
+//->	movei	#120,y2
+//->	movefa	dump.a,r0
+//->	cmpq	#1,r0
+//->	jump	ne,(LR3)
+//->	nop
+//->	bclr	#31,color
+//->	sub	tmp2,x0
+//->	sub	tmp2,x1
+//->	sub	tmp2,x2
+//->	sub	tmp1,y0
+//->	sub	tmp1,y1
+//->	sub	tmp1,y2
+//->	movefa	LR.a,LR
+.first
+
+	;; check if triangle is outside screen
+	move	y0,tmp0		; triangle y < 0
+	move	x0,tmp1
+	and	y1,tmp0
+	and	x1,tmp1
+	and	y2,tmp0
+	jump	n,(LR3)		; all y < 0
+	and	x2,tmp1
+	jump	n,(LR3)		; all x < 0
+	movefa	max_y.a,tmp1
+	cmp	y0,tmp1		; triangle > y_max ?
+	movei	#max_x,tmp0
+	jr	nn,.y_ok
+	cmp	y1,tmp1
+	jr	nn,.y_ok
+	cmp	y2,tmp1
+	jump	n,(LR3)
+.y_ok
+	cmp	x0,tmp0
+	jr	nn,.x_ok
+	cmp	x1,tmp0
+	jr	nn,.x_ok
+	cmp	x2,tmp0
+	jump	n,(LR3)
+.x_ok
+	;; debug
+	movefa	dump.a,r0
+	addqt	#1,r0
+	moveta	r0,dump.a
+
+	shrq	#16,color
+ IF LOCAL_USE_PHRASE = 1
+	move	color,tmp0
+	shlq	#16,tmp0
+	or	tmp0,color
+ ENDIF
+	; sort y
+	cmp	y0,y1
+	move	x1,tmp0
+	jr	pl,.no_swap1
+	move	y1,tmp1
+	move	x0,x1
+	move	y0,y1
+	move	tmp0,x0
+	move	tmp1,y0
+.no_swap1:
+	cmp	y1,y2
+	move	x1,tmp0
+	jr	pl,.no_swap2
+	move	y1,tmp1
+	move	x2,x1
+	move	y2,y1
+	move	tmp0,x2
+	move	tmp1,y2
+.no_swap2:
+	cmp	y0,y1
+	move	x1,tmp0
+	jr	pl,.no_swap3
+	move	y1,tmp1
+	move	x0,x1
+	move	y0,y1
+	move	tmp0,x0
+	move	tmp1,y0
+.no_swap3:
+	move	y2,dy02
+	sub	y0,dy02
+	moveq	#16,tmp0
+	jump	eq,(LR3)		; flat triangle
+	normi	dy02,tmp1
+
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	div	dy02,tmp0	; 1/dy02
+	neg	tmp1
+	subq	#4,tmp1
+
+	move	y1,dy01
+
+	move	x1,dx01
+	move	x2,dx02
+	move	x2,dx12
+	sub	x0,dx01
+	sub	x0,dx02
+	sub	x1,dx12
+
+	imult	tmp0,dx02	; (x2-x0)/dy02
+	sha	tmp1,dx02
+
+	sub	y0,dy01
+	moveq	#16,tmp0
+	jr	ne,.dy01_non_zero
+	normi	dy01,tmp1
+	jr	.dy01_zero
+	moveq	#0,tmp0
+
+.dy01_non_zero:
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	store	dy01,(tmp2)
+	addq	#4,tmp2
+
+	store	tmp0,(tmp2)
+	addq	#4,tmp2
+
+	div	dy01,tmp0	; 1/dy01
+	neg	tmp1
+	subq	#4,tmp1
+.dy01_zero
+	imult	tmp0,dx01	; (x2-x0)/dy02
+	sha	tmp1,dx01
+
+	move	y2,dy12
+	sub	y1,dy12
+	moveq	#16,tmp0
+	jr	ne,.dy12_none_zero
+	normi	dy12,tmp1
+
+	jr	.dy12_zero
+	moveq	#0,tmp0
+
+.dy12_none_zero:
+	addq	#31,tmp1
+	neg	tmp1
+	sh	tmp1,tmp0
+
+	div	dy12,tmp0	; 1/dy12
+	neg	tmp1
+	subq	#4,tmp1
+.dy12_zero:
+
+	imult	tmp0,dx12	; (x2-x1)/dy12
+	sha	tmp1,dx12
+
+	shlq	#fp_rez,x0
+	shlq	#fp_rez,x1
+
+	move	x0,x2
+
+	cmpq	#0,y0
+	move	dx01,tmp0
+	jr	pl,.y0_top_ok
+	move	dx02,tmp1
+
+	imult	y0,tmp0
+	imult	y0,tmp1
+	sub	tmp0,x0
+	sub	tmp1,x2
+
+	moveq	#0,y0
+.y0_top_ok:
+	cmpq	#0,y1
+	movefa	max_y.a,tmp0
+	jr	pl,.y1_top_ok
+	nop
+
+	imult	dx12,y1
+	sub	y1,x1
+
+	moveq	#0,y1
+.y1_top_ok:
+	cmp	y2,tmp0
+	jr	pl,.y_btm_ok
+	cmp	y1,tmp0
+
+	move	tmp0,y2
+.y_btm_ok:
+	jr	pl,.y_btm2_ok
+	nop
+	move	tmp0,y1
+.y_btm2_ok:
+
+	unreg dy01,dy02,dy12
+
+HLINE		reg	99
+LR2		reg	99
+
+	movei	#hline,HLINE
+	sub	y0,y1
+	move	pc,LR2
+	jump	nn_ne,(HLINE)
+	addq	#10,LR2
+	jr	.top_done
+	move	x1,x0
+.loop_top:
+	add	dx01,x0
+	subq	#1,y1
+	addqt	#1,y0
+	jump	ne,(HLINE)
+	add	dx02,x2
+
+	move	x1,x0
+.top_done:
+
+	sub	y0,y2
+	move	pc,LR2
+	jump	ne,(HLINE)
+	addq	#8,LR2
+	jump	(LR3)
+.loop_btm:
+	add	dx12,x0
+	subq	#1,y2
+	addqt	#1,y0
+	jump	eq,(LR3)
+	add	dx02,x2
+
+****************
+* draw H-Lines
+xl	reg 99
+
+hline:
+	move	x2,tmp0
+	move	x0,xl		; left
+	sharq	#fp_rez,tmp0
+	sharq	#fp_rez,xl
+	move	tmp0,tmp2	; xr
+	sub	xl,tmp0		; dx
+	jump	eq,(LR2)
+	move	y0,tmp3
+	jr	pl,.ok
+	nop
+	add	tmp0,xl
+	sub	tmp0,tmp2
+	neg	tmp0
+.ok
+	shlq	#16,xl
+	movei	#B_PATDSEL|B_CLIP_A1,tmp2
+	or	tmp3,xl		; y:x
+	load	(blitter+$38),tmp1 ; wait for previous blit
+	rorq	#16,xl
+	bset	#16,tmp0
+.waitblit:
+	btst	#0,tmp1
+	jr	z,.waitblit
+	load	(blitter+$38),tmp1 ; wait for previous blit
+
+	store	color,(blitter+_BLIT_PATD)
+ IF LOCAL_USE_PHRASE = 1
+	store	color,(blitter+_BLIT_PATD+4)
+ ENDIF
+	store	xl,(blitter+_BLIT_A1_PIXEL)
+	store	tmp0,(blitter+_BLIT_COUNT)
+	jump	(LR2)
+	store	tmp2,(blitter+_BLIT_CMD)
+
+	unreg	dx01,dx02,dx12,xl
+	unreg	l0,l1,l2,HLINE,LR2
+	unreg	tri_array, x0,x1,x2, blitter,LR3
+	unreg	tri_ptrs,color,y0,y1,y2,max_y.a
