@@ -122,9 +122,9 @@ triangle:
 	nop
 .x_ok
 	;; debug
-	movefa	dump.a,r1
-	addqt	#1,r1
-	moveta	r1,dump.a
+//->	movefa	dump.a,r1
+//->	addqt	#1,r1
+//->	moveta	r1,dump.a
 
 ;;; ----------------------------------------
 ;;->_dx	equ 260
@@ -364,28 +364,28 @@ LR2		reg	99
 
 	movei	#hline,HLINE
 	sub	y0,y1
-	move	pc,LR2
+._pc1	move	pc,LR2
 	jump	nn_ne,(HLINE)
-	addq	#10,LR2
+	addq	#.loop_top-._pc1,LR2
 	jr	.top_done
 	movefa	x1save.a,x0
-
 .loop_top:
 	add	dx01,x0
 	add	dl01,l0
-	add	dx02,x2
+	add	dl02,l2
 	subq	#1,y1
 	addqt	#1,y0
 	jump	ne,(HLINE)
-	add	dl02,l2
+	add	dx02,x2
+
 	movefa	x1save.a,x0
 .top_done:
 	movefa	l1save.a,l0
 
 	sub	y0,y2
-	move	pc,LR2
+._pc2	move	pc,LR2
 	jump	ne,(HLINE)
-	addq	#8,LR2
+	addq	#.loop_btm-._pc2,LR2
 	jump	(LR)
 .loop_btm:
 	add	dx12,x0
@@ -450,26 +450,31 @@ hline:
 	moveq	#0,x1
 .lx
 	cmpq	#0,tmp0
+	move	l1,tmp3
 	jr	nn_ne,.count_ok	; tmp0 (count) > 0 ?
-	rorq	#COLOR_FP,l1
+	or	tmp2,x1		; y:x
 	jump	(LR2)		; <= 0, do not draw
 .count_ok:
-	or	tmp2,x1		; y:x
-
-.waitblit:
+	shlq	#16-COLOR_FP,tmp3
 	load	(blitter+$38),tmp2 ; wait for previous blit
+	jr	pl,.ok_l1
+	shrq	#16,tmp3
+	xor	tmp3,tmp3
+.ok_l1:
+	or	color,tmp3
+.waitblit:
 	btst	#0,tmp2
 	jr	z,.waitblit
-	or	color,l1
+	load	(blitter+$38),tmp2 ; wait for previous blit
 
 	store	x1,(blitter+_BLIT_A1_PIXEL)
 	cmpq	#0,sign		; negative color step?
-	store	l1,(blitter+_BLIT_PATD)
+	store	tmp3,(blitter+_BLIT_PATD)
 	jr	pl,.pos2
 	bset	#16,tmp0
 	neg	tmp1
 .pos2
-	rorq	#16,l1
+	shrq	#COLOR_FP,l1
 	shlq	#8-COLOR_FP,tmp1	; remove fixpoint, remove top 8bits
 	store	l1,(blitter+_BLIT_SRCD)
 	shrq	#8,tmp1
