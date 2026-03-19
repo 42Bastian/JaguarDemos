@@ -21,7 +21,7 @@ OB0.a		reg 99
 OPF.a		reg 99
 VBLcount.a	reg 99
 photo.a		reg 99
-SKIP.a		reg 99
+
 y_count.a	reg 99
 ptr.a		reg 99
 blitter.a	reg 14
@@ -75,18 +75,17 @@ op::
 	movei	#WIDTH*2,r4
 	loadw	(VC.a),r3
 	bset	#9+3,IRQ_FLAG.a
-
 	move	r3,r1
 	bclr	#11,r3		; clear top/bottom flag
 	shrq	#11,r1		; copy top/bottom flag to bit 0
 	movei	#60+2,r2	; boundary (see obl0!)
-//->	jr	eq.empty
 	or	r1,r3		; set odd/even
 	sub	r2,r3		; => line index
 	move	photo.a,r2
+	addqt	#2,r3
 	jr	pl,.no_vbl
 	mult	r3,r4		; r4 = line ptr
-	movei	#201,y_count.a
+	movei	#200,y_count.a
 	addq	#1,VBLcount.a
 .no_vbl:
 	add	r4,r2
@@ -95,6 +94,18 @@ op::
 .empty	nop
 	movei	#$100000,r2
 .no_blank
+ IF 0
+	/* BigPEmu does not emulate Blitter writes to linebuffer! */
+	movei	#200/2,r0
+	move	LB.a,r1
+.copy:
+	loadp	(r2),r3
+	addq	#8,r2
+	subq	#1,r0
+	storep	r3,(r1)
+	jr	nz,.copy
+	addq	#8,r1
+ ELSE
 	store	LB.a,(blitter)
 	moveq	#0,r0
 	store	r2,(blitter+_BLIT_A2_BASE)
@@ -104,7 +115,7 @@ op::
 	movei	#1<<16|200,r0
 	store	r0,(blitter+_BLIT_COUNT)
 	store	r1,(blitter+_BLIT_CMD)
-
+ ENDIF
 skip:
 	storew	IRQScratch0.a,(OPF.a)
 	load	(IRQ_SP.a),IRQ_RTS.a
@@ -174,8 +185,6 @@ init::
 	load	(r14+4),pic1
 	load	(r14+8),pic2
 	moveta	pic0,photo.a
-	movei	#skip,r0
-	moveta	r0,SKIP.a
 	movei	#$10000,r0
 	moveta	r0,ptr.a
 	movei	#$f02200,blitter
@@ -204,25 +213,24 @@ init::
 	movei	#(26591-1)<<16|(2-1),r1
 	store	r1,(r0)			; Start timer
 
-	movei	#loop,LOOP
 	xor	r0,r0
+	move	pc,LOOP
 	moveta	r0,VBLcount.a
+	addq	#4+2,LOOP
 loop:
 	movefa	VBLcount.a,r3
 	move	pic0,r0
 	shrq	#7,r3
+	move	pic1,r1
 	jump	eq,(LOOP)
-	nop
-	move	pic1,pic0
-	move	pic2,pic1
-	move	r0,pic2
-	moveta	pic0,photo.a
+	move	pic2,r2
 
+	move	r1,pic0
+	move	r2,pic1
+	move	r0,pic2
 	xor	r0,r0
+	moveta	pic0,photo.a
+	jump	(LOOP)
 	moveta	r0,VBLcount.a
 
-	jump	(LOOP)
-	nop
-
 	align 4
-	regmap
